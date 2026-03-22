@@ -1,0 +1,210 @@
+'use client';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Tooltip, Legend, Filler } from 'chart.js';
+import AdminLayout from '@/components/AdminLayout';
+import { AdminAPI } from '@/lib/api';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Tooltip, Legend, Filler);
+
+const IcRevenue = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>;
+const IcBooking = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+const IcUsers   = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+const IcStar    = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
+const IcPin     = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
+const IcLeaf    = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>;
+const IcPercent = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>;
+
+function KpiCard({ label, value, icon, color, sub, trend }: any) {
+  return (
+    <div className="stat-card">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+        <div style={{ width: 44, height: 44, borderRadius: 13, background: `${color}14`, border: `1px solid ${color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', color }}>{icon}</div>
+        {trend != null && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', fontWeight: 700, color: trend >= 0 ? '#16a34a' : '#dc2626', background: trend >= 0 ? 'rgba(22,163,74,0.08)' : 'rgba(220,38,38,0.08)', padding: '3px 8px', borderRadius: 99 }}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points={trend >= 0 ? "18 15 12 9 6 15" : "6 9 12 15 18 9"}/></svg>
+            {Math.abs(trend)}%
+          </div>
+        )}
+      </div>
+      <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: '1.8rem', fontWeight: 900, color, lineHeight: 1, letterSpacing: '-0.02em', marginBottom: sub ? 4 : 0 }}>{value ?? '—'}</div>
+      {sub && <div style={{ fontSize: '0.72rem', color: 'var(--text-faint)', fontWeight: 500 }}>{sub}</div>}
+    </div>
+  );
+}
+
+const CHART_OPTS = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+};
+
+export default function AnalyticsPage() {
+  const [period, setPeriod] = useState('30');
+  const { data: an, isLoading } = useQuery({ queryKey: ['admin-analytics', period], queryFn: () => AdminAPI.analytics({ period }) });
+  const { data: util } = useQuery({ queryKey: ['admin-utilization', period], queryFn: () => AdminAPI.utilization({ period }) });
+  const a: any = an;
+  const u: any = util;
+
+  const revenueData = {
+    labels: (a?.revenueByDay||[]).map((r:any) => new Date(r.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})),
+    datasets: [{ label: 'Revenue', data: (a?.revenueByDay||[]).map((r:any)=>r.revenue||r.amount||0), borderColor:'#03411a', backgroundColor:'rgba(3,65,26,0.07)', fill:true, tension:0.4, borderWidth:2, pointRadius:0, pointHoverRadius:5 }],
+  };
+  const bookingsData = {
+    labels: (a?.bookingsByDay||[]).map((r:any) => new Date(r.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})),
+    datasets: [{ label: 'Bookings', data: (a?.bookingsByDay||[]).map((r:any)=>r.count||r.bookings||0), borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,0.07)', fill:true, tension:0.4, borderWidth:2, pointRadius:0, pointHoverRadius:5 }],
+  };
+  const zoneData = {
+    labels: (a?.zonePerformance||[]).map((z:any)=>z.zone_name||z.name||'Unknown'),
+    datasets: [{ label:'Bookings', data:(a?.zonePerformance||[]).map((z:any)=>z.total_bookings||z.bookings||0), backgroundColor:'rgba(3,65,26,0.8)', borderRadius:6, borderSkipped:false }],
+  };
+  const newCustData = {
+    labels: (a?.newCustomersByDay||[]).map((r:any) => new Date(r.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})),
+    datasets: [{ label:'New Customers', data:(a?.newCustomersByDay||[]).map((r:any)=>r.count||0), backgroundColor:'rgba(37,99,235,0.7)', borderRadius:6, borderSkipped:false }],
+  };
+  const statusData = {
+    labels: (a?.bookingsByStatus||[]).map((s:any)=>s.status?.replace(/_/g,' ')),
+    datasets: [{ data:(a?.bookingsByStatus||[]).map((s:any)=>s.count||0), backgroundColor:['#03411a','#2563eb','#d97706','#16a34a','#808285','#dc2626'], borderWidth:0, hoverOffset:8 }],
+  };
+
+  const KPIS = [
+    { label:'Total Revenue',    value: a?.totalRevenue!=null ? `₹${Number(a.totalRevenue).toLocaleString('en-IN')}` : '—', icon:<IcRevenue/>, color:'#03411a', sub:`${period}-day period`, trend:18 },
+    { label:'Total Bookings',   value: a?.totalBookings?.toLocaleString('en-IN'), icon:<IcBooking/>, color:'#2563eb', sub:'All bookings', trend:12 },
+    { label:'New Customers',    value: a?.newCustomers?.toLocaleString('en-IN'),  icon:<IcUsers/>,  color:'#16a34a', sub:'New sign-ups',  trend:8  },
+    { label:'Avg Rating',       value: a?.avgRating ? `${Number(a.avgRating).toFixed(1)} ★` : '—', icon:<IcStar/>, color:'#d97706', sub:'Out of 5.0' },
+    { label:'Completion Rate',  value: a?.completionRate ? `${Number(a.completionRate).toFixed(0)}%` : '—', icon:<IcPercent/>, color:'#16a34a', sub:'Of all bookings', trend:3 },
+    { label:'Active Zones',     value: (a?.zonePerformance||[]).length || '—', icon:<IcPin/>, color:'#9333ea', sub:'Serving customers' },
+    { label:'Active Gardeners', value: u?.activeGardeners?.toLocaleString('en-IN'), icon:<IcLeaf/>, color:'#0891b2', sub:'Currently working' },
+    { label:'Avg Jobs/Day',     value: u?.avgJobsPerDay ? Number(u.avgJobsPerDay).toFixed(1) : '—', icon:<IcBooking/>, color:'#d97706', sub:'Utilization avg' },
+  ];
+
+  return (
+    <AdminLayout>
+      {/* Header */}
+      <div style={{ marginBottom:28, display:'flex', justifyContent:'space-between', alignItems:'flex-end', flexWrap:'wrap', gap:12 }}>
+        <div>
+          <h1 className="page-title">Analytics</h1>
+          <p style={{ color:'var(--text-muted)', fontSize:'0.875rem', marginTop:4 }}>Platform performance & insights</p>
+        </div>
+        <div style={{ display:'flex', gap:4, background:'#fff', padding:4, borderRadius:12, border:'1px solid var(--border)' }}>
+          {[['7','7 Days'],['30','30 Days'],['90','90 Days'],['365','1 Year']].map(([v,l])=>(
+            <button key={v} onClick={()=>setPeriod(v)} style={{ padding:'6px 14px', borderRadius:9, border:'none', background:period===v?'var(--forest)':'transparent', color:period===v?'#fff':'var(--text-muted)', fontWeight:600, fontSize:'0.78rem', cursor:'pointer', fontFamily:'var(--font)', transition:'all 0.15s' }}>{l}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* KPI Grid */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:16, marginBottom:24 }}>
+        {isLoading ? Array(8).fill(null).map((_,i)=><div key={i} className="skeleton" style={{ height:130, borderRadius:18 }}/>) :
+          KPIS.map((k,i)=><KpiCard key={i} {...k}/>)}
+      </div>
+
+      {/* Revenue + Bookings charts */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:20 }}>
+        <div className="card">
+          <div className="card-header"><h2>Revenue Trend</h2><span style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>Daily ₹</span></div>
+          <div className="card-body" style={{ height:240 }}>
+            {(a?.revenueByDay||[]).length>0 ? <Line data={revenueData} options={{ ...CHART_OPTS, scales:{ x:{grid:{display:false},ticks:{font:{size:10,family:'Poppins'},color:'var(--text-muted)',maxRotation:0}}, y:{grid:{color:'rgba(3,65,26,0.05)'},ticks:{font:{size:10,family:'Poppins'},color:'var(--text-muted)',callback:(v:any)=>`₹${Number(v).toLocaleString('en-IN')}`}} } }} />
+            : <div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'100%',color:'var(--text-muted)',fontSize:'0.85rem' }}>No revenue data</div>}
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-header"><h2>Booking Volume</h2><span style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>Daily count</span></div>
+          <div className="card-body" style={{ height:240 }}>
+            {(a?.bookingsByDay||[]).length>0 ? <Line data={bookingsData} options={{ ...CHART_OPTS, scales:{ x:{grid:{display:false},ticks:{font:{size:10,family:'Poppins'},color:'var(--text-muted)',maxRotation:0}}, y:{grid:{color:'rgba(37,99,235,0.05)'},ticks:{font:{size:10,family:'Poppins'},color:'var(--text-muted)'}} } }} />
+            : <div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'100%',color:'var(--text-muted)',fontSize:'0.85rem' }}>No booking data</div>}
+          </div>
+        </div>
+      </div>
+
+      {/* Zone + Donut + New customers */}
+      <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:20, marginBottom:20 }}>
+        <div className="card">
+          <div className="card-header"><h2>Bookings by Zone</h2><IcPin /></div>
+          <div className="card-body" style={{ height:260 }}>
+            {(a?.zonePerformance||[]).length>0 ? <Bar data={zoneData} options={{ ...CHART_OPTS, scales:{ x:{grid:{display:false},ticks:{font:{size:10,family:'Poppins'},color:'var(--text-muted)'}}, y:{grid:{color:'rgba(3,65,26,0.05)'},ticks:{font:{size:10,family:'Poppins'},color:'var(--text-muted)'}} } }} />
+            : <div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'100%',color:'var(--text-muted)',fontSize:'0.85rem' }}>No zone data</div>}
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-header"><h2>Status Breakdown</h2></div>
+          <div className="card-body" style={{ height:260, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            {(a?.bookingsByStatus||[]).length>0 ? <Doughnut data={statusData} options={{ ...CHART_OPTS, plugins:{ legend:{ position:'bottom', labels:{ font:{size:10,family:'Poppins'}, padding:10, boxWidth:10 } } }, cutout:'65%' }} />
+            : <div style={{ color:'var(--text-muted)',fontSize:'0.85rem' }}>No data</div>}
+          </div>
+        </div>
+      </div>
+
+      {/* New customers bar + top gardeners */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:20 }}>
+        <div className="card">
+          <div className="card-header"><h2>New Customer Signups</h2></div>
+          <div className="card-body" style={{ height:240 }}>
+            {(a?.newCustomersByDay||[]).length>0 ? <Bar data={newCustData} options={{ ...CHART_OPTS, scales:{ x:{grid:{display:false},ticks:{font:{size:10,family:'Poppins'},color:'var(--text-muted)',maxRotation:0}}, y:{grid:{color:'rgba(37,99,235,0.05)'},ticks:{font:{size:10,family:'Poppins'},color:'var(--text-muted)'}} } }} />
+            : <div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'100%',color:'var(--text-muted)',fontSize:'0.85rem' }}>No customer data</div>}
+          </div>
+        </div>
+
+        {/* Top Gardeners */}
+        <div className="card">
+          <div className="card-header"><h2>Top Gardeners</h2><span style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>By completions</span></div>
+          <div style={{ padding:'8px 0' }}>
+            {!(a?.topGardeners?.length) ? (
+              <div style={{ padding:'24px', textAlign:'center', color:'var(--text-muted)', fontSize:'0.85rem' }}>No data available</div>
+            ) : a.topGardeners.slice(0,5).map((g:any, i:number) => {
+              const max = a.topGardeners[0]?.completed_jobs || a.topGardeners[0]?.total_jobs || 1;
+              const val = g.completed_jobs || g.total_jobs || 0;
+              return (
+                <div key={g.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 20px' }}>
+                  <div style={{ width:24, height:24, borderRadius:'50%', background:i===0?'var(--gold)':i===1?'var(--sage)':i===2?'var(--earth)':'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.72rem', fontWeight:800, color:i<3?'#fff':'var(--text-muted)', flexShrink:0 }}>{i+1}</div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontWeight:600, fontSize:'0.85rem', marginBottom:5, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{g.name}</div>
+                    <div style={{ height:5, background:'var(--border)', borderRadius:99, overflow:'hidden' }}>
+                      <div style={{ height:'100%', width:`${(val/max)*100}%`, background:'var(--forest)', borderRadius:99, transition:'width 1s var(--ease)' }} />
+                    </div>
+                  </div>
+                  <div style={{ fontSize:'0.8rem', fontWeight:700, color:'var(--forest)', flexShrink:0 }}>{val} jobs</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Zone performance table */}
+      {(a?.zonePerformance||[]).length > 0 && (
+        <div className="card">
+          <div className="card-header"><h2>Zone Performance Detail</h2></div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Zone</th><th>Total Bookings</th><th>Completed</th><th>Revenue</th><th>Avg Rating</th><th>Completion Rate</th></tr></thead>
+              <tbody>
+                {a.zonePerformance.map((z:any) => {
+                  const rate = z.total_bookings ? Math.round((z.completed_bookings||0)/z.total_bookings*100) : 0;
+                  return (
+                    <tr key={z.zone_id||z.id}>
+                      <td style={{ fontWeight:600 }}>{z.zone_name||z.name}</td>
+                      <td>{(z.total_bookings||0).toLocaleString('en-IN')}</td>
+                      <td>{(z.completed_bookings||0).toLocaleString('en-IN')}</td>
+                      <td style={{ fontWeight:700, color:'var(--forest)' }}>{z.revenue!=null ? `₹${Number(z.revenue).toLocaleString('en-IN')}` : '—'}</td>
+                      <td>{z.avg_rating ? `${Number(z.avg_rating).toFixed(1)} ★` : '—'}</td>
+                      <td>
+                        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                          <div style={{ flex:1, height:6, background:'var(--border)', borderRadius:99, overflow:'hidden', minWidth:60 }}>
+                            <div style={{ height:'100%', width:`${rate}%`, background: rate>80?'var(--success)':rate>50?'var(--warning)':'var(--error)', borderRadius:99 }} />
+                          </div>
+                          <span style={{ fontSize:'0.8rem', fontWeight:700, color: rate>80?'var(--success)':rate>50?'var(--warning)':'var(--error)', minWidth:36, textAlign:'right' }}>{rate}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </AdminLayout>
+  );
+}

@@ -1,0 +1,251 @@
+// GKM API — All endpoints verified against swagger.json v2.1.0
+// Prod: https://gkm.gobt.in/api
+
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://gkm.gobt.in/api';
+
+export const getToken = () =>
+  typeof window !== 'undefined' ? localStorage.getItem('gkm_admin_token') : null;
+
+export class ApiError extends Error {
+  constructor(public message: string, public status: number, public data?: any) {
+    super(message);
+  }
+}
+
+async function req<T = any>(path: string, opts: RequestInit & { auth?: boolean } = {}): Promise<T> {
+  const { auth = true, ...rest } = opts;
+  const headers: Record<string, string> = { ...(rest.headers as any) };
+  if (auth) { const t = getToken(); if (t) headers['Authorization'] = `Bearer ${t}`; }
+  if (!(rest.body instanceof FormData)) headers['Content-Type'] = 'application/json';
+  const res = await fetch(`${API_BASE}${path}`, { ...rest, headers });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new ApiError(json?.message || `Error ${res.status}`, res.status, json);
+  return (json?.data ?? json) as T;
+}
+
+export const qs = (p?: Record<string, any>) => {
+  if (!p) return '';
+  const s = Object.entries(p).filter(([, v]) => v != null && v !== '').map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+  return s ? `?${s}` : '';
+};
+
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+export const sendOtp = (phone: string) =>
+  req('/auth/send-otp', { method: 'POST', auth: false, body: JSON.stringify({ phone }) });
+
+export const verifyOtp = (phone: string, otp: string, name?: string) =>
+  req('/auth/verify-otp', { method: 'POST', auth: false, body: JSON.stringify({ phone, otp, ...(name ? { name } : {}) }) });
+
+export const adminLogin = (phone: string, password: string) =>
+  req('/auth/admin-login', { method: 'POST', auth: false, body: JSON.stringify({ phone, password }) });
+
+// Gardener login is OTP-based, NOT password-based
+export const gardenerOtpLogin = (phone: string, otp: string) =>
+  req('/auth/gardener-login', { method: 'POST', auth: false, body: JSON.stringify({ phone, otp }) });
+
+export const gardenerRegister = (form: FormData) =>
+  req('/auth/gardener-register', { method: 'POST', auth: false, body: form });
+
+export const getProfile = () => req('/auth/profile');
+
+// Profile update is multipart/form-data
+export const updateProfile = (form: FormData) =>
+  req('/auth/profile', { method: 'PUT', body: form });
+
+// ─── ZONES ────────────────────────────────────────────────────────────────────
+export const getZones = () => req('/zones', { auth: false });
+
+// Serviceability check: GET not POST, under /payments/ path
+export const checkServiceability = (lat: number, lng: number) =>
+  req(`/payments/check-serviceability?latitude=${lat}&longitude=${lng}`, { auth: false });
+
+// ─── PLANS & ADDONS ───────────────────────────────────────────────────────────
+export const getPlans = () => req('/plans', { auth: false });
+export const getAddons = () => req('/addons', { auth: false });
+
+// ─── BOOKINGS (customer) ──────────────────────────────────────────────────────
+export const createBooking = (b: {
+  zone_id: number; scheduled_date: string; scheduled_time?: string;
+  service_address: string; service_latitude: number; service_longitude: number;
+  plant_count?: number; preferred_gardener_id?: number; customer_notes?: string;
+}) => req('/bookings', { method: 'POST', body: JSON.stringify(b) });
+
+export const getMyBookings = (p?: { status?: string; page?: number; limit?: number }) =>
+  req(`/bookings/my${qs(p)}`);
+
+export const getBooking = (id: number) => req(`/bookings/${id}`);
+
+// Cancel = POST /bookings/cancel with body, NOT DELETE
+export const cancelBooking = (booking_id: number, reason?: string) =>
+  req('/bookings/cancel', { method: 'POST', body: JSON.stringify({ booking_id, ...(reason ? { reason } : {}) }) });
+
+// Rate = POST /bookings/rate with body
+export const rateBooking = (booking_id: number, rating: number, review?: string) =>
+  req('/bookings/rate', { method: 'POST', body: JSON.stringify({ booking_id, rating, ...(review ? { review } : {}) }) });
+
+export const trackBooking = (booking_id: number) =>
+  req(`/bookings/track/${booking_id}`);
+
+// Reschedule = POST /payments/reschedule
+export const rescheduleBooking = (booking_id: number, new_date: string, new_time?: string) =>
+  req('/payments/reschedule', { method: 'POST', body: JSON.stringify({ booking_id, new_date, ...(new_time ? { new_time } : {}) }) });
+
+export const addBookingAddons = (id: number, addon_ids: { addon_id: number; quantity: number }[]) =>
+  req(`/bookings/${id}/addons`, { method: 'POST', body: JSON.stringify({ addon_ids }) });
+
+// ─── SUBSCRIPTIONS ────────────────────────────────────────────────────────────
+export const createSubscription = (b: any) =>
+  req('/subscriptions', { method: 'POST', body: JSON.stringify(b) });
+
+export const getMySubscriptions = () => req('/subscriptions/my');
+
+export const cancelSubscription = (id: number) =>
+  req(`/subscriptions/${id}/cancel`, { method: 'PUT' }); // PUT not POST
+
+export const pauseSubscription = (id: number) =>
+  req(`/subscriptions/${id}/pause`, { method: 'PATCH' }); // PATCH not POST
+
+export const resumeSubscription = (id: number) =>
+  req(`/subscriptions/${id}/resume`, { method: 'PATCH' }); // PATCH not POST
+
+// ─── PAYMENTS ─────────────────────────────────────────────────────────────────
+export const initiatePayment = (b: any) =>
+  req('/payments/initiate', { method: 'POST', body: JSON.stringify(b) });
+
+export const getPayments = (page?: number, limit?: number) =>
+  req(`/payments/my${qs({ page, limit })}`);
+
+export const walletTopup = (amount: number) =>
+  req('/payments/wallet-topup', { method: 'POST', body: JSON.stringify({ amount }) });
+
+// ─── PLANTOPEDIA ──────────────────────────────────────────────────────────────
+export const identifyPlant = (form: FormData) =>
+  req('/plants/identify', { method: 'POST', body: form });
+
+export const getPlantHistory = () => req('/plants/history');
+
+// ─── BLOGS ────────────────────────────────────────────────────────────────────
+export const getBlogs = (p?: any) => req(`/blogs${qs(p)}`, { auth: false });
+export const getBlog = (slug: string) => req(`/blogs/${slug}`, { auth: false });
+
+// ─── CITIES ───────────────────────────────────────────────────────────────────
+export const getCities = () => req('/cities', { auth: false });
+export const getCity = (slug: string) => req(`/cities/${slug}`, { auth: false });
+
+// ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
+export const getNotifications = () => req('/notifications');
+export const markRead = (id: number) => req(`/notifications/${id}/read`, { method: 'PUT' });
+export const markAllRead = () => req('/notifications/read-all', { method: 'PUT' });
+
+// ─── COMPLAINTS ───────────────────────────────────────────────────────────────
+// type is required (not optional), no "subject" field in swagger
+export const createComplaint = (b: {
+  type: 'service_quality' | 'late_arrival' | 'no_show' | 'rude_behavior' | 'billing' | 'damage' | 'other';
+  description: string;
+  booking_id?: number;
+  priority?: 'low' | 'medium' | 'high';
+}) => req('/complaints', { method: 'POST', body: JSON.stringify(b) });
+
+export const getMyComplaints = () => req('/complaints/my');
+
+// ─── GARDENER ─────────────────────────────────────────────────────────────────
+export const getGardenerProfile = () => req('/gardener/profile');
+export const updateGardenerProfile = (b: any) =>
+  req('/gardener/profile', { method: 'PUT', body: JSON.stringify(b) });
+
+// PATCH not PUT
+export const setAvailability = (is_available: boolean) =>
+  req('/gardener/availability', { method: 'PATCH', body: JSON.stringify({ is_available }) });
+
+export const getGardenerJobs = (p?: any) =>
+  req(`/bookings/gardener/jobs${qs(p)}`);
+
+export const getGardenerEarnings = (period?: 'daily' | 'weekly' | 'monthly') =>
+  req(`/bookings/gardener/earnings${qs({ period })}`);
+
+// Gardener verifies customer OTP to start visit
+export const verifyVisitOtp = (booking_id: number, otp: string) =>
+  req('/bookings/verify-otp', { method: 'POST', body: JSON.stringify({ booking_id, otp }) });
+
+// Status update is multipart/form-data PUT to /bookings/status
+export const updateBookingStatus = (form: FormData) =>
+  req('/bookings/status', { method: 'PUT', body: form });
+
+// POST /bookings/location
+export const updateLocation = (latitude: number, longitude: number, booking_id?: number) =>
+  req('/bookings/location', {
+    method: 'POST',
+    body: JSON.stringify({ latitude, longitude, ...(booking_id ? { booking_id } : {}) }),
+  });
+
+export const getGardenerRewards = (p?: any) =>
+  req(`/gardener/rewards${qs(p)}`);
+
+// ─── ADMIN ────────────────────────────────────────────────────────────────────
+export const AdminAPI = {
+  dashboard: () => req('/admin/dashboard'),
+  analytics: (p?: any) => req(`/admin/analytics${qs(p)}`),
+  utilization: (p?: any) => req(`/admin/utilization${qs(p)}`),
+
+  gardeners: (p?: any) => req(`/admin/gardeners${qs(p)}`),
+  gardenerDetail: (id: number) => req(`/admin/gardeners/${id}`),
+  approveGardener: (id: number, approved: boolean) =>
+    req(`/admin/gardeners/${id}/approve`, { method: 'PATCH', body: JSON.stringify({ approved }) }),
+
+  customers: (p?: any) => req(`/admin/customers${qs(p)}`),
+  customerDetail: (id: number) => req(`/admin/customers/${id}`),
+
+  bookings: (p?: any) => req(`/admin/bookings${qs(p)}`),
+  bookingDetail: (id: number) => req(`/admin/bookings/${id}`),
+  reassignBooking: (id: number, gardener_id: number, reason?: string) =>
+    req(`/admin/bookings/${id}/reassign`, {
+      method: 'PATCH',
+      body: JSON.stringify({ gardener_id, ...(reason ? { reason } : {}) }),
+    }),
+
+  subscriptions: (p?: any) => req(`/admin/subscriptions${qs(p)}`),
+
+  zones: () => req('/admin/zones'),
+  createZone: (b: any) => req('/admin/zones', { method: 'POST', body: JSON.stringify(b) }),
+  updateZone: (id: number, b: any) => req(`/admin/zones/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  deleteZone: (id: number) => req(`/admin/zones/${id}`, { method: 'DELETE' }),
+
+  plans: () => req('/admin/plans'),
+  createPlan: (b: any) => req('/admin/plans', { method: 'POST', body: JSON.stringify(b) }),
+  updatePlan: (id: number, b: any) => req(`/admin/plans/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  deletePlan: (id: number) => req(`/admin/plans/${id}`, { method: 'DELETE' }),
+
+  addons: () => req('/admin/addons'),
+  createAddon: (b: any) => req('/admin/addons', { method: 'POST', body: JSON.stringify(b) }),
+  updateAddon: (id: number, b: any) => req(`/admin/addons/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  deleteAddon: (id: number) => req(`/admin/addons/${id}`, { method: 'DELETE' }),
+
+  supervisors: () => req('/admin/supervisors'),
+  createSupervisor: (b: any) => req('/admin/supervisors', { method: 'POST', body: JSON.stringify(b) }),
+  updateSupervisor: (id: number, b: any) => req(`/admin/supervisors/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+
+  rewards: (p?: any) => req(`/admin/rewards${qs(p)}`),
+  createReward: (b: any) => req('/admin/rewards', { method: 'POST', body: JSON.stringify(b) }),
+
+  slaConfig: () => req('/admin/sla/config'),
+  updateSlaConfig: (b: any) => req('/admin/sla/config', { method: 'PUT', body: JSON.stringify(b) }),
+  slaBreaches: (p?: any) => req(`/admin/sla/breaches${qs(p)}`),
+  resolveBreach: (id: number) => req(`/admin/sla/breaches/${id}/resolve`, { method: 'PUT' }),
+
+  blogs: (p?: any) => req(`/admin/blogs${qs(p)}`),
+  createBlog: (b: any) => req('/admin/blogs', { method: 'POST', body: JSON.stringify(b) }),
+  updateBlog: (id: number, b: any) => req(`/admin/blogs/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  deleteBlog: (id: number) => req(`/admin/blogs/${id}`, { method: 'DELETE' }),
+
+  // Complaints admin: GET /complaints (not /admin/complaints)
+  complaints: (p?: any) => req(`/complaints${qs(p)}`),
+  updateComplaint: (id: number, b: any) => req(`/complaints/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  complaintStats: () => req('/complaints/stats'),
+
+  supervisorDashboard: () => req('/supervisor/dashboard'),
+  supervisorGardeners: () => req('/supervisor/gardeners'),
+  gardenerPerformance: (id: number, period?: string) =>
+    req(`/supervisor/gardeners/${id}/performance${qs({ period })}`),
+
+  priceHikeSchedules: () => req('/admin/price-hike/schedules'),
+};
