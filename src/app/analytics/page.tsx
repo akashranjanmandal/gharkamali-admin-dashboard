@@ -47,6 +47,16 @@ export default function AnalyticsPage() {
   const a: any = an;
   const u: any = util;
 
+  // Remap API field names to what the components expect
+  const zonePerformance = (a?.bookingsByZone || []).map((z: any) => ({
+    ...z, zone_name: z.zone, total_bookings: Number(z.total || 0), completed_bookings: 0,
+  }));
+  const newCustomersByDay = (a?.newUsersTrend || []).filter((r: any) => r.role === 'customer');
+  const bookingsByStatus = a?.bookingStatusDist || [];
+  const totalBookings = (a?.bookingsByZone || []).reduce((n: number, z: any) => n + Number(z.total || 0), 0);
+  const totalRevenue = (a?.bookingsByZone || []).reduce((n: number, z: any) => n + Number(z.revenue || 0), 0);
+  const newCustomers = newCustomersByDay.reduce((n: number, r: any) => n + Number(r.count || 0), 0);
+
   const revenueData = {
     labels: (a?.revenueByDay||[]).map((r:any) => new Date(r.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})),
     datasets: [{ label: 'Revenue', data: (a?.revenueByDay||[]).map((r:any)=>r.revenue||r.amount||0), borderColor:'#03411a', backgroundColor:'rgba(3,65,26,0.07)', fill:true, tension:0.4, borderWidth:2, pointRadius:0, pointHoverRadius:5 }],
@@ -56,25 +66,25 @@ export default function AnalyticsPage() {
     datasets: [{ label: 'Bookings', data: (a?.bookingsByDay||[]).map((r:any)=>r.count||r.bookings||0), borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,0.07)', fill:true, tension:0.4, borderWidth:2, pointRadius:0, pointHoverRadius:5 }],
   };
   const zoneData = {
-    labels: (a?.zonePerformance||[]).map((z:any)=>z.zone_name||z.name||'Unknown'),
-    datasets: [{ label:'Bookings', data:(a?.zonePerformance||[]).map((z:any)=>z.total_bookings||z.bookings||0), backgroundColor:'rgba(3,65,26,0.8)', borderRadius:6, borderSkipped:false }],
+    labels: zonePerformance.map((z:any)=>z.zone_name),
+    datasets: [{ label:'Bookings', data:zonePerformance.map((z:any)=>z.total_bookings), backgroundColor:'rgba(3,65,26,0.8)', borderRadius:6, borderSkipped:false }],
   };
   const newCustData = {
-    labels: (a?.newCustomersByDay||[]).map((r:any) => new Date(r.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})),
-    datasets: [{ label:'New Customers', data:(a?.newCustomersByDay||[]).map((r:any)=>r.count||0), backgroundColor:'rgba(37,99,235,0.7)', borderRadius:6, borderSkipped:false }],
+    labels: newCustomersByDay.map((r:any) => new Date(r.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})),
+    datasets: [{ label:'New Customers', data:newCustomersByDay.map((r:any)=>r.count||0), backgroundColor:'rgba(37,99,235,0.7)', borderRadius:6, borderSkipped:false }],
   };
   const statusData = {
-    labels: (a?.bookingsByStatus||[]).map((s:any)=>s.status?.replace(/_/g,' ')),
-    datasets: [{ data:(a?.bookingsByStatus||[]).map((s:any)=>s.count||0), backgroundColor:['#03411a','#2563eb','#d97706','#16a34a','#808285','#dc2626'], borderWidth:0, hoverOffset:8 }],
+    labels: bookingsByStatus.map((s:any)=>s.status?.replace(/_/g,' ')),
+    datasets: [{ data:bookingsByStatus.map((s:any)=>s.count||0), backgroundColor:['#03411a','#2563eb','#d97706','#16a34a','#808285','#dc2626'], borderWidth:0, hoverOffset:8 }],
   };
 
   const KPIS = [
-    { label:'Total Revenue',    value: a?.totalRevenue!=null ? `₹${Number(a.totalRevenue).toLocaleString('en-IN')}` : '—', icon:<IcRevenue/>, color:'#03411a', sub:`${period}-day period`, trend:18 },
-    { label:'Total Bookings',   value: a?.totalBookings?.toLocaleString('en-IN'), icon:<IcBooking/>, color:'#2563eb', sub:'All bookings', trend:12 },
-    { label:'New Customers',    value: a?.newCustomers?.toLocaleString('en-IN'),  icon:<IcUsers/>,  color:'#16a34a', sub:'New sign-ups',  trend:8  },
+    { label:'Total Revenue',    value: totalRevenue ? `₹${Number(totalRevenue).toLocaleString('en-IN')}` : '—', icon:<IcRevenue/>, color:'#03411a', sub:`${period}-day period`, trend:18 },
+    { label:'Total Bookings',   value: totalBookings ? totalBookings.toLocaleString('en-IN') : '—', icon:<IcBooking/>, color:'#2563eb', sub:'All bookings', trend:12 },
+    { label:'New Customers',    value: newCustomers ? newCustomers.toLocaleString('en-IN') : '—',  icon:<IcUsers/>,  color:'#16a34a', sub:'New sign-ups',  trend:8  },
     { label:'Avg Rating',       value: a?.avgRating ? `${Number(a.avgRating).toFixed(1)} ★` : '—', icon:<IcStar/>, color:'#d97706', sub:'Out of 5.0' },
     { label:'Completion Rate',  value: a?.completionRate ? `${Number(a.completionRate).toFixed(0)}%` : '—', icon:<IcPercent/>, color:'#16a34a', sub:'Of all bookings', trend:3 },
-    { label:'Active Zones',     value: (a?.zonePerformance||[]).length || '—', icon:<IcPin/>, color:'#9333ea', sub:'Serving customers' },
+    { label:'Active Zones',     value: zonePerformance.length || '—', icon:<IcPin/>, color:'#9333ea', sub:'Serving customers' },
     { label:'Active Gardeners', value: u?.activeGardeners?.toLocaleString('en-IN'), icon:<IcLeaf/>, color:'#0891b2', sub:'Currently working' },
     { label:'Avg Jobs/Day',     value: u?.avgJobsPerDay ? Number(u.avgJobsPerDay).toFixed(1) : '—', icon:<IcBooking/>, color:'#d97706', sub:'Utilization avg' },
   ];
@@ -123,14 +133,14 @@ export default function AnalyticsPage() {
         <div className="card">
           <div className="card-header"><h2>Bookings by Zone</h2><IcPin /></div>
           <div className="card-body" style={{ height:260 }}>
-            {(a?.zonePerformance||[]).length>0 ? <Bar data={zoneData} options={{ ...CHART_OPTS, scales:{ x:{grid:{display:false},ticks:{font:{size:10,family:'Poppins'},color:'var(--text-muted)'}}, y:{grid:{color:'rgba(3,65,26,0.05)'},ticks:{font:{size:10,family:'Poppins'},color:'var(--text-muted)'}} } }} />
+            {zonePerformance.length>0 ? <Bar data={zoneData} options={{ ...CHART_OPTS, scales:{ x:{grid:{display:false},ticks:{font:{size:10,family:'Poppins'},color:'var(--text-muted)'}}, y:{grid:{color:'rgba(3,65,26,0.05)'},ticks:{font:{size:10,family:'Poppins'},color:'var(--text-muted)'}} } }} />
             : <div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'100%',color:'var(--text-muted)',fontSize:'0.85rem' }}>No zone data</div>}
           </div>
         </div>
         <div className="card">
           <div className="card-header"><h2>Status Breakdown</h2></div>
           <div className="card-body" style={{ height:260, display:'flex', alignItems:'center', justifyContent:'center' }}>
-            {(a?.bookingsByStatus||[]).length>0 ? <Doughnut data={statusData} options={{ ...CHART_OPTS, plugins:{ legend:{ position:'bottom', labels:{ font:{size:10,family:'Poppins'}, padding:10, boxWidth:10 } } }, cutout:'65%' }} />
+            {bookingsByStatus.length>0 ? <Doughnut data={statusData} options={{ ...CHART_OPTS, plugins:{ legend:{ position:'bottom', labels:{ font:{size:10,family:'Poppins'}, padding:10, boxWidth:10 } } }, cutout:'65%' }} />
             : <div style={{ color:'var(--text-muted)',fontSize:'0.85rem' }}>No data</div>}
           </div>
         </div>
@@ -141,7 +151,7 @@ export default function AnalyticsPage() {
         <div className="card">
           <div className="card-header"><h2>New Customer Signups</h2></div>
           <div className="card-body" style={{ height:240 }}>
-            {(a?.newCustomersByDay||[]).length>0 ? <Bar data={newCustData} options={{ ...CHART_OPTS, scales:{ x:{grid:{display:false},ticks:{font:{size:10,family:'Poppins'},color:'var(--text-muted)',maxRotation:0}}, y:{grid:{color:'rgba(37,99,235,0.05)'},ticks:{font:{size:10,family:'Poppins'},color:'var(--text-muted)'}} } }} />
+            {newCustomersByDay.length>0 ? <Bar data={newCustData} options={{ ...CHART_OPTS, scales:{ x:{grid:{display:false},ticks:{font:{size:10,family:'Poppins'},color:'var(--text-muted)',maxRotation:0}}, y:{grid:{color:'rgba(37,99,235,0.05)'},ticks:{font:{size:10,family:'Poppins'},color:'var(--text-muted)'}} } }} />
             : <div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'100%',color:'var(--text-muted)',fontSize:'0.85rem' }}>No customer data</div>}
           </div>
         </div>
@@ -173,14 +183,14 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Zone performance table */}
-      {(a?.zonePerformance||[]).length > 0 && (
+      {zonePerformance.length > 0 && (
         <div className="card">
           <div className="card-header"><h2>Zone Performance Detail</h2></div>
           <div className="table-wrap">
             <table>
               <thead><tr><th>Zone</th><th>Total Bookings</th><th>Completed</th><th>Revenue</th><th>Avg Rating</th><th>Completion Rate</th></tr></thead>
               <tbody>
-                {a.zonePerformance.map((z:any) => {
+                {zonePerformance.map((z:any) => {
                   const rate = z.total_bookings ? Math.round((z.completed_bookings||0)/z.total_bookings*100) : 0;
                   return (
                     <tr key={z.zone_id||z.id}>

@@ -47,14 +47,17 @@ function StatCard({ label, value, icon, color = 'var(--forest)', sub, trend }: a
 export default function AdminDashboardPage() {
   const { data, isLoading } = useQuery({ queryKey: ['admin-dashboard'], queryFn: AdminAPI.dashboard, refetchInterval: 60000 });
   const { data: analyticsRaw } = useQuery({ queryKey: ['admin-analytics-dash'], queryFn: () => AdminAPI.analytics({ period: '30' }) });
+  const { data: pendingGardenersData } = useQuery({ queryKey: ['admin-gardeners-pending-dash'], queryFn: () => AdminAPI.gardeners({ status: 'pending', limit: 5 }) });
   const d: any = data;
+  const s: any = d?.stats;
   const an: any = analyticsRaw;
+  const pg: any = pendingGardenersData;
 
   const recentBookings: any[] = Array.isArray(d?.recentBookings) ? d.recentBookings : [];
-  const pendingApprovals: any[] = Array.isArray(d?.pendingGardeners) ? d.pendingGardeners : [];
+  const pendingApprovals: any[] = Array.isArray(pg?.items) ? pg.items : Array.isArray(pg) ? pg : [];
   const openComplaints: any[] = Array.isArray(d?.openComplaints) ? d.openComplaints : [];
   const revenueChart = Array.isArray(an?.revenueByDay) ? an.revenueByDay : [];
-  const statusDist: any[] = Array.isArray(an?.bookingsByStatus) ? an.bookingsByStatus : [];
+  const statusDist: any[] = Array.isArray(an?.bookingStatusDist) ? an.bookingStatusDist : [];
 
   const lineData = {
     labels: revenueChart.map((r: any) => new Date(r.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })),
@@ -66,14 +69,14 @@ export default function AdminDashboardPage() {
   };
 
   const STATS = [
-    { label: 'Total Customers',   value: d?.totalCustomers?.toLocaleString('en-IN'),  icon: <IcUsers />,   color: 'var(--forest)', sub: 'All registered',      trend: 12 },
-    { label: 'Active Gardeners',  value: d?.activeGardeners?.toLocaleString('en-IN'), icon: <IcLeaf />,    color: '#2563eb',       sub: 'Currently active',    trend: 5  },
-    { label: 'Bookings Today',    value: d?.todayBookings?.toLocaleString('en-IN'),    icon: <IcCal />,     color: '#d97706',       sub: 'Scheduled visits',    trend: -2 },
-    { label: 'Revenue (30d)',     value: d?.revenue30d != null ? `₹${Number(d.revenue30d).toLocaleString('en-IN')}` : '—', icon: <IcCash />, color: '#16a34a', sub: 'Last 30 days', trend: 18 },
-    { label: 'Avg Rating',        value: d?.avgRating ? `${Number(d.avgRating).toFixed(1)}` : '—', icon: <IcStar />, color: 'var(--earth)', sub: 'Customer satisfaction' },
+    { label: 'Total Customers',   value: s?.totalCustomers?.toLocaleString('en-IN'),  icon: <IcUsers />,   color: 'var(--forest)', sub: 'All registered',      trend: 12 },
+    { label: 'Active Gardeners',  value: s?.totalGardeners?.toLocaleString('en-IN'),  icon: <IcLeaf />,    color: '#2563eb',       sub: 'Currently active',    trend: 5  },
+    { label: 'Bookings Today',    value: s?.todayBookings?.toLocaleString('en-IN'),    icon: <IcCal />,     color: '#d97706',       sub: 'Scheduled visits',    trend: -2 },
+    { label: 'Revenue (30d)',     value: s?.totalRevenue != null ? `₹${Number(s.totalRevenue).toLocaleString('en-IN')}` : '—', icon: <IcCash />, color: '#16a34a', sub: 'Last 30 days', trend: 18 },
+    { label: 'Avg Rating',        value: s?.avgRating ? `${Number(s.avgRating).toFixed(1)}` : '—', icon: <IcStar />, color: 'var(--earth)', sub: 'Customer satisfaction' },
     { label: 'Open Complaints',   value: d?.openComplaints?.length ?? 0,              icon: <IcAlert />,   color: '#dc2626',       sub: 'Need attention'        },
-    { label: 'Active Subs',       value: d?.activeSubscriptions?.toLocaleString('en-IN'), icon: <IcRefresh />, color: '#9333ea', sub: 'Recurring plans' },
-    { label: 'Pending Approvals', value: d?.pendingGardeners?.length ?? 0,            icon: <IcLeaf />,    color: '#0891b2',       sub: 'Gardeners waiting'     },
+    { label: 'Active Subs',       value: s?.activeSubscriptions?.toLocaleString('en-IN'), icon: <IcRefresh />, color: '#9333ea', sub: 'Recurring plans' },
+    { label: 'Pending Approvals', value: s?.pendingGardeners ?? 0,                    icon: <IcLeaf />,    color: '#0891b2',       sub: 'Gardeners waiting'     },
   ];
 
   return (
