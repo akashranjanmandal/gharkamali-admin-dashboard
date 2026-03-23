@@ -1,15 +1,5 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/sla/page": "app/sla/page.js",
-  "/addons/page": "app/addons/page.js",
-  "/blogs/page": "app/blogs/page.js",
-  "/rewards/page": "app/rewards/page.js",
-  "/complaints/page": "app/complaints/page.js",
-  "/subscriptions/page": "app/subscriptions/page.js",
-  "/bookings/page": "app/bookings/page.js",
-  "/analytics/page": "app/analytics/page.js",
   "/dashboard/page": "app/dashboard/page.js",
-  "/gardeners/page": "app/gardeners/page.js",
-  "/customers/page": "app/customers/page.js",
-  "/supervisors/page": "app/supervisors/page.js"
+  "/login/page": "app/login/page.js"
 }
