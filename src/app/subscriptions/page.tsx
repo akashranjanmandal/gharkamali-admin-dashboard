@@ -7,7 +7,7 @@ import { AdminAPI } from '@/lib/api';
 export default function AdminSubscriptionsPage() {
   const [page, setPage] = useState(1);
   const { data, isLoading } = useQuery({ queryKey: ['admin-subscriptions', page], queryFn: () => AdminAPI.subscriptions({ page, limit: 20 }) });
-  const subs: any[] = (data as any)?.items ?? Array.isArray((data as any)?.items) ? (data as any).items : Array.isArray(data as any) ? (data as any) : [];
+  const subs: any[] = (data as any)?.subscriptions ?? [];
   const total = (data as any)?.total ?? subs.length;
   const pages = Math.ceil(total / 20);
   const STATUS_COLOR: Record<string,string> = { active:'badge-green', paused:'badge-yellow', cancelled:'badge-gray', expired:'badge-red' };

@@ -190,7 +190,9 @@ export const AdminAPI = {
   gardeners: (p?: any) => req(`/admin/gardeners${qs(p)}`),
   gardenerDetail: (id: number) => req(`/admin/gardeners/${id}`),
   approveGardener: (id: number, approved: boolean) =>
-    req(`/admin/gardeners/${id}/approve`, { method: 'PATCH', body: JSON.stringify({ approved }) }),
+    req(approved ? '/admin/gardeners/approve' : '/admin/gardeners/reject', {
+      method: 'POST', body: JSON.stringify({ user_id: id })
+    }),
 
   customers: (p?: any) => req(`/admin/customers${qs(p)}`),
   customerDetail: (id: number) => req(`/admin/customers/${id}`),

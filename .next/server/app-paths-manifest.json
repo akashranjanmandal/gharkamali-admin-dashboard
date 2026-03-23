@@ -1,16 +1,4 @@
 {
-  "/analytics/page": "app/analytics/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
-  "/bookings/page": "app/bookings/page.js",
-  "/complaints/page": "app/complaints/page.js",
-  "/subscriptions/page": "app/subscriptions/page.js",
-  "/sla/page": "app/sla/page.js",
-  "/customers/page": "app/customers/page.js",
-  "/gardeners/page": "app/gardeners/page.js",
-  "/supervisors/page": "app/supervisors/page.js",
-  "/plans/page": "app/plans/page.js",
   "/zones/page": "app/zones/page.js",
-  "/addons/page": "app/addons/page.js",
-  "/blogs/page": "app/blogs/page.js",
-  "/rewards/page": "app/rewards/page.js"
+  "/supervisors/page": "app/supervisors/page.js"
 }

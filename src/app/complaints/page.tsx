@@ -12,7 +12,7 @@ export default function AdminComplaintsPage() {
   const [resolution, setResolution] = useState('');
 
   const { data, isLoading } = useQuery({ queryKey: ['admin-complaints', status], queryFn: () => AdminAPI.complaints({ status: status||undefined }) });
-  const complaints: any[] = (data as any)?.items ?? Array.isArray((data as any)?.items) ? (data as any).items : Array.isArray(data as any) ? (data as any) : [];
+  const complaints: any[] = (data as any)?.complaints ?? [];
 
   const resolveMut = useMutation({
     mutationFn: () => AdminAPI.updateComplaint(modal.id, { status: 'resolved', resolution_notes: resolution }),
@@ -53,11 +53,19 @@ export default function AdminComplaintsPage() {
       {modal&&(
         <div className="modal-overlay" onClick={()=>setModal(null)}>
           <div className="modal-box" onClick={e=>e.stopPropagation()}>
-            <h2 style={{fontWeight:800,fontSize:'1.2rem',marginBottom:8}}>Resolve Complaint</h2>
-            <p style={{color:'var(--text-muted)',fontSize:'0.875rem',marginBottom:20}}>{modal.type?.replace(/_/g,' ')} · {modal.customer?.name}</p>
-            <div style={{padding:'12px 14px',background:'var(--bg)',borderRadius:12,marginBottom:20,fontSize:'0.875rem'}}>{modal.description}</div>
-            <div className="form-group"><label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5}}>Resolution Notes *</label><textarea className="input" rows={3} value={resolution} onChange={e=>setResolution(e.target.value)} placeholder="Describe how you resolved this..." style={{resize:'vertical'}} /></div>
-            <div style={{display:'flex',gap:10}}><button onClick={()=>setModal(null)} className="btn btn-ghost" style={{flex:1}}>Cancel</button><button onClick={()=>resolveMut.mutate()} disabled={!resolution.trim()||resolveMut.isPending} className="btn btn-primary" style={{flex:2}}>{resolveMut.isPending?'Resolving…':'Mark Resolved'}</button></div>
+            <div className="modal-header">
+              <h3>Resolve Complaint</h3>
+              <button className="modal-close" onClick={()=>setModal(null)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <p style={{color:'var(--text-muted)',fontSize:'0.82rem',marginBottom:14,textTransform:'capitalize'}}>{modal.type?.replace(/_/g,' ')} · {modal.customer?.name}</p>
+              <div style={{padding:'12px 14px',background:'var(--bg)',borderRadius:10,marginBottom:16,fontSize:'0.875rem',color:'var(--text-2)',lineHeight:1.6}}>{modal.description}</div>
+              <div className="form-group"><label>Resolution Notes *</label><textarea className="input" rows={3} value={resolution} onChange={e=>setResolution(e.target.value)} placeholder="Describe how you resolved this…" style={{resize:'vertical'}} /></div>
+            </div>
+            <div className="modal-footer">
+              <button onClick={()=>setModal(null)} className="btn btn-ghost">Cancel</button>
+              <button onClick={()=>resolveMut.mutate()} disabled={!resolution.trim()||resolveMut.isPending} className="btn btn-primary">{resolveMut.isPending?'Resolving…':'Mark Resolved'}</button>
+            </div>
           </div>
         </div>
       )}

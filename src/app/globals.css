@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
 
 :root {
   --forest: #03411a; --forest-hover: #054d20; --forest-light: rgba(3,65,26,0.08);
@@ -127,19 +128,39 @@ select.input { cursor: pointer; }
 
 /* Modal overlay */
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(4px);
+  position: fixed; inset: 0; background: rgba(3,15,8,0.55); backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px;
   animation: fadeIn 0.2s ease;
 }
 .modal-box {
-  background: #fff; border-radius: var(--radius-xl); width: 100%; max-width: 540px;
-  max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg);
-  animation: scaleIn 0.25s var(--ease);
+  background: #fff; border-radius: var(--radius-xl); width: 100%; max-width: 520px;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(3,65,26,0.12), 0 32px 80px rgba(0,0,0,0.18);
+  animation: scaleIn 0.22s var(--ease);
+  border: 1px solid var(--border-light);
 }
-.modal-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: #fff; z-index: 1; }
-.modal-header h3 { font-weight: 700; font-size: 1rem; }
-.modal-body { padding: 20px 24px; }
-.modal-footer { padding: 14px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+.modal-header {
+  padding: 18px 22px 16px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: #fff; z-index: 1;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+.modal-header h3 { font-weight: 800; font-size: 1rem; color: var(--text); letter-spacing: -0.01em; }
+.modal-body { padding: 20px 22px; }
+.modal-footer {
+  padding: 14px 22px; border-top: 1px solid var(--border);
+  display: flex; gap: 10px; justify-content: flex-end;
+  background: var(--bg-subtle);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+.modal-close {
+  width: 28px; height: 28px; border-radius: 8px; border: none;
+  background: var(--bg); color: var(--text-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem; transition: all 0.15s; flex-shrink: 0; line-height: 1;
+}
+.modal-close:hover { background: rgba(220,38,38,0.1); color: var(--error); }
 
 /* Form groups */
 .form-group { margin-bottom: 16px; }
@@ -175,6 +196,8 @@ select.input { cursor: pointer; }
 /* Additional fixes for modal and form classes used in admin pages */
 .btn-outline { background: transparent; border: 1.5px solid var(--forest); color: var(--forest); padding: 9px 18px; }
 .btn-outline:hover { background: var(--forest-light); }
+.btn-ghost { background: transparent; border: 1.5px solid var(--border); color: var(--text-2); }
+.btn-ghost:hover:not(:disabled) { background: var(--bg); border-color: var(--text-faint); }
 @keyframes shimmer { from{background-position:-400% 0} to{background-position:400% 0} }
 @keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 @keyframes spin { to { transform: rotate(360deg); } }

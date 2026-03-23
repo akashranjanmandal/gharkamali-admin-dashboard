@@ -3,14 +3,14 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
-import { AdminAPI } from '@/lib/api';
+import { AdminAPI, getBlogs } from '@/lib/api';
 
 export default function AdminBlogsPage() {
   const qc = useQueryClient();
   const [modal, setModal] = useState<any>(null);
   const [form, setForm] = useState<any>({});
-  const { data, isLoading } = useQuery({ queryKey: ['admin-blogs'], queryFn: () => AdminAPI.blogs({}) });
-  const rawBl: any = data; const blogs: any[] = Array.isArray(rawBl?.items) ? rawBl.items : Array.isArray(rawBl) ? rawBl : [];
+  const { data, isLoading } = useQuery({ queryKey: ['admin-blogs'], queryFn: () => getBlogs({ limit: 100 }) });
+  const rawBl: any = data; const blogs: any[] = Array.isArray(rawBl?.blogs) ? rawBl.blogs : Array.isArray(rawBl) ? rawBl : [];
 
   const saveMut = useMutation({ mutationFn: () => modal.id ? AdminAPI.updateBlog(modal.id, form) : AdminAPI.createBlog(form), onSuccess: () => { toast.success('Blog saved!'); setModal(null); qc.invalidateQueries({ queryKey: ['admin-blogs'] }); }, onError: (e: any) => toast.error(e.message) });
   const deleteMut = useMutation({ mutationFn: (id: number) => AdminAPI.deleteBlog(id), onSuccess: () => { toast.success('Deleted'); qc.invalidateQueries({ queryKey: ['admin-blogs'] }); }, onError: (e: any) => toast.error(e.message) });
@@ -44,14 +44,22 @@ export default function AdminBlogsPage() {
       {modal&&(
         <div className="modal-overlay" onClick={()=>setModal(null)}>
           <div className="modal-box" onClick={e=>e.stopPropagation()}>
-            <h2 style={{fontWeight:800,fontSize:'1.2rem',marginBottom:20}}>{modal.new?'New Blog Post':'Edit Post'}</h2>
-            <div className="form-group"><label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5}}>Title *</label><input className="input" value={form.title||''} onChange={e=>f('title',e.target.value)} /></div>
-            <div className="form-row"><div className="form-group"><label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5}}>Slug *</label><input className="input" value={form.slug||''} onChange={e=>f('slug',e.target.value)} placeholder="my-blog-post" /></div><div className="form-group"><label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5}}>Category</label><input className="input" value={form.category||''} onChange={e=>f('category',e.target.value)} /></div></div>
-            <div className="form-group"><label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5}}>Excerpt</label><textarea className="input" value={form.excerpt||''} onChange={e=>f('excerpt',e.target.value)} rows={2} style={{resize:'vertical'}} /></div>
-            <div className="form-group"><label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5}}>Content (HTML)</label><textarea className="input" value={form.content||''} onChange={e=>f('content',e.target.value)} rows={6} style={{resize:'vertical',fontFamily:'monospace'}} /></div>
-            <div className="form-group"><label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5}}>Cover Image URL</label><input className="input" value={form.cover_image||''} onChange={e=>f('cover_image',e.target.value)} /></div>
-            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:20}}><input type="checkbox" id="pub" checked={!!form.is_published} onChange={e=>f('is_published',e.target.checked)} style={{width:16,height:16}} /><label htmlFor="pub" style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5}} style={{marginBottom:0}}>Published</label></div>
-            <div style={{display:'flex',gap:10}}><button onClick={()=>setModal(null)} className="btn btn-ghost" style={{flex:1}}>Cancel</button><button onClick={()=>saveMut.mutate()} disabled={saveMut.isPending||!form.title||!form.slug} className="btn btn-primary" style={{flex:2}}>{saveMut.isPending?'Saving…':'Save Post'}</button></div>
+            <div className="modal-header">
+              <h3>{modal.new?'New Blog Post':'Edit Post'}</h3>
+              <button className="modal-close" onClick={()=>setModal(null)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group"><label>Title *</label><input className="input" value={form.title||''} onChange={e=>f('title',e.target.value)} /></div>
+              <div className="form-row"><div className="form-group"><label>Slug *</label><input className="input" value={form.slug||''} onChange={e=>f('slug',e.target.value)} placeholder="my-blog-post" /></div><div className="form-group"><label>Category</label><input className="input" value={form.category||''} onChange={e=>f('category',e.target.value)} /></div></div>
+              <div className="form-group"><label>Excerpt</label><textarea className="input" value={form.excerpt||''} onChange={e=>f('excerpt',e.target.value)} rows={2} style={{resize:'vertical'}} /></div>
+              <div className="form-group"><label>Content (HTML)</label><textarea className="input" value={form.content||''} onChange={e=>f('content',e.target.value)} rows={6} style={{resize:'vertical',fontFamily:'monospace'}} /></div>
+              <div className="form-group"><label>Cover Image URL</label><input className="input" value={form.cover_image||''} onChange={e=>f('cover_image',e.target.value)} /></div>
+              <div style={{display:'flex',alignItems:'center',gap:8}}><input type="checkbox" id="pub" checked={!!form.is_published} onChange={e=>f('is_published',e.target.checked)} style={{width:16,height:16,accentColor:'var(--forest)',cursor:'pointer'}} /><label htmlFor="pub" style={{fontSize:'0.82rem',fontWeight:600,color:'var(--text-2)',cursor:'pointer'}}>Publish immediately</label></div>
+            </div>
+            <div className="modal-footer">
+              <button onClick={()=>setModal(null)} className="btn btn-ghost">Cancel</button>
+              <button onClick={()=>saveMut.mutate()} disabled={saveMut.isPending||!form.title||!form.slug} className="btn btn-primary">{saveMut.isPending?'Saving…':'Save Post'}</button>
+            </div>
           </div>
         </div>
       )}

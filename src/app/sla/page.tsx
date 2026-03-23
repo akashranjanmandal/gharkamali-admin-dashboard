@@ -12,7 +12,7 @@ export default function SLAPage() {
 
   const { data: configRaw } = useQuery({ queryKey: ['sla-config'], queryFn: AdminAPI.slaConfig });
   const { data: breachesRaw } = useQuery({ queryKey: ['sla-breaches'], queryFn: () => AdminAPI.slaBreaches({}) });
-  const rawBr: any = breachesRaw; const breaches: any[] = Array.isArray(rawBr?.items) ? rawBr.items : Array.isArray(rawBr) ? rawBr : [];
+  const rawBr: any = breachesRaw; const breaches: any[] = Array.isArray(rawBr?.breaches) ? rawBr.breaches : Array.isArray(rawBr) ? rawBr : [];
 
   const saveMut = useMutation({ mutationFn: () => AdminAPI.updateSlaConfig(config), onSuccess: () => { toast.success('SLA config updated'); setEditConfig(false); qc.invalidateQueries({ queryKey: ['sla-config'] }); }, onError: (e: any) => toast.error(e.message) });
   const resolveMut = useMutation({ mutationFn: (id: number) => AdminAPI.resolveBreach(id), onSuccess: () => { toast.success('Breach resolved'); qc.invalidateQueries({ queryKey: ['sla-breaches'] }); }, onError: (e: any) => toast.error(e.message) });

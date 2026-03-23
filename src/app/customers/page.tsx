@@ -8,7 +8,7 @@ export default function CustomersPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const { data, isLoading } = useQuery({ queryKey: ['admin-customers', search, page], queryFn: () => AdminAPI.customers({ search: search||undefined, page, limit: 20 }) });
-  const customers: any[] = (data as any)?.items ?? Array.isArray((data as any)?.items) ? (data as any).items : Array.isArray(data as any) ? (data as any) : [];
+  const customers: any[] = (data as any)?.customers ?? [];
   const total = (data as any)?.total ?? customers.length;
   const pages = Math.ceil(total / 20);
 

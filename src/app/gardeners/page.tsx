@@ -11,7 +11,7 @@ export default function AdminGardenersPage() {
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery({ queryKey: ['admin-gardeners', filter, page], queryFn: () => AdminAPI.gardeners({ status: filter==='all'?undefined:filter, page, limit: 20 }) });
-  const gardeners: any[] = (data as any)?.items ?? Array.isArray((data as any)?.items) ? (data as any).items : Array.isArray(data as any) ? (data as any) : [];
+  const gardeners: any[] = (data as any)?.gardeners ?? [];
   const total = (data as any)?.total ?? gardeners.length;
   const pages = Math.ceil(total / 20);
 

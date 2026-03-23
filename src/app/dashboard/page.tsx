@@ -54,8 +54,9 @@ export default function AdminDashboardPage() {
   const pg: any = pendingGardenersData;
 
   const recentBookings: any[] = Array.isArray(d?.recentBookings) ? d.recentBookings : [];
-  const pendingApprovals: any[] = Array.isArray(pg?.items) ? pg.items : Array.isArray(pg) ? pg : [];
-  const openComplaints: any[] = Array.isArray(d?.openComplaints) ? d.openComplaints : [];
+  const pendingApprovals: any[] = Array.isArray(pg?.gardeners) ? pg.gardeners : Array.isArray(pg) ? pg : [];
+  const { data: openComplaintsData } = useQuery({ queryKey: ['admin-open-complaints-dash'], queryFn: () => AdminAPI.complaints({ status: 'open', limit: 10 }) });
+  const openComplaints: any[] = Array.isArray((openComplaintsData as any)?.complaints) ? (openComplaintsData as any).complaints : [];
   const revenueChart = Array.isArray(an?.revenueByDay) ? an.revenueByDay : [];
   const statusDist: any[] = Array.isArray(an?.bookingStatusDist) ? an.bookingStatusDist : [];
 
@@ -73,8 +74,8 @@ export default function AdminDashboardPage() {
     { label: 'Active Gardeners',  value: s?.totalGardeners?.toLocaleString('en-IN'),  icon: <IcLeaf />,    color: '#2563eb',       sub: 'Currently active',    trend: 5  },
     { label: 'Bookings Today',    value: s?.todayBookings?.toLocaleString('en-IN'),    icon: <IcCal />,     color: '#d97706',       sub: 'Scheduled visits',    trend: -2 },
     { label: 'Revenue (30d)',     value: s?.totalRevenue != null ? `₹${Number(s.totalRevenue).toLocaleString('en-IN')}` : '—', icon: <IcCash />, color: '#16a34a', sub: 'Last 30 days', trend: 18 },
-    { label: 'Avg Rating',        value: s?.avgRating ? `${Number(s.avgRating).toFixed(1)}` : '—', icon: <IcStar />, color: 'var(--earth)', sub: 'Customer satisfaction' },
-    { label: 'Open Complaints',   value: d?.openComplaints?.length ?? 0,              icon: <IcAlert />,   color: '#dc2626',       sub: 'Need attention'        },
+    { label: 'Avg Rating',        value: an?.avgRating ? `${Number(an.avgRating).toFixed(1)}` : '—', icon: <IcStar />, color: 'var(--earth)', sub: 'Customer satisfaction' },
+    { label: 'Open Complaints',   value: openComplaints.length,                       icon: <IcAlert />,   color: '#dc2626',       sub: 'Need attention'        },
     { label: 'Active Subs',       value: s?.activeSubscriptions?.toLocaleString('en-IN'), icon: <IcRefresh />, color: '#9333ea', sub: 'Recurring plans' },
     { label: 'Pending Approvals', value: s?.pendingGardeners ?? 0,                    icon: <IcLeaf />,    color: '#0891b2',       sub: 'Gardeners waiting'     },
   ];

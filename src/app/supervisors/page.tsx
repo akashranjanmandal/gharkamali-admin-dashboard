@@ -10,7 +10,7 @@ export default function SupervisorsPage() {
   const [modal, setModal] = useState<any>(null);
   const [form, setForm] = useState<any>({});
   const { data, isLoading } = useQuery({ queryKey: ['admin-supervisors'], queryFn: AdminAPI.supervisors });
-  const supervisors: any[] = Array.isArray((data as any)?.items) ? (data as any).items : Array.isArray(data as any) ? (data as any) : [];
+  const supervisors: any[] = Array.isArray(data as any) ? (data as any) : [];
 
   const saveMut = useMutation({ mutationFn: () => modal.id ? AdminAPI.updateSupervisor(modal.id, form) : AdminAPI.createSupervisor(form), onSuccess: () => { toast.success('Saved!'); setModal(null); qc.invalidateQueries({ queryKey: ['admin-supervisors'] }); }, onError: (e: any) => toast.error(e.message) });
 
@@ -41,11 +41,19 @@ export default function SupervisorsPage() {
       {modal&&(
         <div className="modal-overlay" onClick={()=>setModal(null)}>
           <div className="modal-box" onClick={e=>e.stopPropagation()}>
-            <h2 style={{fontWeight:800,fontSize:'1.2rem',marginBottom:20}}>{modal.new?'New Supervisor':'Edit Supervisor'}</h2>
-            <div className="form-row"><div className="form-group"><label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5}}>Name *</label><input className="input" value={form.name||''} onChange={e=>setForm((p:any)=>({...p,name:e.target.value}))} /></div><div className="form-group"><label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5}}>Phone *</label><input type="tel" className="input" value={form.phone||''} onChange={e=>setForm((p:any)=>({...p,phone:e.target.value}))} /></div></div>
-            <div className="form-group"><label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5}}>Email</label><input type="email" className="input" value={form.email||''} onChange={e=>setForm((p:any)=>({...p,email:e.target.value}))} /></div>
-            {modal.new&&<div className="form-group"><label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5}}>Password *</label><input type="password" className="input" value={form.password||''} onChange={e=>setForm((p:any)=>({...p,password:e.target.value}))} /></div>}
-            <div style={{display:'flex',gap:10,marginTop:8}}><button onClick={()=>setModal(null)} className="btn btn-ghost" style={{flex:1}}>Cancel</button><button onClick={()=>saveMut.mutate()} disabled={saveMut.isPending} className="btn btn-primary" style={{flex:2}}>Save</button></div>
+            <div className="modal-header">
+              <h3>{modal.new?'New Supervisor':'Edit Supervisor'}</h3>
+              <button className="modal-close" onClick={()=>setModal(null)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-row"><div className="form-group"><label>Name *</label><input className="input" value={form.name||''} onChange={e=>setForm((p:any)=>({...p,name:e.target.value}))} /></div><div className="form-group"><label>Phone *</label><input type="tel" className="input" value={form.phone||''} onChange={e=>setForm((p:any)=>({...p,phone:e.target.value}))} /></div></div>
+              <div className="form-group"><label>Email</label><input type="email" className="input" value={form.email||''} onChange={e=>setForm((p:any)=>({...p,email:e.target.value}))} /></div>
+              {modal.new&&<div className="form-group"><label>Password *</label><input type="password" className="input" value={form.password||''} onChange={e=>setForm((p:any)=>({...p,password:e.target.value}))} /></div>}
+            </div>
+            <div className="modal-footer">
+              <button onClick={()=>setModal(null)} className="btn btn-ghost">Cancel</button>
+              <button onClick={()=>saveMut.mutate()} disabled={saveMut.isPending} className="btn btn-primary">{saveMut.isPending?'Saving…':'Save'}</button>
+            </div>
           </div>
         </div>
       )}

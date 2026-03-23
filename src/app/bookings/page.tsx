@@ -16,10 +16,10 @@ export default function AdminBookingsPage() {
 
   const { data, isLoading } = useQuery({ queryKey: ['admin-bookings', status, page, search], queryFn: () => AdminAPI.bookings({ status: status||undefined, page, limit: 20, search: search||undefined }) });
   const { data: gardenersRaw } = useQuery({ queryKey: ['admin-gardeners-list'], queryFn: () => AdminAPI.gardeners({ status: 'active', limit: 100 }) });
-  const bookings: any[] = (data as any)?.items ?? Array.isArray((data as any)?.items) ? (data as any).items : Array.isArray(data as any) ? (data as any) : [];
+  const bookings: any[] = (data as any)?.bookings ?? [];
   const total = (data as any)?.total ?? bookings.length;
   const pages = Math.ceil(total / 20);
-  const rawGard: any = gardenersRaw; const gardeners: any[] = Array.isArray(rawGard?.items) ? rawGard.items : Array.isArray(rawGard) ? rawGard : [];
+  const rawGard: any = gardenersRaw; const gardeners: any[] = Array.isArray(rawGard?.gardeners) ? rawGard.gardeners : Array.isArray(rawGard) ? rawGard : [];
 
   const reassignMut = useMutation({
     mutationFn: () => AdminAPI.reassignBooking(reassignModal.id, parseInt(gardenerId), reason),
@@ -82,23 +82,27 @@ export default function AdminBookingsPage() {
       {reassignModal && (
         <div className="modal-overlay" onClick={()=>setReassignModal(null)}>
           <div className="modal-box" onClick={e=>e.stopPropagation()}>
-            <h2 style={{fontWeight:800,fontSize:'1.2rem',marginBottom:6}}>Reassign Booking</h2>
-            <p style={{color:'var(--text-muted)',fontSize:'0.875rem',marginBottom:20}}>{reassignModal.booking_number} · Current: {reassignModal.gardener?.name ?? 'Unassigned'}</p>
-            <div className="form-group">
-              <label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5}}>Select New Gardener *</label>
-              <select value={gardenerId} onChange={e=>setGardenerId(e.target.value)}
-                style={{width:'100%',padding:'9px 12px',background:'var(--bg)',border:'1.5px solid var(--border)',borderRadius:10,fontFamily:'Poppins',fontSize:'0.875rem',outline:'none',appearance:'none'}}>
-                <option value="">Choose a gardener…</option>
-                {gardeners.map((g:any)=><option key={g.id} value={g.id}>{g.name} — {g.zone?.name ?? 'No zone'}</option>)}
-              </select>
+            <div className="modal-header">
+              <h3>Reassign Booking</h3>
+              <button className="modal-close" onClick={()=>setReassignModal(null)}>✕</button>
             </div>
-            <div className="form-group">
-              <label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5}}>Reason (optional)</label>
-              <input className="input" value={reason} onChange={e=>setReason(e.target.value)} placeholder="e.g. Original gardener called sick" />
+            <div className="modal-body">
+              <p style={{color:'var(--text-muted)',fontSize:'0.82rem',marginBottom:16}}><span style={{fontFamily:'monospace',fontWeight:700,color:'var(--forest)'}}>{reassignModal.booking_number}</span> · Current: {reassignModal.gardener?.name ?? 'Unassigned'}</p>
+              <div className="form-group">
+                <label>Select New Gardener *</label>
+                <select className="input" value={gardenerId} onChange={e=>setGardenerId(e.target.value)} style={{appearance:'none'}}>
+                  <option value="">Choose a gardener…</option>
+                  {gardeners.map((g:any)=><option key={g.id} value={g.id}>{g.name} — {g.zone?.name ?? 'No zone'}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Reason (optional)</label>
+                <input className="input" value={reason} onChange={e=>setReason(e.target.value)} placeholder="e.g. Original gardener called sick" />
+              </div>
             </div>
-            <div style={{display:'flex',gap:10}}>
-              <button onClick={()=>setReassignModal(null)} className="btn btn-ghost" style={{flex:1}}>Cancel</button>
-              <button onClick={()=>reassignMut.mutate()} disabled={!gardenerId||reassignMut.isPending} className="btn btn-primary" style={{flex:2,opacity:(!gardenerId||reassignMut.isPending)?0.6:1}}>{reassignMut.isPending?'Reassigning…':'Confirm Reassign'}</button>
+            <div className="modal-footer">
+              <button onClick={()=>setReassignModal(null)} className="btn btn-ghost">Cancel</button>
+              <button onClick={()=>reassignMut.mutate()} disabled={!gardenerId||reassignMut.isPending} className="btn btn-primary">{reassignMut.isPending?'Reassigning…':'Confirm Reassign'}</button>
             </div>
           </div>
         </div>
