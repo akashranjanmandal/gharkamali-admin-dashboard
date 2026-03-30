@@ -27,7 +27,7 @@ export default function SLAPage() {
             {editConfig?(
               <>
                 {['max_response_minutes','max_completion_hours','penalty_amount','reward_on_time_amount','rating_threshold'].map(key=>(
-                  <div key={key} className="form-group"><label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5}} style={{textTransform:'capitalize'}}>{key.replace(/_/g,' ')}</label><input type="number" className="input" value={config[key]||''} onChange={e=>setConfig((p:any)=>({...p,[key]:e.target.value}))} /></div>
+                  <div key={key} className="form-group"><label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5,textTransform:'capitalize'}}>{key.replace(/_/g,' ')}</label><input type="number" className="input" value={config[key]||''} onChange={e=>setConfig((p:any)=>({...p,[key]:e.target.value}))} /></div>
                 ))}
                 <button onClick={()=>saveMut.mutate()} disabled={saveMut.isPending} className="btn btn-primary" style={{width:'100%'}}>{saveMut.isPending?'Saving…':'Save Config'}</button>
               </>
