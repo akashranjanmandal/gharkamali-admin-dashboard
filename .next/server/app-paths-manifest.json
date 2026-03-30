@@ -1,7 +1,6 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
-  "/zones/page": "app/zones/page.js",
-  "/login/page": "app/login/page.js",
   "/geofencing/page": "app/geofencing/page.js",
+  "/login/page": "app/login/page.js",
+  "/zones/page": "app/zones/page.js",
   "/dashboard/page": "app/dashboard/page.js"
 }

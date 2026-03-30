@@ -115,7 +115,7 @@ export default function GeofencingPage() {
       </div>
 
       {/* Zone Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16, alignItems: 'start' }}>
         {isLoading
           ? Array(4).fill(null).map((_, i) => <div key={i} className="skeleton" style={{ height: 220, borderRadius: 20 }} />)
           : geofences.length === 0
