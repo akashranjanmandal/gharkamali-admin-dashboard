@@ -193,6 +193,12 @@ export const AdminAPI = {
     req(approved ? '/admin/gardeners/approve' : '/admin/gardeners/reject', {
       method: 'POST', body: JSON.stringify({ user_id: id })
     }),
+  deleteGardener: (id: number) => req(`/admin/gardeners/${id}`, { method: 'DELETE' }),
+
+  geofences: () => req('/admin/geofence'),
+  createGeofence: (b: any) => req('/admin/geofence', { method: 'POST', body: JSON.stringify(b) }),
+  updateGeofence: (id: number, b: any) => req(`/admin/geofence/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  deleteGeofence: (id: number) => req(`/admin/geofence/${id}`, { method: 'DELETE' }),
 
   customers: (p?: any) => req(`/admin/customers${qs(p)}`),
   customerDetail: (id: number) => req(`/admin/customers/${id}`),
