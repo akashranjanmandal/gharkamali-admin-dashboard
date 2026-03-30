@@ -1,4 +1,8 @@
 {
+  "/bookings/page": "app/bookings/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
   "/zones/page": "app/zones/page.js",
-  "/supervisors/page": "app/supervisors/page.js"
+  "/plans/page": "app/plans/page.js",
+  "/subscriptions/page": "app/subscriptions/page.js",
+  "/complaints/page": "app/complaints/page.js"
 }
