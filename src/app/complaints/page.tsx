@@ -8,8 +8,16 @@ import { AdminAPI } from '@/lib/api';
 export default function AdminComplaintsPage() {
   const qc = useQueryClient();
   const [status, setStatus] = useState('open');
+  const [modal, setModal] = useState<any>(null);
+  const [resolution, setResolution] = useState('');
   const { data: supervisorData } = useQuery({ queryKey: ['admin-supervisors'], queryFn: () => AdminAPI.supervisors() });
   const supervisors: any[] = (supervisorData as any) ?? [];
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-complaints', status],
+    queryFn: () => AdminAPI.complaints({ status })
+  });
+  const complaints: any[] = (data as any) ?? [] as any[];
 
   const updateMut = useMutation({
     mutationFn: (payload: any) => AdminAPI.updateComplaint(modal.id, payload),
