@@ -128,6 +128,13 @@ export const getPlantHistory = () => req('/plants/history');
 export const getBlogs = (p?: any) => req(`/blogs${qs(p)}`, { auth: false });
 export const getBlog = (slug: string) => req(`/blogs/${slug}`, { auth: false });
 
+// ─── SHOP ─────────────────────────────────────────────────────────────────────
+export const getShopCategories = () => req('/shop/categories', { auth: false });
+export const getShopProducts = (p?: any) => req(`/shop/products${qs(p)}`, { auth: false });
+export const getProductDetail = (id: number) => req(`/shop/products/${id}`, { auth: false });
+export const createOrder = (b: any) => req('/shop/orders', { method: 'POST', body: JSON.stringify(b) });
+export const getMyOrders = () => req('/shop/orders/my');
+
 // ─── CITIES ───────────────────────────────────────────────────────────────────
 export const getCities = () => req('/cities', { auth: false });
 export const getCity = (slug: string) => req(`/cities/${slug}`, { auth: false });
@@ -265,4 +272,18 @@ export const AdminAPI = {
     req(`/supervisor/gardeners/${id}/performance${qs({ period })}`),
 
   priceHikeSchedules: () => req('/admin/price-hike/schedules'),
+
+  // Shop Management
+  shopCategories: () => req('/admin/shop/categories'),
+  createShopCategory: (b: any) => req('/admin/shop/categories', { method: 'POST', body: JSON.stringify(b) }),
+  updateShopCategory: (id: number, b: any) => req(`/admin/shop/categories/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  deleteShopCategory: (id: number) => req(`/admin/shop/categories/${id}`, { method: 'DELETE' }),
+
+  shopProducts: () => req('/admin/shop/products'),
+  createShopProduct: (b: any) => req('/admin/shop/products', { method: 'POST', body: JSON.stringify(b) }),
+  updateShopProduct: (id: number, b: any) => req(`/admin/shop/products/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  deleteShopProduct: (id: number) => req(`/admin/shop/products/${id}`, { method: 'DELETE' }),
+
+  shopOrders: (p?: any) => req(`/admin/shop/orders${qs(p)}`),
+  updateOrderStatus: (id: number, status: string) => req(`/admin/shop/orders/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
 };
