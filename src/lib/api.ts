@@ -250,7 +250,16 @@ export const AdminAPI = {
   updateComplaint: (id: number, b: any) => req(`/complaints/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
   complaintStats: () => req('/complaints/stats'),
 
+  // City SEO
+  cityPages: () => req('/cities'),
+  upsertCityPage: (b: any) => req('/admin/cities', { method: 'POST', body: JSON.stringify(b) }),
+
+  // Logs & Audits
+  allPayments: (p?: any) => req(`/admin/payments${qs(p)}`),
+  plantIdentifications: (p?: any) => req(`/admin/plants/history${qs(p)}`),
+
   supervisorDashboard: () => req('/supervisor/dashboard'),
+
   supervisorGardeners: () => req('/supervisor/gardeners'),
   gardenerPerformance: (id: number, period?: string) =>
     req(`/supervisor/gardeners/${id}/performance${qs({ period })}`),

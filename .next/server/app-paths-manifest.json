@@ -1,6 +1,9 @@
 {
   "/geofencing/page": "app/geofencing/page.js",
-  "/login/page": "app/login/page.js",
   "/zones/page": "app/zones/page.js",
-  "/dashboard/page": "app/dashboard/page.js"
+  "/gardeners/page": "app/gardeners/page.js",
+  "/plans/page": "app/plans/page.js",
+  "/city-pages/page": "app/city-pages/page.js",
+  "/plant-history/page": "app/plant-history/page.js",
+  "/blogs/page": "app/blogs/page.js"
 }
