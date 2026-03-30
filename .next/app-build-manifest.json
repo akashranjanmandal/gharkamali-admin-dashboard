@@ -16,25 +16,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/dashboard/page.js"
     ],
-    "/login/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/login/page.js"
-    ],
     "/geofencing/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/geofencing/page.js"
-    ],
-    "/zones/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/zones/page.js"
-    ],
-    "/gardeners/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/gardeners/page.js"
     ],
     "/subscriptions/page": [
       "static/chunks/webpack.js",
@@ -46,20 +31,30 @@
       "static/chunks/main-app.js",
       "static/chunks/app/plans/page.js"
     ],
-    "/city-pages/page": [
+    "/gardeners/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/city-pages/page.js"
+      "static/chunks/app/gardeners/page.js"
     ],
-    "/plant-history/page": [
+    "/addons/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/plant-history/page.js"
+      "static/chunks/app/addons/page.js"
     ],
-    "/blogs/page": [
+    "/customers/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/blogs/page.js"
+      "static/chunks/app/customers/page.js"
+    ],
+    "/supervisors/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/supervisors/page.js"
+    ],
+    "/_not-found/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/_not-found/page.js"
     ]
   }
 }
