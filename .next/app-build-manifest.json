@@ -16,25 +16,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/dashboard/page.js"
     ],
-    "/plans/page": [
+    "/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/plans/page.js"
+      "static/chunks/app/login/page.js"
     ],
-    "/bookings/page": [
+    "/geofencing/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/bookings/page.js"
-    ],
-    "/subscriptions/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/subscriptions/page.js"
-    ],
-    "/complaints/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/complaints/page.js"
+      "static/chunks/app/geofencing/page.js"
     ],
     "/zones/page": [
       "static/chunks/webpack.js",

@@ -1,8 +1,6 @@
 {
-  "/bookings/page": "app/bookings/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
+  "/geofencing/page": "app/geofencing/page.js",
   "/zones/page": "app/zones/page.js",
-  "/plans/page": "app/plans/page.js",
-  "/subscriptions/page": "app/subscriptions/page.js",
-  "/complaints/page": "app/complaints/page.js"
+  "/login/page": "app/login/page.js",
+  "/dashboard/page": "app/dashboard/page.js"
 }

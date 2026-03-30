@@ -41,11 +41,11 @@ const NAV = [
   ]},
   { section: 'Catalog', items: [
     { href: '/plans', icon: 'plans', label: 'Plans' },
-    { href: '/zones', icon: 'zones', label: 'Zones' },
     { href: '/geofencing', icon: 'geofencing', label: 'Geofencing' },
     { href: '/addons', icon: 'addons', label: 'Add-Ons' },
     { href: '/blogs', icon: 'blogs', label: 'Blogs' },
   ]},
+
   { section: 'Finance', items: [
     { href: '/rewards', icon: 'rewards', label: 'Rewards' },
   ]},

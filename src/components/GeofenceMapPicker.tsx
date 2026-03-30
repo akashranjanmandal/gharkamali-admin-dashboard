@@ -167,7 +167,11 @@ export default function GeofenceMapPicker({ points, onChange, readOnly = false }
       {ready && !readOnly && (
         <div style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 8, zIndex: 1000 }}>
           <div style={{ background: 'rgba(3,65,26,0.9)', color: '#fff', borderRadius: 99, padding: '5px 14px', fontSize: '0.72rem', fontWeight: 600, fontFamily: 'Poppins', backdropFilter: 'blur(4px)', whiteSpace: 'nowrap' }}>
-            {localPoints.length === 0 ? 'Click map to add vertices' : localPoints.length < 3 ? `${localPoints.length} point${localPoints.length > 1 ? 's' : ''} — need at least 3` : `${localPoints.length} points — polygon ready ✓`}
+            {localPoints.length === 0
+              ? 'Click map to add vertices (min 3, no maximum)'
+              : localPoints.length < 3
+                ? `${localPoints.length} point${localPoints.length > 1 ? 's' : ''} — add ${3 - localPoints.length} more`
+                : `${localPoints.length} vertices ✓ — keep clicking for more precision`}
           </div>
           {localPoints.length > 0 && (
             <button onClick={undoLast} style={{ background: 'rgba(0,0,0,0.75)', color: '#fff', border: 'none', borderRadius: 99, padding: '5px 12px', fontSize: '0.72rem', fontWeight: 600, fontFamily: 'Poppins', cursor: 'pointer', backdropFilter: 'blur(4px)' }}>⟵ Undo</button>
