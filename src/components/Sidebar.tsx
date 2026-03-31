@@ -78,7 +78,7 @@ export default function Sidebar() {
         </div>
         <div>
           <div className="sidebar-logo-text">GKM Admin</div>
-          <div style={{ fontSize: '0.62rem', color: 'var(--text-faint)', fontWeight: 500, letterSpacing: '0.04em' }}>Ghar Ka Mali</div>
+          <div style={{ fontSize: '0.62rem', color: 'var(--text-faint)', fontWeight: 500, letterSpacing: '0.04em' }}>GharKaMali</div>
         </div>
       </div>
 

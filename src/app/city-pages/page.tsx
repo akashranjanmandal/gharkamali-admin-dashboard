@@ -119,7 +119,7 @@ export default function CityPagesAdmin() {
 
               <div className="form-group">
                 <label>SEO Browser Title</label>
-                <input className="input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. Best Gardeners in Noida | Ghar Ka Mali" />
+                <input className="input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. Best Gardeners in Noida | GharKaMali" />
               </div>
 
               <div className="form-group">

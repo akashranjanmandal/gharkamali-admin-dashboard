@@ -6,7 +6,7 @@ import { Toaster } from 'react-hot-toast';
 
 const poppins = Poppins({ subsets: ['latin'], weight: ['400','500','600','700','800'], display: 'swap' });
 
-export const metadata: Metadata = { title: 'GKM Admin', description: 'Ghar Ka Mali — Admin Dashboard' };
+export const metadata: Metadata = { title: 'GharKaMali Admin', description: 'GharKaMali — Admin Dashboard' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
