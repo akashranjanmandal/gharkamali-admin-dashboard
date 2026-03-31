@@ -286,4 +286,10 @@ export const AdminAPI = {
 
   shopOrders: (p?: any) => req(`/admin/shop/orders${qs(p)}`),
   updateOrderStatus: (id: number, status: string) => req(`/admin/shop/orders/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
+
+  // Taglines
+  taglines: () => req('/admin/taglines'),
+  createTagline: (b: any) => req('/admin/taglines', { method: 'POST', body: JSON.stringify(b) }),
+  updateTagline: (id: number, b: any) => req(`/admin/taglines/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  deleteTagline: (id: number) => req(`/admin/taglines/${id}`, { method: 'DELETE' }),
 };

@@ -1,14 +1,1 @@
-{
-  "app\\geofencing\\page.tsx -> @/components/GeofenceMapPicker": {
-    "id": "app\\geofencing\\page.tsx -> @/components/GeofenceMapPicker",
-    "files": [
-      "static/chunks/_app-pages-browser_src_components_GeofenceMapPicker_tsx.js"
-    ]
-  },
-  "components\\GeofenceMapPicker.tsx -> leaflet": {
-    "id": "components\\GeofenceMapPicker.tsx -> leaflet",
-    "files": [
-      "static/chunks/_app-pages-browser_node_modules_leaflet_dist_leaflet-src_js.js"
-    ]
-  }
-}
+{}

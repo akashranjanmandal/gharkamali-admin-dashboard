@@ -141,6 +141,7 @@ export default function AdminShopProductsPage() {
             </div>
             <div className="modal-body">
               <div className="form-group"><label>Product Name *</label><input className="input" value={form.name || ''} onChange={e => f('name', e.target.value)} placeholder="e.g. Premium Potting Mix" /></div>
+              <div className="form-group"><label>Image URLs (comma separated)</label><input className="input" value={form.images ? (Array.isArray(form.images) ? form.images.join(', ') : form.images) : ''} onChange={e => f('images', e.target.value.split(',').map((s: string) => s.trim()).filter(Boolean))} placeholder="https://..., https://..." /></div>
               <div className="form-row">
                 <div className="form-group">
                   <label>Category *</label>
@@ -165,6 +166,7 @@ export default function AdminShopProductsPage() {
                 <div className="form-group"><label>Badge (e.g. Bestseller)</label><input className="input" value={form.badge || ''} onChange={e => f('badge', e.target.value)} /></div>
               </div>
               <div className="form-group"><label>Description</label><textarea className="input" rows={4} value={form.description || ''} onChange={e => f('description', e.target.value)} placeholder="Detailed description of the product..." /></div>
+              <div className="form-group"><label>Tags (comma separated for search)</label><input className="input" value={form.tags ? (Array.isArray(form.tags) ? form.tags.join(', ') : form.tags) : ''} onChange={e => f('tags', e.target.value.split(',').map((s: string) => s.trim()).filter(Boolean))} placeholder="indoor, pet-friendly, low-light" /></div>
               <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <input type="checkbox" id="p_active" checked={form.is_active} onChange={e => f('is_active', e.target.checked)} />
                 <label htmlFor="p_active" style={{ marginBottom: 0, cursor: 'pointer' }}>Active and visible in shop</label>
