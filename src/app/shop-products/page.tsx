@@ -21,10 +21,12 @@ export default function AdminShopProductsPage() {
   const saveMut = useMutation({ 
     mutationFn: (data: any) => {
       const fd = new FormData();
+      const skip = ['image', 'created_at', 'updated_at', 'createdAt', 'updatedAt', 'category'];
       Object.entries(data).forEach(([k, v]) => {
+        if (skip.includes(k)) return;
         if (k === 'image' && v instanceof File) fd.append('image', v);
         else if (Array.isArray(v)) fd.append(k, JSON.stringify(v));
-        else if (k !== 'image') fd.append(k, String(v));
+        else fd.append(k, String(v));
       });
       return modal.id ? AdminAPI.updateShopProduct(modal.id, fd) : AdminAPI.createShopProduct(fd);
     }, 
@@ -103,8 +105,12 @@ export default function AdminShopProductsPage() {
               <tr key={p.id}>
                 <td style={{ color: 'var(--text-faint)', fontSize: '0.75rem' }}>#{p.id}</td>
                 <td>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-                    {p.icon_key === 'soil' ? '🟤' : p.icon_key === 'pest' ? '🕸️' : p.icon_key === 'pot' ? '🏺' : p.icon_key === 'fert' ? '🧪' : p.icon_key === 'plant' ? '🌿' : '🛠️'}
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', overflow: 'hidden' }}>
+                    {p.images?.[0] ? (
+                      <img src={p.images[0]} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      p.icon_key === 'soil' ? '🟤' : p.icon_key === 'pest' ? '🕸️' : p.icon_key === 'pot' ? '🏺' : p.icon_key === 'fert' ? '🧪' : p.icon_key === 'plant' ? '🌿' : '🛠️'
+                    )}
                   </div>
                 </td>
                 <td>

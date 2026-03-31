@@ -15,9 +15,11 @@ export default function AdminShopCategoriesPage() {
   const saveMut = useMutation({
     mutationFn: (data: any) => {
       const fd = new FormData();
+      const skip = ['image', 'created_at', 'updated_at', 'createdAt', 'updatedAt'];
       Object.entries(data).forEach(([k, v]) => {
+        if (skip.includes(k)) return;
         if (k === 'image' && v instanceof File) fd.append('image', v);
-        else if (k !== 'image') fd.append(k, String(v));
+        else fd.append(k, String(v));
       });
       return modal.id ? AdminAPI.updateShopCategory(modal.id, fd) : AdminAPI.createShopCategory(fd);
     },
