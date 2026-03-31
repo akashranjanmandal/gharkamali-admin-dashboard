@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
@@ -10,9 +11,7 @@ const PRODUCT_ICONS = ['soil', 'pest', 'pot', 'fert', 'plant', 'tool'];
 export default function AdminShopProductsPage() {
   const qc = useQueryClient();
   const [modal, setModal] = useState<any>(null);
-  const [catModal, setCatModal] = useState<any>(null);
   const [form, setForm] = useState<any>({});
-  const [catForm, setCatForm] = useState<any>({});
 
   const { data: products, isLoading: loadingProducts } = useQuery({ queryKey: ['admin-shop-products'], queryFn: AdminAPI.shopProducts });
   const { data: categories, isLoading: loadingCats } = useQuery({ queryKey: ['admin-shop-categories'], queryFn: AdminAPI.shopCategories });
@@ -23,11 +22,6 @@ export default function AdminShopProductsPage() {
     onError: (e: any) => toast.error(e.message) 
   });
 
-  const categoryMut = useMutation({
-    mutationFn: (payload: any) => catModal.id ? AdminAPI.updateShopCategory(catModal.id, payload) : AdminAPI.createShopCategory(payload),
-    onSuccess: () => { toast.success('Category Saved!'); setCatModal(null); qc.invalidateQueries({ queryKey: ['admin-shop-categories'] }); },
-    onError: (e: any) => toast.error(e.message)
-  });
 
   const deleteMut = useMutation({ 
     mutationFn: (id: number) => AdminAPI.deleteShopProduct(id), 
@@ -36,7 +30,6 @@ export default function AdminShopProductsPage() {
   });
 
   const f = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }));
-  const cf = (k: string, v: any) => setCatForm((p: any) => ({ ...p, [k]: v }));
 
   const prodList = Array.isArray(products) ? products : [];
   const catList = Array.isArray(categories) ? categories : [];
@@ -49,7 +42,7 @@ export default function AdminShopProductsPage() {
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Manage your gardening product catalog and categories</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button onClick={() => { setCatForm({ name: '', slug: '', icon: '🌿' }); setCatModal({ new: true }); }} className="btn btn-outline" style={{ height: 44 }}>Manage Categories</button>
+          <Link href="/shop-categories" className="btn btn-outline" style={{ height: 44, display: 'flex', alignItems: 'center' }}>Manage Categories</Link>
           <button onClick={() => { setForm({ name: '', price: '', mrp: '', stock_quantity: 50, icon_key: 'plant', is_active: true }); setModal({ new: true }); }} className="btn btn-primary" style={{ height: 44 }}>+ Add Product</button>
         </div>
       </div>
@@ -175,43 +168,6 @@ export default function AdminShopProductsPage() {
             <div className="modal-footer">
               <button onClick={() => setModal(null)} className="btn btn-ghost">Cancel</button>
               <button onClick={() => saveMut.mutate(form)} disabled={saveMut.isPending} className="btn btn-primary">{saveMut.isPending ? 'Saving…' : 'Save Product'}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Category Modal - Side Drawer or Modal */}
-      {catModal && (
-        <div className="modal-overlay" onClick={() => setCatModal(null)}>
-          <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
-            <div className="modal-header">
-              <h3>Shop Categories</h3>
-              <button className="modal-close" onClick={() => setCatModal(null)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <div style={{ marginBottom: 24, padding: 16, background: 'var(--bg)', borderRadius: 16 }}>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: 12 }}>{catModal.id ? 'Edit Category' : 'Create New Category'}</div>
-                <div className="form-row">
-                  <div className="form-group" style={{ flex: 2 }}><label>Name</label><input className="input" value={catForm.name || ''} onChange={e => cf('name', e.target.value)} /></div>
-                  <div className="form-group" style={{ flex: 1 }}><label>Emoji</label><input className="input" value={catForm.icon || '🌿'} onChange={e => cf('icon', e.target.value)} /></div>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => categoryMut.mutate(catForm)} className="btn btn-forest btn-sm" disabled={categoryMut.isPending}>{catModal.id ? 'Update' : 'Add'}</button>
-                  {catModal.id && <button onClick={() => setCatModal({ new: true })} className="btn btn-ghost btn-sm">Clear</button>}
-                </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <label>Existing Categories</label>
-                {catList.map((c: any) => (
-                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#fff', border: '1px solid var(--border)', borderRadius: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: '1.2rem' }}>{c.icon}</span>
-                      <span style={{ fontWeight: 600 }}>{c.name}</span>
-                    </div>
-                    <button onClick={() => { setCatForm({ ...c }); setCatModal({ id: c.id }); }} style={{ fontSize: '0.75rem', color: 'var(--forest)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>Edit</button>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </div>

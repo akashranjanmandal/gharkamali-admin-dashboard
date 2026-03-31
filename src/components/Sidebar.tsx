@@ -59,6 +59,7 @@ const NAV = [
   ]},
   { section: 'Marketplace', items: [
     { href: '/shop-products', icon: 'shop', label: 'Products' },
+    { href: '/shop-categories', icon: 'zones', label: 'Categories' },
     { href: '/shop-orders', icon: 'payments', label: 'Shop Orders' },
   ]},
 ];
