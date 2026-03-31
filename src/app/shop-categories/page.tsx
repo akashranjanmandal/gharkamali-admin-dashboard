@@ -13,7 +13,14 @@ export default function AdminShopCategoriesPage() {
   const { data: categories, isLoading } = useQuery({ queryKey: ['admin-shop-categories'], queryFn: AdminAPI.shopCategories });
 
   const saveMut = useMutation({
-    mutationFn: (payload: any) => modal.id ? AdminAPI.updateShopCategory(modal.id, payload) : AdminAPI.createShopCategory(payload),
+    mutationFn: (data: any) => {
+      const fd = new FormData();
+      Object.entries(data).forEach(([k, v]) => {
+        if (k === 'image' && v instanceof File) fd.append('image', v);
+        else if (k !== 'image') fd.append(k, String(v));
+      });
+      return modal.id ? AdminAPI.updateShopCategory(modal.id, fd) : AdminAPI.createShopCategory(fd);
+    },
     onSuccess: () => { 
       toast.success('Category Saved!'); 
       setModal(null); 
@@ -42,7 +49,7 @@ export default function AdminShopCategoriesPage() {
           <h1 className="page-title" style={{ marginBottom: 4 }}>Shop Categories</h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Manage product classification and display icons</p>
         </div>
-        <button onClick={() => { setForm({ name: '', slug: '', icon: '🌿', image_url: '', is_active: true }); setModal({ new: true }); }} className="btn btn-primary" style={{ height: 44 }}>+ Add Category</button>
+        <button onClick={() => { setForm({ name: '', slug: '', icon: '🌿', is_active: true }); setModal({ new: true }); }} className="btn btn-primary" style={{ height: 44 }}>+ Add Category</button>
       </div>
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -122,9 +129,10 @@ export default function AdminShopCategoriesPage() {
                 </div>
               </div>
               <div className="form-group">
-                <label>Image URL (Optional)</label>
-                <input className="input" value={form.image_url || ''} onChange={e => f('image_url', e.target.value)} placeholder="https://..." />
-                {form.image_url && <img src={form.image_url} alt="Preview" style={{ marginTop: 8, borderRadius: 8, height: 100, width: '100%', objectFit: 'cover', border: '1px solid var(--border)' }} />}
+                <label>Category Image</label>
+                <input type="file" className="input" onChange={e => f('image', e.target.files?.[0])} accept="image/*" />
+                {form.image_url && !form.image && <img src={form.image_url} alt="Current" style={{ marginTop: 8, borderRadius: 8, height: 100, width: '100%', objectFit: 'cover', border: '1px solid var(--border)' }} />}
+                {form.image && <p style={{ fontSize: '0.75rem', marginTop: 4, color: 'var(--forest)' }}>New image selected: {form.image.name}</p>}
               </div>
             </div>
             <div className="modal-footer">

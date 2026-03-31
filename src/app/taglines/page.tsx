@@ -13,7 +13,14 @@ export default function AdminTaglinesPage() {
   const { data: taglines, isLoading } = useQuery({ queryKey: ['admin-taglines'], queryFn: AdminAPI.taglines });
 
   const saveMut = useMutation({
-    mutationFn: (payload: any) => modal.id ? AdminAPI.updateTagline(modal.id, payload) : AdminAPI.createTagline(payload),
+    mutationFn: (data: any) => {
+      const fd = new FormData();
+      Object.entries(data).forEach(([k, v]) => {
+        if (k === 'image' && v instanceof File) fd.append('image', v);
+        else if (k !== 'image') fd.append(k, String(v));
+      });
+      return modal.id ? AdminAPI.updateTagline(modal.id, fd) : AdminAPI.createTagline(fd);
+    },
     onSuccess: () => { toast.success('Tagline Saved!'); setModal(null); qc.invalidateQueries({ queryKey: ['admin-taglines'] }); },
     onError: (e: any) => toast.error(e.message)
   });
@@ -35,7 +42,7 @@ export default function AdminTaglinesPage() {
           <h1 className="page-title" style={{ marginBottom: 4 }}>Taglines & Content</h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Manage marketing taglines and hero text</p>
         </div>
-        <button onClick={() => { setForm({ text: '', display_order: 0, image_url: '', is_active: true }); setModal({ new: true }); }} className="btn btn-primary" style={{ height: 44 }}>+ Add Tagline</button>
+        <button onClick={() => { setForm({ text: '', display_order: 0, is_active: true }); setModal({ new: true }); }} className="btn btn-primary" style={{ height: 44 }}>+ Add Tagline</button>
       </div>
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -99,9 +106,10 @@ export default function AdminTaglinesPage() {
                 <textarea className="input" rows={3} value={form.text || ''} onChange={e => f('text', e.target.value)} placeholder="e.g. Plants ki tension? GharKaMali hai na" />
               </div>
               <div className="form-group">
-                <label>Image URL (Optional)</label>
-                <input className="input" value={form.image_url || ''} onChange={e => f('image_url', e.target.value)} placeholder="https://..." />
-                {form.image_url && <img src={form.image_url} alt="Preview" style={{ marginTop: 8, borderRadius: 8, height: 80, objectFit: 'cover', border: '1px solid var(--border)' }} />}
+                <label>Tagline Image</label>
+                <input type="file" className="input" onChange={e => f('image', e.target.files?.[0])} accept="image/*" />
+                {form.image_url && !form.image && <img src={form.image_url} alt="Current" style={{ marginTop: 8, borderRadius: 8, height: 80, width: '100%', objectFit: 'cover', border: '1px solid var(--border)' }} />}
+                {form.image && <p style={{ fontSize: '0.75rem', marginTop: 4, color: 'var(--forest)' }}>New image selected: {form.image.name}</p>}
               </div>
               <div className="form-row">
                 <div className="form-group">

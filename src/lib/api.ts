@@ -249,8 +249,8 @@ export const AdminAPI = {
   resolveBreach: (id: number) => req(`/admin/sla/breaches/${id}/resolve`, { method: 'PUT' }),
 
   blogs: (p?: any) => req(`/admin/blogs${qs(p)}`),
-  createBlog: (b: any) => req('/admin/blogs', { method: 'POST', body: JSON.stringify(b) }),
-  updateBlog: (id: number, b: any) => req(`/admin/blogs/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  createBlog: (form: FormData) => req('/admin/blogs', { method: 'POST', body: form }),
+  updateBlog: (id: number, form: FormData) => req(`/admin/blogs/${id}`, { method: 'PUT', body: form }),
   deleteBlog: (id: number) => req(`/admin/blogs/${id}`, { method: 'DELETE' }),
 
   // Complaints admin: GET /complaints (not /admin/complaints)
@@ -276,13 +276,13 @@ export const AdminAPI = {
 
   // Shop Management
   shopCategories: () => req('/admin/shop/categories'),
-  createShopCategory: (b: any) => req('/admin/shop/categories', { method: 'POST', body: JSON.stringify(b) }),
-  updateShopCategory: (id: number, b: any) => req(`/admin/shop/categories/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  createShopCategory: (form: FormData) => req('/admin/shop/categories', { method: 'POST', body: form }),
+  updateShopCategory: (id: number, form: FormData) => req(`/admin/shop/categories/${id}`, { method: 'PUT', body: form }),
   deleteShopCategory: (id: number) => req(`/admin/shop/categories/${id}`, { method: 'DELETE' }),
 
   shopProducts: () => req('/admin/shop/products'),
-  createShopProduct: (b: any) => req('/admin/shop/products', { method: 'POST', body: JSON.stringify(b) }),
-  updateShopProduct: (id: number, b: any) => req(`/admin/shop/products/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  createShopProduct: (form: FormData) => req('/admin/shop/products', { method: 'POST', body: form }),
+  updateShopProduct: (id: number, form: FormData) => req(`/admin/shop/products/${id}`, { method: 'PUT', body: form }),
   deleteShopProduct: (id: number) => req(`/admin/shop/products/${id}`, { method: 'DELETE' }),
 
   shopOrders: (p?: any) => req(`/admin/shop/orders${qs(p)}`),
@@ -290,7 +290,7 @@ export const AdminAPI = {
 
   // Taglines
   taglines: () => req('/admin/taglines'),
-  createTagline: (b: any) => req('/admin/taglines', { method: 'POST', body: JSON.stringify(b) }),
-  updateTagline: (id: number, b: any) => req(`/admin/taglines/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  createTagline: (form: FormData) => req('/admin/taglines', { method: 'POST', body: form }),
+  updateTagline: (id: number, form: FormData) => req(`/admin/taglines/${id}`, { method: 'PUT', body: form }),
   deleteTagline: (id: number) => req(`/admin/taglines/${id}`, { method: 'DELETE' }),
 };

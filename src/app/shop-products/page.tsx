@@ -19,7 +19,15 @@ export default function AdminShopProductsPage() {
   const geoList: any[] = Array.isArray(geofences) ? geofences : [];
 
   const saveMut = useMutation({ 
-    mutationFn: (payload: any) => modal.id ? AdminAPI.updateShopProduct(modal.id, payload) : AdminAPI.createShopProduct(payload), 
+    mutationFn: (data: any) => {
+      const fd = new FormData();
+      Object.entries(data).forEach(([k, v]) => {
+        if (k === 'image' && v instanceof File) fd.append('image', v);
+        else if (Array.isArray(v)) fd.append(k, JSON.stringify(v));
+        else if (k !== 'image') fd.append(k, String(v));
+      });
+      return modal.id ? AdminAPI.updateShopProduct(modal.id, fd) : AdminAPI.createShopProduct(fd);
+    }, 
     onSuccess: () => { toast.success('Product Saved!'); setModal(null); qc.invalidateQueries({ queryKey: ['admin-shop-products'] }); }, 
     onError: (e: any) => toast.error(e.message) 
   });
@@ -139,7 +147,12 @@ export default function AdminShopProductsPage() {
             </div>
             <div className="modal-body">
               <div className="form-group"><label>Product Name *</label><input className="input" value={form.name || ''} onChange={e => f('name', e.target.value)} placeholder="e.g. Premium Potting Mix" /></div>
-              <div className="form-group"><label>Image URLs (comma separated)</label><input className="input" value={form.images ? (Array.isArray(form.images) ? form.images.join(', ') : form.images) : ''} onChange={e => f('images', e.target.value.split(',').map((s: string) => s.trim()).filter(Boolean))} placeholder="https://..., https://..." /></div>
+              <div className="form-group">
+                <label>Product Image</label>
+                <input type="file" className="input" onChange={e => f('image', e.target.files?.[0])} accept="image/*" />
+                {form.images?.[0] && !form.image && <img src={form.images[0]} alt="Current" style={{ marginTop: 8, borderRadius: 8, height: 120, width: '100%', objectFit: 'cover', border: '1px solid var(--border)' }} />}
+                {form.image && <p style={{ fontSize: '0.75rem', marginTop: 4, color: 'var(--forest)' }}>New image selected: {form.image.name}</p>}
+              </div>
               <div className="form-row">
                 <div className="form-group">
                   <label>Category *</label>
