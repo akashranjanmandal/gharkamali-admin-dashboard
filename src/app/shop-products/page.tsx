@@ -15,6 +15,8 @@ export default function AdminShopProductsPage() {
 
   const { data: products, isLoading: loadingProducts } = useQuery({ queryKey: ['admin-shop-products'], queryFn: AdminAPI.shopProducts });
   const { data: categories, isLoading: loadingCats } = useQuery({ queryKey: ['admin-shop-categories'], queryFn: AdminAPI.shopCategories });
+  const { data: geofences } = useQuery({ queryKey: ['admin-geofences'], queryFn: AdminAPI.geofences });
+  const geoList: any[] = Array.isArray(geofences) ? geofences : [];
 
   const saveMut = useMutation({ 
     mutationFn: (payload: any) => modal.id ? AdminAPI.updateShopProduct(modal.id, payload) : AdminAPI.createShopProduct(payload), 
@@ -59,7 +61,7 @@ export default function AdminShopProductsPage() {
         </div>
         <div className="stat-card">
           <div className="stat-label">Low Stock items</div>
-          <div className="stat-value" style={{ color: 'var(--error)' }}>{prodList.filter((p: any) => p.stock_quantity < 10).length}</div>
+          <div className="stat-value" style={{ color: 'var(--error)' }}>{prodList.filter((p: any) => p.stock_quantity <= 5).length}</div>
         </div>
       </div>
 
@@ -107,7 +109,10 @@ export default function AdminShopProductsPage() {
                   {p.mrp && p.mrp > p.price && <div style={{ fontSize: '0.7rem', color: 'var(--text-faint)', textDecoration: 'line-through' }}>₹{p.mrp}</div>}
                 </td>
                 <td>
-                  <div style={{ fontWeight: 700, color: p.stock_quantity < 10 ? 'var(--error)' : 'var(--text)' }}>{p.stock_quantity} units</div>
+                  <div style={{ fontWeight: 700, color: p.stock_quantity <= 5 ? '#dc2626' : 'var(--text)' }}>
+                    {p.stock_quantity <= 5 && <span style={{ marginRight: 4 }}>⚠️</span>}
+                    {p.stock_quantity} units
+                  </div>
                 </td>
                 <td><span className={`badge ${p.is_active ? 'badge-forest' : 'badge-gold'}`}>{p.is_active ? 'Active' : 'Inactive'}</span></td>
                 <td style={{ textAlign: 'right' }}>
@@ -160,6 +165,36 @@ export default function AdminShopProductsPage() {
               </div>
               <div className="form-group"><label>Description</label><textarea className="input" rows={4} value={form.description || ''} onChange={e => f('description', e.target.value)} placeholder="Detailed description of the product..." /></div>
               <div className="form-group"><label>Tags (comma separated for search)</label><input className="input" value={form.tags ? (Array.isArray(form.tags) ? form.tags.join(', ') : form.tags) : ''} onChange={e => f('tags', e.target.value.split(',').map((s: string) => s.trim()).filter(Boolean))} placeholder="indoor, pet-friendly, low-light" /></div>
+              {/* Location-based availability */}
+              <div className="form-group">
+                <label style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  📍 Location Availability
+                  <span style={{ fontSize:'0.72rem', color:'var(--text-muted)', fontWeight:400 }}>(leave empty = available everywhere)</span>
+                </label>
+                {geoList.length === 0 ? (
+                  <div style={{ fontSize:'0.8rem', color:'var(--text-muted)', padding:'8px 12px', background:'var(--bg)', borderRadius:8, border:'1px solid var(--border)' }}>No geofences configured yet</div>
+                ) : (
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:8, padding:'10px 12px', background:'var(--bg)', borderRadius:8, border:'1px solid var(--border)' }}>
+                    {geoList.map((g: any) => {
+                      const selected = (form.available_geofence_ids || []).includes(g.id);
+                      return (
+                        <button
+                          key={g.id}
+                          type="button"
+                          onClick={() => {
+                            const current: number[] = form.available_geofence_ids || [];
+                            const updated = selected ? current.filter((id: number) => id !== g.id) : [...current, g.id];
+                            f('available_geofence_ids', updated.length > 0 ? updated : null);
+                          }}
+                          style={{ padding:'5px 12px', borderRadius:99, border:`1px solid ${selected ? 'var(--forest)' : 'var(--border)'}`, background: selected ? 'rgba(3,65,26,0.12)' : 'transparent', color: selected ? 'var(--forest)' : 'var(--text-muted)', fontSize:'0.78rem', fontWeight: selected ? 700 : 400, cursor:'pointer', fontFamily:'var(--font)', transition:'all 0.15s' }}
+                        >
+                          {selected ? '✓ ' : ''}{g.name} <span style={{ opacity:0.5, fontSize:'0.7rem' }}>({g.city})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
               <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <input type="checkbox" id="p_active" checked={form.is_active} onChange={e => f('is_active', e.target.checked)} />
                 <label htmlFor="p_active" style={{ marginBottom: 0, cursor: 'pointer' }}>Active and visible in shop</label>

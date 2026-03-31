@@ -240,22 +240,12 @@ export default function AdminShopOrdersPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                       <IconCreditCard size={18} style={{ color: 'var(--forest)' }} />
                       <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>
-                        {customerOrdersRaw ? (
-                          (() => {
-                            const allOrders = (customerOrdersRaw as any).orders || [];
-                            if (allOrders.length === 0) return 'First order';
-                            const sorted = [...allOrders].sort((a,b)=> {
-                              const da = new Date(a.created_at || a.createdAt).getTime();
-                              const db = new Date(b.created_at || b.createdAt).getTime();
-                              return da - db;
-                            });
-                            const idx = sorted.findIndex(o => o.id === selected.id);
-                            const pos = idx === -1 ? allOrders.length : idx + 1;
-                            const suffixes = ['th','st','nd','rd'];
-                            const suffix = (pos % 10 > 3 || (pos % 100 >= 11 && pos % 100 <= 13)) ? 'th' : suffixes[pos % 10] || 'th';
-                            return `This is their ${pos}${suffix} order`;
-                          })()
-                        ) : 'Calculating…'}
+                        {(() => {
+                          const pos = selected.order_sequence || 1;
+                          const suffixes = ['th','st','nd','rd'];
+                          const suffix = (pos % 10 > 3 || (pos % 100 >= 11 && pos % 100 <= 13)) ? 'th' : suffixes[pos % 10] || 'th';
+                          return `This is their ${pos}${suffix} order`;
+                        })()}
                       </span>
                     </div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Customer Loyalty Track</div>

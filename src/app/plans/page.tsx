@@ -25,9 +25,13 @@ export default function AdminPlansPage() {
             <div style={{background:item.is_best_value?'#88a43c':'#f9f3e5',padding:'24px 20px',textAlign:'center',position:'relative'}}>
               {item.is_best_value === 1 && <div style={{position:'absolute',top:0,left:'50%',transform:'translateX(-50%)',background:'#4a5d23',color:'#fff',fontSize:'0.6rem',fontWeight:700,padding:'2px 8px',borderBottomLeftRadius:4,borderBottomRightRadius:4}}>Best Value</div>}
               <h3 style={{fontWeight:700,fontSize:'1.1rem',margin:'0 0 16px',color:item.is_best_value?'#fff':'var(--text)'}}>{item.name}</h3>
-              <div style={{fontSize:'2.2rem',fontWeight:900,color:item.is_best_value?'#fff':'var(--text)',lineHeight:1}}>₹{item.price?.toLocaleString('en-IN')}</div>
-              <div style={{fontSize:'0.75rem',color:item.is_best_value?'rgba(255,255,255,0.8)':'var(--text-muted)',marginTop:4}}>{item.price_subtitle || (item.plan_type==='subscription'?'Every month':'One-time')}</div>
-              <div style={{fontSize:'0.82rem',fontWeight:600,color:item.is_best_value?'#fff':'var(--text)',marginTop:12}}>{item.plan_summary || `Up to ${item.max_plants} Plants`}</div>
+              <div style={{fontSize:'2.2rem',fontWeight:900,color:item.is_best_value?'#fff':'var(--text)',lineHeight:1}}>
+                {item.plan_type === 'ondemand' ? 'From ₹' : '₹'}{item.price?.toLocaleString('en-IN')}
+              </div>
+              <div style={{fontSize:'0.75rem',color:item.is_best_value?'rgba(255,255,255,0.8)':'var(--text-muted)',marginTop:4}}>
+                {item.plan_type === 'ondemand' ? '* Zone dependent pricing' : (item.price_subtitle || 'Every month')}
+              </div>
+              <div style={{fontSize:'0.82rem',fontWeight:600,color:item.is_best_value?'#fff':'var(--text)',marginTop:12}}>{item.plan_summary || (item.plan_type === 'ondemand' ? 'Per Visit' : `Up to ${item.max_plants} Plants`)}</div>
             </div>
             <div style={{padding:20,flex:1,display:'flex',flexDirection:'column'}}>
               {item.features && Array.isArray(item.features) && (

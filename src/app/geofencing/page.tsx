@@ -9,9 +9,18 @@ import type { LatLng } from '@/components/GeofenceMapPicker';
 
 const GeofenceMapPicker = dynamic(() => import('@/components/GeofenceMapPicker'), { ssr: false });
 
+const INDIAN_STATES = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 
+  'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 
+  'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 
+  'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 
+  'Uttarakhand', 'West Bengal', 'Delhi', 'Chandigarh', 'Jammu and Kashmir', 'Ladakh'
+];
+
 const EMPTY_FORM = {
   name: '', city: '', state: '',
   base_price: '', price_per_plant: '0', min_plants: '1',
+  product_markup: '0',
   is_active: true,
   polygon_coords: [] as LatLng[],
 };
@@ -34,6 +43,7 @@ export default function GeofencingPage() {
         base_price: parseFloat(form.base_price) || 0,
         price_per_plant: parseFloat(form.price_per_plant) || 0,
         min_plants: parseInt(form.min_plants) || 1,
+        product_markup: parseFloat(form.product_markup) || 0,
         is_active: form.is_active,
         polygon_coords: form.polygon_coords,
       };
@@ -62,6 +72,7 @@ export default function GeofencingPage() {
       base_price: String(g.base_price ?? ''),
       price_per_plant: String(g.price_per_plant ?? '0'),
       min_plants: String(g.min_plants ?? '1'),
+      product_markup: String(g.product_markup ?? '0'),
       is_active: g.is_active,
       polygon_coords: pts,
     });
@@ -141,15 +152,16 @@ export default function GeofencingPage() {
                       </div>
 
                       {/* Pricing grid */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
                         {[
                           { l: 'Base Price', v: g.base_price != null ? `₹${g.base_price}` : '—' },
                           { l: 'Per Plant', v: g.price_per_plant != null ? `₹${g.price_per_plant}` : '—' },
                           { l: 'Min Plants', v: g.min_plants ?? '—' },
+                          { l: 'Prod Surge', v: g.product_markup != null ? `+₹${g.product_markup}` : '—' },
                         ].map(s => (
-                          <div key={s.l} style={{ background: 'var(--bg)', borderRadius: 8, padding: '6px 8px' }}>
-                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>{s.l}</div>
-                            <div style={{ fontWeight: 700, fontSize: '0.82rem' }}>{s.v}</div>
+                          <div key={s.l} style={{ background: 'var(--bg)', borderRadius: 8, padding: '6px 4px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.55rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 2 }}>{s.l}</div>
+                            <div style={{ fontWeight: 700, fontSize: '0.78rem' }}>{s.v}</div>
                           </div>
                         ))}
                       </div>
@@ -211,8 +223,11 @@ export default function GeofencingPage() {
               {/* State + Active */}
               <div className="form-row">
                 <div className="form-group">
-                  <label>State</label>
-                  <input className="input" value={form.state} onChange={e => f('state', e.target.value)} placeholder="Karnataka" />
+                  <label>State *</label>
+                  <select className="input" value={form.state} onChange={e => f('state', e.target.value)}>
+                    <option value="">Select State</option>
+                    {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
                 </div>
                 <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 28 }}>
                   <input type="checkbox" id="gf-active" checked={form.is_active} onChange={e => f('is_active', e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--forest)', cursor: 'pointer' }} />
@@ -221,7 +236,7 @@ export default function GeofencingPage() {
               </div>
 
               {/* Pricing */}
-              <div className="form-row">
+              <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr' }}>
                 <div className="form-group">
                   <label>Base Price (₹) *</label>
                   <input type="number" className="input" value={form.base_price} onChange={e => f('base_price', e.target.value)} placeholder="e.g. 299" min="0" />
@@ -229,6 +244,10 @@ export default function GeofencingPage() {
                 <div className="form-group">
                   <label>Price per Plant (₹)</label>
                   <input type="number" className="input" value={form.price_per_plant} onChange={e => f('price_per_plant', e.target.value)} placeholder="0" min="0" />
+                </div>
+                <div className="form-group">
+                  <label>Product Markup (₹)</label>
+                  <input type="number" className="input" value={form.product_markup} onChange={e => f('product_markup', e.target.value)} placeholder="0" min="0" />
                 </div>
                 <div className="form-group">
                   <label>Min Plants</label>

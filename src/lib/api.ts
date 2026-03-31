@@ -196,6 +196,7 @@ export const AdminAPI = {
 
   gardeners: (p?: any) => req(`/admin/gardeners${qs(p)}`),
   gardenerDetail: (id: number) => req(`/admin/gardeners/${id}`),
+  updateGardener: (id: number, b: any) => req(`/admin/gardeners/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
   approveGardener: (id: number, approved: boolean) =>
     req(approved ? '/admin/gardeners/approve' : '/admin/gardeners/reject', {
       method: 'POST', body: JSON.stringify({ user_id: id })
