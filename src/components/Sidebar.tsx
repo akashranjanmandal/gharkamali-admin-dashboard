@@ -64,12 +64,12 @@ const NAV = [
   ]},
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const { user, logout } = useAdmin();
 
   return (
-    <aside className="admin-sidebar">
+    <aside className={`admin-sidebar${open ? ' open' : ''}`}>
       {/* Logo */}
       <div className="sidebar-logo">
         <div className="sidebar-logo-icon">
@@ -78,10 +78,15 @@ export default function Sidebar() {
             <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
           </svg>
         </div>
-        <div>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div className="sidebar-logo-text">GKM Admin</div>
           <div style={{ fontSize: '0.62rem', color: 'var(--text-faint)', fontWeight: 500, letterSpacing: '0.04em' }}>GharKaMali</div>
         </div>
+        {onClose && (
+          <button onClick={onClose} className="sidebar-close-btn" aria-label="Close menu" style={{ marginLeft: 'auto' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        )}
       </div>
 
       {/* Nav */}
@@ -92,7 +97,7 @@ export default function Sidebar() {
             {group.items.map(item => {
               const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
               return (
-                <Link key={item.href} href={item.href} className={`sidebar-link ${active ? 'active' : ''}`}>
+                <Link key={item.href} href={item.href} className={`sidebar-link ${active ? 'active' : ''}`} onClick={onClose}>
                   <span className="sidebar-icon">{icons[item.icon]}</span>
                   <span>{item.label}</span>
                   {active && <span style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)', flexShrink: 0 }} />}
