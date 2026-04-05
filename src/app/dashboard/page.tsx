@@ -140,7 +140,10 @@ export default function AdminDashboardPage() {
                   recentBookings.slice(0,6).map((b: any) => (
                     <tr key={b.id}>
                       <td style={{ fontWeight: 600 }}>{b.customer?.name ?? b.customer_name ?? '—'}</td>
-                      <td style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{b.scheduled_date ? new Date(b.scheduled_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—'}</td>
+                      <td style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                        {b.scheduled_date ? new Date(b.scheduled_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—'}
+                        {b.scheduled_time && <span style={{ color: 'var(--gold-deep)', fontWeight: 600 }}> at {b.scheduled_time}</span>}
+                      </td>
                       <td><StatusBadge s={b.status} /></td>
                     </tr>
                   ))}

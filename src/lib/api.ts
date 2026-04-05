@@ -213,6 +213,8 @@ export const AdminAPI = {
 
   bookings: (p?: any) => req(`/admin/bookings${qs(p)}`),
   bookingDetail: (id: number) => req(`/admin/bookings/${id}`),
+  checkGardenerAvailability: (date: string, gardener_id?: number, zone_id?: number) =>
+    req(`/bookings/check-availability${qs({ date, gardener_id, zone_id })}`),
   reassignBooking: (id: number, gardener_id: number, reason?: string) =>
     req(`/admin/bookings/${id}/reassign`, {
       method: 'PATCH',
@@ -239,6 +241,11 @@ export const AdminAPI = {
   supervisors: () => req('/admin/supervisors'),
   createSupervisor: (b: any) => req('/admin/supervisors', { method: 'POST', body: JSON.stringify(b) }),
   updateSupervisor: (id: number, b: any) => req(`/admin/supervisors/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+
+  faqs: () => req('/admin/faqs'),
+  createFaq: (b: any) => req('/admin/faqs', { method: 'POST', body: JSON.stringify(b) }),
+  updateFaq: (id: number, b: any) => req(`/admin/faqs/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  deleteFaq: (id: number) => req(`/admin/faqs/${id}`, { method: 'DELETE' }),
 
   rewards: (p?: any) => req(`/admin/rewards${qs(p)}`),
   createReward: (b: any) => req('/admin/rewards', { method: 'POST', body: JSON.stringify(b) }),

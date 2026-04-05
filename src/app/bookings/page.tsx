@@ -76,6 +76,7 @@ export default function AdminBookingsPage() {
       Gardener: b.gardener?.name || 'Unassigned',
       Zone: b.zone?.name,
       ScheduledDate: b.scheduled_date,
+      ScheduledTime: b.scheduled_time || 'Flexible',
       Status: b.status,
       Amount: b.total_amount,
     }));
@@ -124,7 +125,10 @@ export default function AdminBookingsPage() {
                     <td><div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{b.customer?.name}</div><div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>+91 {b.customer?.phone}</div></td>
                     <td>{b.gardener ? <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{b.gardener.name}</div> : <span style={{ color: 'var(--text-faint)', fontSize: '0.8rem' }}>Unassigned</span>}</td>
                     <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{b.zone?.name ?? '—'}</td>
-                    <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{b.scheduled_date && new Date(b.scheduled_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
+                    <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                      {b.scheduled_date && new Date(b.scheduled_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                      {b.scheduled_time && <span style={{ color: 'var(--gold-deep)', fontWeight: 600 }}> at {b.scheduled_time}</span>}
+                    </td>
                     <td><span className={`badge badge-${b.status === 'completed' ? 'green' : b.status === 'cancelled' || b.status === 'failed' ? 'red' : b.status === 'pending' ? 'yellow' : 'blue'}`}>{b.status?.replace(/_/g, ' ')}</span></td>
                     <td style={{ fontWeight: 700 }}>₹{b.total_amount?.toLocaleString('en-IN')}</td>
                     <td style={{ display: 'flex', gap: 6 }}>
@@ -146,34 +150,54 @@ export default function AdminBookingsPage() {
       </div>
 
       {/* Reassign Modal */}
-      {reassignModal && (
-        <div className="modal-overlay" onClick={()=>setReassignModal(null)}>
-          <div className="modal-box" onClick={e=>e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Reassign Booking</h3>
-              <button className="modal-close" onClick={()=>setReassignModal(null)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <p style={{color:'var(--text-muted)',fontSize:'0.82rem',marginBottom:16}}><span style={{fontFamily:'monospace',fontWeight:700,color:'var(--forest)'}}>{reassignModal.booking_number}</span> · Current: {reassignModal.gardener?.name ?? 'Unassigned'}</p>
-              <div className="form-group">
-                <label>Select New Gardener *</label>
-                <select className="input" value={gardenerId} onChange={e=>setGardenerId(e.target.value)} style={{appearance:'none'}}>
-                  <option value="">Choose a gardener…</option>
-                  {gardeners.map((g:any)=><option key={g.id} value={g.id}>{g.name} — {g.zone?.name ?? 'No zone'}</option>)}
-                </select>
+      {reassignModal && (() => {
+        const [slots, setSlots] = useState<string[]>([]);
+        const [loading, setLoading] = useState(false);
+
+        useEffect(() => {
+          if (gardenerId && reassignModal.scheduled_date) {
+             setLoading(true);
+             AdminAPI.checkGardenerAvailability(reassignModal.scheduled_date, parseInt(gardenerId))
+               .then(s => setSlots(s))
+               .finally(() => setLoading(false));
+          } else {
+             setSlots([]);
+          }
+        }, [gardenerId, reassignModal.scheduled_date]);
+
+        const isBusy = gardenerId && reassignModal.scheduled_time && !loading && !slots.includes(reassignModal.scheduled_time.slice(0,5));
+
+        return (
+          <div className="modal-overlay" onClick={()=>setReassignModal(null)}>
+            <div className="modal-box" onClick={e=>e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>Reassign Booking</h3>
+                <button className="modal-close" onClick={()=>setReassignModal(null)}>✕</button>
               </div>
-              <div className="form-group">
-                <label>Reason (optional)</label>
-                <input className="input" value={reason} onChange={e=>setReason(e.target.value)} placeholder="e.g. Original gardener called sick" />
+              <div className="modal-body">
+                <p style={{color:'var(--text-muted)',fontSize:'0.82rem',marginBottom:16}}><span style={{fontFamily:'monospace',fontWeight:700,color:'var(--forest)'}}>{reassignModal.booking_number}</span> · Current: {reassignModal.gardener?.name ?? 'Unassigned'}</p>
+                <div className="form-group" style={{ position: 'relative' }}>
+                  <label>Select New Gardener *</label>
+                  <select className="input" value={gardenerId} onChange={e=>setGardenerId(e.target.value)} style={{appearance:'none', border: isBusy ? '2px solid var(--error)' : '' }}>
+                    <option value="">Choose a gardener…</option>
+                    {gardeners.map((g:any)=><option key={g.id} value={g.id}>{g.name} — {g.zone?.name ?? 'No zone'}</option>)}
+                  </select>
+                  {loading && <div style={{ position: 'absolute', right: 40, top: 38 }}><div className="spin-sm" /></div>}
+                  {isBusy && <div style={{ color: 'var(--error)', fontSize: '0.75rem', fontWeight: 700, marginTop: 4 }}>⚠️ This gardener is busy at {reassignModal.scheduled_time} (± 2h)</div>}
+                </div>
+                <div className="form-group">
+                  <label>Reason (optional)</label>
+                  <input className="input" value={reason} onChange={e=>setReason(e.target.value)} placeholder="e.g. Original gardener called sick" />
+                </div>
               </div>
-            </div>
-            <div className="modal-footer">
-              <button onClick={()=>setReassignModal(null)} className="btn btn-ghost">Cancel</button>
-              <button onClick={()=>reassignMut.mutate()} disabled={!gardenerId||reassignMut.isPending} className="btn btn-primary">{reassignMut.isPending?'Reassigning…':'Confirm Reassign'}</button>
+              <div className="modal-footer">
+                <button onClick={()=>setReassignModal(null)} className="btn btn-ghost">Cancel</button>
+                <button onClick={()=>reassignMut.mutate()} disabled={!gardenerId||reassignMut.isPending} className="btn btn-primary">{reassignMut.isPending?'Reassigning…':'Confirm Reassign'}</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
       {/* Booking Details Modal */}
       {selectedId && (
         <div className="modal-overlay" onClick={() => setSelectedId(null)}>
@@ -191,8 +215,12 @@ export default function AdminBookingsPage() {
                       <span className={`badge badge-${bookingDetail.status === 'completed' ? 'green' : (bookingDetail.status === 'cancelled' || bookingDetail.status === 'failed') ? 'red' : 'blue'}`}>{bookingDetail.status?.replace(/_/g, ' ')}</span>
                     </div>
                     <div className="card" style={{ padding: 12, background: 'var(--bg)', border: 'none' }}>
-                      <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>SCHEDULED DATE</div>
-                      <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}><IconCalendar size={14} /> {new Date(bookingDetail.scheduled_date).toLocaleDateString('en-IN', { dateStyle: 'medium' })}</div>
+                      <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>SCHEDULED SLOT</div>
+                      <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <IconCalendar size={14} /> 
+                        {new Date(bookingDetail.scheduled_date).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
+                        {bookingDetail.scheduled_time && <span style={{ color: 'var(--gold-deep)' }}> at {bookingDetail.scheduled_time}</span>}
+                      </div>
                     </div>
                     <div className="card" style={{ padding: 12, background: 'var(--bg)', border: 'none' }}>
                       <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>TOTAL AMOUNT</div>
@@ -268,6 +296,40 @@ export default function AdminBookingsPage() {
                       {bookingDetail.review && <p style={{ marginTop: 8, fontSize: '0.9rem', color: 'var(--text)' }}>{bookingDetail.review}</p>}
                     </div>
                   )}
+
+                  <div style={{ marginTop: 24, padding: '20px 0', borderTop: '1.5px solid var(--border)' }}>
+                    <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 20, letterSpacing: 1 }}>Service Activity Logs</h4>
+                    <div style={{ position: 'relative', paddingLeft: 28 }}>
+                      <div style={{ position: 'absolute', left: 7, top: 4, bottom: 4, width: 2, background: 'var(--border)' }} />
+                      {[
+                        { label: 'Booking Received', time: bookingDetail.created_at, status: 'pending' },
+                        { label: 'Gardener Assigned', time: bookingDetail.assigned_at, status: 'assigned' },
+                        { label: 'Out for Service', time: bookingDetail.en_route_at, status: 'en_route' },
+                        { label: 'Gardener Arrived', time: bookingDetail.gardener_arrived_at, status: 'arrived' },
+                        { label: 'OTP Verified / Started', time: bookingDetail.otp_verified_at || bookingDetail.started_at, status: 'in_progress' },
+                        { label: 'Service Completed', time: bookingDetail.completed_at, status: 'completed' },
+                        { label: 'Customer Rated', time: bookingDetail.rated_at, status: 'rated' },
+                        { label: 'Booking Cancelled', time: bookingDetail.status === 'cancelled' ? (bookingDetail.updated_at || bookingDetail.updatedAt) : null, status: 'cancelled' },
+                        { label: 'Booking Failed', time: bookingDetail.status === 'failed' ? (bookingDetail.updated_at || bookingDetail.updatedAt) : null, status: 'failed' },
+                      ].filter(e => e.time).sort((a,b) => new Date(a.time).getTime() - new Date(b.time).getTime()).map((e, index) => (
+                        <div key={index} style={{ marginBottom: 18, position: 'relative' }}>
+                          <div style={{ position: 'absolute', left: -25, top: 4, width: 10, height: 10, borderRadius: '50%', background: 'var(--forest)', border: '2.5px solid #fff', boxShadow: '0 0 0 1px var(--forest)' }} />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                              <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text)' }}>{e.label}</div>
+                              {e.status === 'assigned' && bookingDetail.gardener && (
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>Assigned to {bookingDetail.gardener.name}</div>
+                              )}
+                            </div>
+                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--forest)' }}>{new Date(e.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{new Date(e.time).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               ) : <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Booking data not found</div>}
             </div>

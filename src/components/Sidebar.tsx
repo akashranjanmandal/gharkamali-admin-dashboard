@@ -51,6 +51,7 @@ const NAV = [
     { href: '/geofencing', icon: 'geofencing', label: 'Geofencing' },
     { href: '/addons', icon: 'addons', label: 'Add-Ons' },
     { href: '/blogs', icon: 'blogs', label: 'Blogs' },
+    { href: '/faqs', icon: 'bookings', label: 'FAQs' },
     { href: '/taglines', icon: 'shop', label: 'Taglines' },
   ]},
 

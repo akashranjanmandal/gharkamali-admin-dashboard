@@ -17,7 +17,7 @@ export default function AdminComplaintsPage() {
     queryKey: ['admin-complaints', status],
     queryFn: () => AdminAPI.complaints({ status })
   });
-  const complaints: any[] = (data as any) ?? [] as any[];
+  const complaints: any[] = (data as any)?.complaints ?? [];
 
   const updateMut = useMutation({
     mutationFn: (payload: any) => AdminAPI.updateComplaint(modal.id, payload),

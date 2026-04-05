@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import { exportToCSV } from '@/lib/utils';
-import { IconFilter, IconDownload, IconSearch, IconX, IconCalendar, IconUser, IconMapPin, IconLeaf } from '@tabler/icons-react';
+import { IconFilter, IconDownload, IconSearch, IconX, IconCalendar, IconUser, IconMapPin, IconLeaf, IconMessageCircle, IconStar, IconClock, IconChevronRight } from '@tabler/icons-react';
 
 export default function AdminSubscriptionsPage() {
   const [page, setPage] = useState(1);
@@ -13,6 +13,8 @@ export default function AdminSubscriptionsPage() {
   const [planId, setPlanId] = useState('');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<any>(null);
+  const [schedulingSub, setSchedulingSub] = useState<any>(null);
+  const [selectedBookingId, setSelectedBookingId] = useState<number | null>(null);
 
   const { data, isLoading } = useQuery({ 
     queryKey: ['admin-subscriptions', page, status, zoneId, planId, search], 
@@ -33,6 +35,12 @@ export default function AdminSubscriptionsPage() {
     queryKey: ['admin-subscription-history', selected?.id],
     queryFn: () => selected?.id ? AdminAPI.bookings({ subscription_id: selected.id, limit: 100 }) : null,
     enabled: !!selected?.id
+  });
+
+  const { data: bookingDetail, isLoading: isBookingLoading } = useQuery({
+    queryKey: ['admin-booking-detail', selectedBookingId],
+    queryFn: () => selectedBookingId ? AdminAPI.bookingDetail(selectedBookingId) : null,
+    enabled: !!selectedBookingId
   });
 
   const subsRaw: any[] = (data as any)?.subscriptions ?? [];
@@ -167,12 +175,32 @@ export default function AdminSubscriptionsPage() {
                 </div>
               </div>
 
+              <div style={{ marginTop: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                <div>
+                  <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12, letterSpacing: 1 }}>Subscription Period</h4>
+                  <div className="card" style={{ padding: 12, border: '1px solid var(--border)', background: 'var(--bg)' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--forest)' }}>
+                      {new Date(selected.start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      <span style={{ margin: '0 8px', color: 'var(--sage)' }}>→</span>
+                      {new Date(selected.end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12, letterSpacing: 1 }}>Billing Info</h4>
+                  <div className="card" style={{ padding: 12, border: '1px solid var(--border)', background: 'var(--bg)' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--forest)', fontSize: '1rem' }}>₹{selected.amount_paid?.toLocaleString('en-IN') || selected.plan?.price?.toLocaleString('en-IN')}</div>
+                    {selected.payment_id && <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'monospace', marginTop: 4 }}>ID: {selected.payment_id}</div>}
+                  </div>
+                </div>
+              </div>
+
               <div style={{ marginTop: 24 }}>
                 <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12, letterSpacing: 1 }}>Subscription Metadata</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
                   <div className="card" style={{ padding: 12, border: '1px solid var(--border)' }}>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4 }}>START DATE</div>
-                    <div style={{ fontWeight: 600 }}>{new Date(selected.start_date).toLocaleDateString('en-IN', { dateStyle: 'medium' })}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4 }}>PURCHASED ON</div>
+                    <div style={{ fontWeight: 600 }}>{new Date(selected.created_at || selected.createdAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}</div>
                   </div>
                   <div className="card" style={{ padding: 12, border: '1px solid var(--border)' }}>
                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4 }}>NEXT VISIT</div>
@@ -205,8 +233,11 @@ export default function AdminSubscriptionsPage() {
                           ((subHistory as any)?.bookings || []).length === 0 ? <tr><td colSpan={4} style={{ textAlign: 'center', padding: 24, fontSize: '0.8rem', color: 'var(--text-muted)' }}>No service history found</td></tr> :
                           ((subHistory as any).bookings || []).map((b: any) => (
                             <tr key={b.id}>
-                              <td style={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--forest)' }}>{b.booking_number}</td>
-                              <td style={{ fontSize: '0.75rem' }}>{new Date(b.scheduled_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
+                              <td onClick={() => setSelectedBookingId(b.id)} style={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--forest)', cursor: 'pointer', textDecoration: 'underline' }}>{b.booking_number}</td>
+                              <td style={{ fontSize: '0.75rem' }}>
+                                {new Date(b.scheduled_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                {b.scheduled_time && <span style={{ color: 'var(--gold-deep)', fontWeight: 700 }}> at {b.scheduled_time}</span>}
+                              </td>
                               <td><span className={`badge badge-sm badge-${b.status === 'completed' ? 'green' : 'blue'}`} style={{ fontSize: '0.65rem' }}>{b.status}</span></td>
                               <td style={{ fontSize: '0.75rem' }}>{b.gardener?.name || '—'}</td>
                             </tr>
@@ -232,6 +263,134 @@ export default function AdminSubscriptionsPage() {
             <div className="modal-footer">
               <button className="btn btn-ghost" onClick={() => setSelected(null)}>Close</button>
               {selected.status === 'active' && <button className="btn btn-outline" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}>Pause Subscription</button>}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Booking Details Modal */}
+      {selectedBookingId && (
+        <div className="modal-overlay" onClick={() => setSelectedBookingId(null)} style={{ zIndex: 2000 }}>
+          <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 720 }}>
+            <div className="modal-header">
+              <h3>Booking <span style={{ fontFamily: 'monospace', color: 'var(--forest)' }}>#{bookingDetail?.booking_number || '...'}</span></h3>
+              <button className="modal-close" onClick={() => setSelectedBookingId(null)}><IconX size={20} /></button>
+            </div>
+            <div className="modal-body">
+              {isBookingLoading ? <div className="skeleton" style={{ height: 400, width: '100%', borderRadius: 12 }} /> : bookingDetail ? (
+                <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+                    <div className="card" style={{ padding: 12, background: 'var(--bg)', border: 'none' }}>
+                      <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>Status</div>
+                      <span className={`badge badge-${bookingDetail.status === 'completed' ? 'green' : (bookingDetail.status === 'cancelled' || bookingDetail.status === 'failed') ? 'red' : 'blue'}`}>{bookingDetail.status?.replace(/_/g, ' ')}</span>
+                    </div>
+                    <div className="card" style={{ padding: 12, background: 'var(--bg)', border: 'none' }}>
+                      <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>Scheduled Slot</div>
+                      <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}>
+                        <IconCalendar size={14} /> 
+                        {new Date(bookingDetail.scheduled_date).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
+                        {bookingDetail.scheduled_time && <span style={{ color: 'var(--gold-deep)' }}> at {bookingDetail.scheduled_time}</span>}
+                      </div>
+                    </div>
+                    <div className="card" style={{ padding: 12, background: 'var(--bg)', border: 'none' }}>
+                      <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>Total Amount</div>
+                      <div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--forest)' }}>₹{bookingDetail.total_amount?.toLocaleString('en-IN')}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                    <div>
+                      <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12, letterSpacing: 1 }}>Customer Info</h4>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                        <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--forest-light)', color: 'var(--forest)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>{bookingDetail.customer?.name?.charAt(0)}</div>
+                        <div>
+                          <div style={{ fontWeight: 700 }}>{bookingDetail.customer?.name}</div>
+                          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>+91 {bookingDetail.customer?.phone}</div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'start' }}>
+                        <IconMapPin size={18} style={{ color: 'var(--forest)', marginTop: 2, flexShrink: 0 }} />
+                        <div style={{ fontSize: '0.85rem' }}>{bookingDetail.service_address}</div>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12, letterSpacing: 1 }}>Gardener Info</h4>
+                      {bookingDetail.gardener ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><IconUser size={24} style={{ color: 'var(--text-muted)' }} /></div>
+                          <div>
+                            <div style={{ fontWeight: 700 }}>{bookingDetail.gardener.name}</div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>+91 {bookingDetail.gardener.phone}</div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ padding: '12px 16px', border: '2px dashed var(--border)', borderRadius: 12, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                          No gardener assigned
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {(bookingDetail.addons?.length > 0 || bookingDetail.customer_notes) && (
+                    <div style={{ marginTop: 24, padding: 16, background: 'var(--bg)', borderRadius: 16 }}>
+                      {bookingDetail.addons?.length > 0 && (
+                        <div style={{ marginBottom: bookingDetail.customer_notes ? 16 : 0 }}>
+                          <h5 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8 }}>Add-ons</h5>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                            {bookingDetail.addons.map((a: any, i: number) => (
+                              <span key={i} className="badge badge-outline" style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#fff' }}><IconLeaf size={12} /> {a.name} (x{a.pivot?.quantity || 1})</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {bookingDetail.customer_notes && (
+                        <div>
+                          <h5 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8 }}>Customer Notes</h5>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'start', color: 'var(--text)', fontSize: '0.85rem', fontStyle: 'italic' }}>
+                            <IconMessageCircle size={16} /> "{bookingDetail.customer_notes}"
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: 24, padding: '20px 0', borderTop: '1.5px solid var(--border)' }}>
+                    <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 20, letterSpacing: 1 }}>Service Activity Logs</h4>
+                    <div style={{ position: 'relative', paddingLeft: 28 }}>
+                      <div style={{ position: 'absolute', left: 7, top: 4, bottom: 4, width: 2, background: 'var(--border)' }} />
+                      {[
+                        { label: 'Booking Received', time: bookingDetail.created_at, status: 'pending' },
+                        { label: 'Gardener Assigned', time: bookingDetail.assigned_at, status: 'assigned' },
+                        { label: 'Out for Service', time: bookingDetail.en_route_at, status: 'en_route' },
+                        { label: 'Gardener Arrived', time: bookingDetail.gardener_arrived_at, status: 'arrived' },
+                        { label: 'OTP Verified / Started', time: bookingDetail.otp_verified_at || bookingDetail.started_at, status: 'in_progress' },
+                        { label: 'Service Completed', time: bookingDetail.completed_at, status: 'completed' },
+                        { label: 'Customer Rated', time: bookingDetail.rated_at, status: 'rated' },
+                        { label: 'Booking Cancelled', time: bookingDetail.status === 'cancelled' ? (bookingDetail.updated_at || bookingDetail.updatedAt) : null, status: 'cancelled' },
+                        { label: 'Booking Failed', time: bookingDetail.status === 'failed' ? (bookingDetail.updated_at || bookingDetail.updatedAt) : null, status: 'failed' },
+                      ].filter(e => e.time).sort((a,b) => new Date(a.time).getTime() - new Date(b.time).getTime()).map((e, index) => (
+                        <div key={index} style={{ marginBottom: 18, position: 'relative' }}>
+                          <div style={{ position: 'absolute', left: -25, top: 4, width: 10, height: 10, borderRadius: '50%', background: 'var(--forest)', border: '2.5px solid #fff', boxShadow: '0 0 0 1px var(--forest)' }} />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                              <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text)' }}>{e.label}</div>
+                              {e.status === 'assigned' && bookingDetail.gardener && (
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>Assigned to {bookingDetail.gardener.name}</div>
+                              )}
+                            </div>
+                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--forest)' }}>{new Date(e.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{new Date(e.time).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Booking data not found</div>}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={() => setSelectedBookingId(null)}>Close</button>
             </div>
           </div>
         </div>

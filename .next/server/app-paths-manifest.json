@@ -1,6 +1,8 @@
 {
-  "/dashboard/page": "app/dashboard/page.js",
+  "/shop-categories/page": "app/shop-categories/page.js",
+  "/gardeners/page": "app/gardeners/page.js",
   "/shop-products/page": "app/shop-products/page.js",
-  "/subscriptions/page": "app/subscriptions/page.js",
-  "/shop-orders/page": "app/shop-orders/page.js"
+  "/shop-orders/page": "app/shop-orders/page.js",
+  "/faqs/page": "app/faqs/page.js",
+  "/payments/page": "app/payments/page.js"
 }
