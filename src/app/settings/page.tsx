@@ -1,8 +1,8 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
+import AdminLayout from '@/components/AdminLayout';
 
 type Setting = { id: number; key: string; value: string; updated_at: string };
 
@@ -50,8 +50,8 @@ export default function SettingsPage() {
 
   return (
     <AdminLayout>
-    <div className="animate-fade" style={{ maxWidth: '900px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '2rem' }}>
+      <div className="animate-fade" style={{ maxWidth: '900px', margin: '0 auto' }}>
+        <div style={{ marginBottom: '2rem' }}>
         <h1 className="page-title">Website Notifications</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
           Manage real-time social proof and visitor notifications to build trust.
@@ -209,6 +209,10 @@ export default function SettingsPage() {
         )}
       </div>
 
+      <div style={{ marginTop: '40px', padding: '20px', textAlign: 'center' }}>
+        <p style={{ fontSize: '0.7rem', color: 'var(--text-faint)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          GKM Admin Dashboard &bull; Settings v2.0
+        </p>
       </div>
     </div>
     </AdminLayout>
