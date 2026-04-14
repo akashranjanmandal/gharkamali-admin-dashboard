@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AdminAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
+import AdminLayout from '@/components/AdminLayout';
 
 type WithdrawalRequest = {
   id: number;
@@ -56,7 +57,7 @@ export default function WithdrawalsPage() {
   };
 
   return (
-    <div>
+    <AdminLayout>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text)' }}>Payout / Withdrawals</h1>
@@ -127,6 +128,6 @@ export default function WithdrawalsPage() {
           </table>
         </div>
       )}
-    </div>
+    </AdminLayout>
   );
 }
