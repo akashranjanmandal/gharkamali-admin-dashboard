@@ -1,8 +1,8 @@
 {
-  "/shop-categories/page": "app/shop-categories/page.js",
-  "/gardeners/page": "app/gardeners/page.js",
-  "/shop-products/page": "app/shop-products/page.js",
+  "/rewards/page": "app/rewards/page.js",
+  "/withdrawals/page": "app/withdrawals/page.js",
   "/shop-orders/page": "app/shop-orders/page.js",
-  "/faqs/page": "app/faqs/page.js",
-  "/payments/page": "app/payments/page.js"
+  "/settings/page": "app/settings/page.js",
+  "/shop-categories/page": "app/shop-categories/page.js",
+  "/_not-found/page": "app/_not-found/page.js"
 }
