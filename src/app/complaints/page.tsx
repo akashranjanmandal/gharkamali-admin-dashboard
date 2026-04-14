@@ -11,13 +11,14 @@ export default function AdminComplaintsPage() {
   const [modal, setModal] = useState<any>(null);
   const [resolution, setResolution] = useState('');
   const { data: supervisorData } = useQuery({ queryKey: ['admin-supervisors'], queryFn: () => AdminAPI.supervisors() });
-  const supervisors: any[] = Array.isArray(supervisorData) ? supervisorData : [];
+  const supervisors: any[] = Array.isArray(supervisorData) ? supervisorData : (supervisorData as any)?.data ?? [];
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-complaints', status],
     queryFn: () => AdminAPI.complaints({ status })
   });
-  const complaints: any[] = (data as any)?.complaints ?? [];
+  const complaints: any[] = (data as any)?.complaints || (Array.isArray(data) ? data : []);
+  const total = (data as any)?.total ?? complaints.length;
 
   const updateMut = useMutation({
     mutationFn: (payload: any) => AdminAPI.updateComplaint(modal.id, payload),
