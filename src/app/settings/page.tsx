@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -39,13 +40,16 @@ export default function SettingsPage() {
 
   if (loading && settings.length === 0) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
-        <div style={{ width: '32px', height: '32px', border: '3px solid var(--border)', borderTopColor: 'var(--forest)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-      </div>
+      <AdminLayout>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
+          <div style={{ width: '32px', height: '32px', border: '3px solid var(--border)', borderTopColor: 'var(--forest)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        </div>
+      </AdminLayout>
     );
   }
 
   return (
+    <AdminLayout>
     <div className="animate-fade" style={{ maxWidth: '900px', margin: '0 auto' }}>
       <div style={{ marginBottom: '2rem' }}>
         <h1 className="page-title">Website Notifications</h1>
@@ -205,11 +209,8 @@ export default function SettingsPage() {
         )}
       </div>
 
-      <div style={{ marginTop: '40px', padding: '20px', textAlign: 'center' }}>
-        <p style={{ fontSize: '0.7rem', color: 'var(--text-faint)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          GKM Admin Dashboard &bull; Settings v2.0
-        </p>
       </div>
     </div>
+    </AdminLayout>
   );
 }
