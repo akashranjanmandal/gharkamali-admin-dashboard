@@ -43,9 +43,9 @@ export default function AdminSubscriptionsPage() {
     enabled: !!selectedBookingId
   });
 
-  const subsRaw: any[] = (data as any)?.subscriptions ?? [];
-  const zones: any[] = (zonesRaw as any) ?? [];
-  const plans: any[] = (plansRaw as any) ?? [];
+  const subsRaw: any[] = (data as any)?.subscriptions || (Array.isArray(data) ? data : []);
+  const zones: any[] = Array.isArray(zonesRaw) ? zonesRaw : (zonesRaw as any)?.data ?? [];
+  const plans: any[] = Array.isArray(plansRaw) ? plansRaw : (plansRaw as any)?.data ?? [];
 
   // Client-side "all columns" filtering
   const subs = subsRaw.filter(s => {
@@ -62,7 +62,7 @@ export default function AdminSubscriptionsPage() {
   });
 
   const total = (data as any)?.total ?? subs.length;
-  const pages = Math.ceil(total / 20);
+  const pages = (data as any)?.pages ?? Math.ceil(total / 20);
 
   const STATUS_COLOR: Record<string,string> = { active:'badge-green', paused:'badge-yellow', cancelled:'badge-gray', expired:'badge-red' };
 

@@ -26,8 +26,8 @@ export default function ReviewsPage() {
     setLoading(true);
     try {
       const data = await AdminAPI.reviews({ status: statusFilter || undefined, page, limit: 20 });
-      setReviews(data.reviews || []);
-      setTotal(data.total || 0);
+      setReviews(data?.reviews || (Array.isArray(data) ? data : []));
+      setTotal(data?.total || (Array.isArray(data) ? data.length : 0));
     } catch { toast.error('Failed to load reviews'); }
     setLoading(false);
   }, [statusFilter, page]);

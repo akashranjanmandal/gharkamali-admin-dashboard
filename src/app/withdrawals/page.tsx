@@ -36,8 +36,8 @@ export default function WithdrawalsPage() {
     setLoading(true);
     try {
       const data = await AdminAPI.withdrawals({ status: statusFilter || undefined, page, limit: 20 });
-      setRequests(data.requests || []);
-      setTotal(data.total || 0);
+      setRequests(data?.requests || (Array.isArray(data) ? data : []));
+      setTotal(data?.total || (Array.isArray(data) ? data.length : 0));
     } catch { toast.error('Failed to load withdrawal requests'); }
     setLoading(false);
   }, [statusFilter, page]);

@@ -27,14 +27,14 @@ export default function AdminGardenersPage() {
     enabled: !!selectedId
   });
 
-  const { data: supervisorsRaw } = useQuery({ queryKey: ['admin-supervisors'], queryFn: AdminAPI.supervisors });
-  const supervisors: any[] = Array.isArray(supervisorsRaw) ? supervisorsRaw : [];
+  const { data: supervisorsRaw } = useQuery({ queryKey: ['admin-supervisors'], queryFn: () => AdminAPI.supervisors() });
+  const supervisors: any[] = Array.isArray(supervisorsRaw) ? supervisorsRaw : (supervisorsRaw as any)?.data ?? [];
 
   const [supervisorId, setSupervisorId] = useState<string>('');
 
-  const gardenersRaw: any[] = (data as any)?.gardeners ?? [];
+  const gardenersRaw: any[] = (data as any)?.gardeners || (Array.isArray(data) ? data : []);
   const total = (data as any)?.total ?? gardenersRaw.length;
-  const pages = Math.ceil(total / 20);
+  const pages = (data as any)?.pages ?? Math.ceil(total / 20);
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => AdminAPI.updateGardener(id, data),

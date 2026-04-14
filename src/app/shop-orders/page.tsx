@@ -35,7 +35,7 @@ export default function AdminShopOrdersPage() {
       to_date: dateTo || undefined
     }) 
   });
-  const ordersRaw: any[] = Array.isArray((data as any)?.orders) ? (data as any).orders : [];
+  const ordersRaw: any[] = (data as any)?.orders || (Array.isArray(data) ? data : []);
 
   const { data: customerOrdersRaw } = useQuery({
     queryKey: ['admin-customer-orders', selected?.customer?.id],

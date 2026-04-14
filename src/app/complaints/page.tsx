@@ -11,7 +11,7 @@ export default function AdminComplaintsPage() {
   const [modal, setModal] = useState<any>(null);
   const [resolution, setResolution] = useState('');
   const { data: supervisorData } = useQuery({ queryKey: ['admin-supervisors'], queryFn: () => AdminAPI.supervisors() });
-  const supervisors: any[] = (supervisorData as any) ?? [];
+  const supervisors: any[] = Array.isArray(supervisorData) ? supervisorData : [];
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-complaints', status],

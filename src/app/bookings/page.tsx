@@ -39,7 +39,7 @@ export default function AdminBookingsPage() {
 
   const { data: gardenersRaw } = useQuery({ queryKey: ['admin-gardeners-list'], queryFn: () => AdminAPI.gardeners({ status: 'active', limit: 100 }) });
   
-  const bookingsRaw: any[] = (data as any)?.bookings ?? [];
+  const bookingsRaw: any[] = (data as any)?.bookings || (Array.isArray(data) ? data : []);
   
   // Client-side "all columns" filtering
   const bookings = bookingsRaw.filter(b => {
@@ -56,8 +56,9 @@ export default function AdminBookingsPage() {
   });
 
   const total = (data as any)?.total ?? bookings.length;
-  const pages = Math.ceil(total / 20);
-  const rawGard: any = gardenersRaw; const gardeners: any[] = Array.isArray(rawGard?.gardeners) ? rawGard.gardeners : Array.isArray(rawGard) ? rawGard : [];
+  const pages = (data as any)?.pages ?? Math.ceil(total / 20);
+  const rawGard: any = gardenersRaw; 
+  const gardeners: any[] = Array.isArray(rawGard?.gardeners) ? rawGard.gardeners : Array.isArray(rawGard) ? rawGard : (rawGard as any)?.data ?? [];
 
   const reassignMut = useMutation({
     mutationFn: () => AdminAPI.reassignBooking(reassignModal.id, parseInt(gardenerId), reason),

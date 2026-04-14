@@ -37,7 +37,7 @@ export default function CustomersPage() {
     enabled: !!selectedBookingId
   });
 
-  const customersRaw: any[] = (data as any)?.customers ?? [];
+  const customersRaw: any[] = (data as any)?.customers || (Array.isArray(data) ? data : []);
   
   // Client-side "all columns" filtering
   const customers = customersRaw.filter(c => {
@@ -52,7 +52,7 @@ export default function CustomersPage() {
   });
 
   const total = (data as any)?.total ?? customers.length;
-  const pages = Math.ceil(total / 20);
+  const pages = (data as any)?.pages ?? Math.ceil(total / 20);
 
   const handleExport = () => {
     const exportData = customers.map(c => ({
