@@ -300,4 +300,71 @@ export const AdminAPI = {
   createTagline: (form: FormData) => req('/admin/taglines', { method: 'POST', body: form }),
   updateTagline: (id: number, form: FormData) => req(`/admin/taglines/${id}`, { method: 'PUT', body: form }),
   deleteTagline: (id: number) => req(`/admin/taglines/${id}`, { method: 'DELETE' }),
+
+  // Booking Logs
+  bookingLogs: (bookingId: number) => req(`/admin/bookings/${bookingId}/logs`),
+
+  // Reviews Management
+  reviews: (p?: any) => req(`/admin/reviews${qs(p)}`),
+  updateReview: (id: number, b: any) => req(`/admin/reviews/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+
+  // Withdrawals
+  withdrawals: (p?: any) => req(`/admin/withdrawals${qs(p)}`),
+  updateWithdrawal: (id: number, b: any) => req(`/admin/withdrawals/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+
+  // Global Search
+  search: (q: string) => req(`/admin/search?q=${encodeURIComponent(q)}`),
+
+  // Export Reports
+  exportReport: (type: string, format?: string) => `${API_BASE}/admin/reports/export?type=${type}&format=${format || 'csv'}&token=${getToken()}`,
+
+  // Contact Messages
+  contacts: (p?: any) => req(`/admin/contacts${qs(p)}`),
+
+  // System Settings
+  settings: () => req('/admin/settings'),
+  updateSetting: (key: string, value: string) => req(`/admin/settings/${key}`, { method: 'PUT', body: JSON.stringify({ value }) }),
+
+  // Order Tracking
+  updateOrderTracking: (id: number, b: any) => req(`/admin/shop/orders/${id}/tracking`, { method: 'PUT', body: JSON.stringify(b) }),
+
+  // Product Zone Pricing
+  productZonePrices: () => req('/admin/product-zone-prices'),
+  upsertProductZonePrice: (b: any) => req('/admin/product-zone-prices', { method: 'POST', body: JSON.stringify(b) }),
+  deleteProductZonePrice: (id: number) => req(`/admin/product-zone-prices/${id}`, { method: 'DELETE' }),
+
+  // Supervisor-Gardener Assignment
+  assignGardenersToSupervisor: (supervisorId: number, gardener_ids: number[]) =>
+    req(`/admin/supervisors/${supervisorId}/gardeners`, { method: 'POST', body: JSON.stringify({ gardener_ids }) }),
+  removeGardenerFromSupervisor: (supervisorId: number, gardenerId: number) =>
+    req(`/admin/supervisors/${supervisorId}/gardeners/${gardenerId}`, { method: 'DELETE' }),
+
+  // Gardener Zones
+  gardenerZones: (id: number) => req(`/admin/gardeners/${id}/zones`),
+  assignGardenerZone: (id: number, zone_id: number) =>
+    req(`/admin/gardeners/${id}/zones`, { method: 'POST', body: JSON.stringify({ zone_id }) }),
+  removeGardenerZone: (id: number, zone_id: number) =>
+    req(`/admin/gardeners/${id}/zones/${zone_id}`, { method: 'DELETE' }),
+
+  // Toggle gardener active status
+  toggleGardener: (id: number) => req(`/admin/gardeners/${id}/toggle`, { method: 'PATCH' }),
 };
+
+// ─── PUBLIC APIs ──────────────────────────────────────────────────────────────
+export const getPublicReviews = (p?: any) => req(`/reviews${qs(p)}`, { auth: false });
+export const getSocialProof = () => req('/social-proof', { auth: false });
+export const getPublicFaqs = () => req('/faqs', { auth: false });
+export const submitContact = (b: { name: string; email?: string; phone?: string; message: string }) =>
+  req('/contact', { method: 'POST', auth: false, body: JSON.stringify(b) });
+export const getSetting = (key: string) => req(`/settings/${key}`, { auth: false });
+
+// Tip & Review (customer)
+export const tipGardener = (bookingId: number, amount: number) =>
+  req(`/bookings/${bookingId}/tip`, { method: 'POST', body: JSON.stringify({ amount }) });
+export const submitReview = (bookingId: number, rating: number, comment?: string) =>
+  req(`/bookings/${bookingId}/review`, { method: 'POST', body: JSON.stringify({ rating, comment }) });
+
+// Gardener Withdrawals
+export const requestWithdrawal = (amount: number) =>
+  req('/gardener/withdraw', { method: 'POST', body: JSON.stringify({ amount }) });
+export const getMyWithdrawals = () => req('/gardener/withdrawals');
