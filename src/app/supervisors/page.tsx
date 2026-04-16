@@ -36,7 +36,7 @@ export default function SupervisorsPage() {
       <div className="card">
         <div className="table-wrap">
           <table className="admin-table">
-            <thead><tr><th>Supervisor</th><th>Phone</th><th>Zones</th><th>Team Size</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Supervisor</th><th>Phone</th><th>Zones</th><th>Team</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
               {isLoading?Array(4).fill(null).map((_,i)=><tr key={i}><td colSpan={6}><div className="skeleton skel-text" style={{ width: '100%' }}/></td></tr>):
                 supervisors.length===0?<tr><td colSpan={6} style={{textAlign:'center',color:'var(--text-muted)',padding:'32px'}}>No supervisors yet</td></tr>:
@@ -45,7 +45,7 @@ export default function SupervisorsPage() {
                     <td><div style={{fontWeight:700,fontSize:'0.875rem'}}>{s.name}</div><div style={{fontSize:'0.72rem',color:'var(--text-muted)'}}>{s.email||'—'}</div></td>
                     <td>+91 {s.phone}</td>
                     <td style={{fontSize:'0.82rem',color:'var(--text-muted)'}}>{s.zones?.map((z:any)=>z.name).join(', ')||'—'}</td>
-                    <td style={{fontWeight:600}}><span className="badge badge-forest" style={{ fontSize: '0.85rem' }}>{s.team_size || 0} gardeners</span></td>
+                    <td style={{fontSize:'0.82rem'}}>{s.team?.map((t: any) => allGardeners.find((g: any) => g.id === t.user_id)?.name).filter(Boolean).join(', ') || '—'}</td>
                     <td><span className={`badge ${s.is_active?'badge-green':'badge-gray'}`}>{s.is_active?'Active':'Inactive'}</span></td>
                     <td><button onClick={()=>{setForm({...s, gardener_ids: s.team?.map((t: any) => t.user_id) || []});setModal(s);}} className="btn btn-sm btn-outline">Edit Team</button></td>
                   </tr>

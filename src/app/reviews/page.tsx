@@ -1,7 +1,22 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { 
+  IconStar, 
+  IconFilter, 
+  IconChevronLeft, 
+  IconChevronRight, 
+  IconCheck, 
+  IconX, 
+  IconUser, 
+  IconCalendar, 
+  IconGardenCart,
+  IconMessageCircle,
+  IconClock
+} from '@tabler/icons-react';
 
 type Review = {
   id: number;
@@ -16,105 +31,237 @@ type Review = {
 };
 
 export default function ReviewsPage() {
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
   const [page, setPage] = useState(1);
+  const queryClient = useQueryClient();
 
-  const fetchReviews = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await AdminAPI.reviews({ status: statusFilter || undefined, page, limit: 20 });
-      setReviews(data?.reviews || (Array.isArray(data) ? data : []));
-      setTotal(data?.total || (Array.isArray(data) ? data.length : 0));
-    } catch { toast.error('Failed to load reviews'); }
-    setLoading(false);
-  }, [statusFilter, page]);
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-reviews', statusFilter, page],
+    queryFn: () => AdminAPI.reviews({ 
+      status: statusFilter || undefined, 
+      page, 
+      limit: 20 
+    })
+  });
 
-  useEffect(() => { fetchReviews(); }, [fetchReviews]);
+  const updateMutation = useMutation({
+    mutationFn: ({ id, status, admin_notes }: { id: number, status: string, admin_notes?: string }) => 
+      AdminAPI.updateReview(id, { status, admin_notes }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
+      toast.success('Review updated successfully');
+    },
+    onError: () => {
+      toast.error('Failed to update review');
+    }
+  });
 
-  const updateReview = async (id: number, status: string, admin_notes?: string) => {
-    try {
-      await AdminAPI.updateReview(id, { status, admin_notes });
-      toast.success(`Review ${status}`);
-      fetchReviews();
-    } catch { toast.error('Failed to update review'); }
+  const reviews: Review[] = data?.reviews || (Array.isArray(data) ? data : []);
+  const total = data?.total || (Array.isArray(data) ? data.length : 0);
+  const totalPages = Math.ceil(total / 20);
+
+  const renderStars = (rating: number) => {
+    return (
+      <div style={{ display: 'flex', gap: 2 }}>
+        {Array(5).fill(0).map((_, i) => (
+          <IconStar 
+            key={i} 
+            size={16} 
+            fill={i < rating ? 'var(--gold)' : 'none'} 
+            stroke={i < rating ? 'var(--gold)' : 'var(--text-muted)'} 
+          />
+        ))}
+      </div>
+    );
   };
 
-  const stars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n);
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'approved': return <span className="badge badge-green">Approved</span>;
+      case 'pending': return <span className="badge badge-yellow">Pending</span>;
+      case 'rejected': return <span className="badge badge-red">Rejected</span>;
+      default: return <span className="badge badge-gray">{status}</span>;
+    }
+  };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+    <AdminLayout>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text)' }}>Reviews</h1>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-            {total} total reviews
+          <h1 className="page-title">Reviews & Feedback</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: 4 }}>
+            {total} customer reviews across all services
           </p>
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-          style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--card-bg)', color: 'var(--text)', fontSize: '0.85rem' }}
-        >
-          <option value="">All Status</option>
-          <option value="pending">🟡 Pending</option>
-          <option value="approved">🟢 Approved</option>
-          <option value="rejected">🔴 Rejected</option>
-        </select>
+        
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ position: 'relative' }}>
+            <IconFilter size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+            <select
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+              className="input"
+              style={{ paddingLeft: 38, minWidth: 160 }}
+            >
+              <option value="">All Statuses</option>
+              <option value="pending">🟡 Pending</option>
+              <option value="approved">🟢 Approved</option>
+              <option value="rejected">🔴 Rejected</option>
+            </select>
+          </div>
+        </div>
       </div>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading reviews...</div>
-      ) : reviews.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>No reviews found</div>
-      ) : (
-        <div style={{ display: 'grid', gap: '1rem' }}>
-          {reviews.map((r) => (
-            <div key={r.id} style={{ background: 'var(--card-bg)', borderRadius: '0.75rem', border: '1px solid var(--border)', padding: '1.25rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                    <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text)' }}>{r.customer?.name || 'Unknown'}</span>
-                    <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '12px', background: r.status === 'approved' ? 'rgba(34,197,94,0.1)' : r.status === 'pending' ? 'rgba(234,179,8,0.1)' : 'rgba(239,68,68,0.1)', color: r.status === 'approved' ? '#22c55e' : r.status === 'pending' ? '#eab308' : '#ef4444' }}>
-                      {r.status}
-                    </span>
-                  </div>
-                  <span style={{ color: '#f59e0b', fontSize: '1rem', letterSpacing: '2px' }}>{stars(r.rating)}</span>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginLeft: '0.5rem' }}>{r.rating}/5</span>
-                </div>
-                <div style={{ textAlign: 'right', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                  {r.booking && <div>Booking: {r.booking.booking_number}</div>}
-                  {r.gardener && <div>Gardener: {r.gardener.name}</div>}
-                  <div>{new Date(r.created_at).toLocaleDateString()}</div>
-                </div>
-              </div>
-              {r.comment && (
-                <p style={{ color: 'var(--text)', fontSize: '0.9rem', lineHeight: 1.5, marginBottom: '0.75rem', fontStyle: 'italic' }}>"{r.comment}"</p>
+      <div className="card">
+        <div className="table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Customer / Date</th>
+                <th>Feedback</th>
+                <th>Rating</th>
+                <th>Entity / Subject</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                Array(6).fill(0).map((_, i) => (
+                  <tr key={i}>
+                    <td colSpan={6}><div className="skeleton skel-text" style={{ width: '100%' }} /></td>
+                  </tr>
+                ))
+              ) : reviews.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
+                    No reviews found matching your criteria.
+                  </td>
+                </tr>
+              ) : (
+                reviews.map((r) => (
+                  <tr key={r.id}>
+                    <td>
+                      <div style={{ fontWeight: 700 }}>{r.customer?.name || 'Guest User'}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <IconCalendar size={12} />
+                        {new Date(r.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </div>
+                    </td>
+                    <td style={{ maxWidth: 300 }}>
+                      <div style={{ fontStyle: r.comment ? 'italic' : 'normal', color: r.comment ? 'var(--text)' : 'var(--text-muted)', fontSize: '0.85rem' }}>
+                        {r.comment ? `"${r.comment}"` : 'No comment provided'}
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {renderStars(r.rating)}
+                        <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)' }}>{r.rating}/5</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {r.booking && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem' }}>
+                            <IconGardenCart size={14} style={{ color: 'var(--forest)' }} />
+                            <span>#{r.booking.booking_number}</span>
+                          </div>
+                        )}
+                        {r.gardener && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem' }}>
+                            <IconUser size={14} style={{ color: 'var(--text-muted)' }} />
+                            <span>{r.gardener.name}</span>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td>{getStatusBadge(r.status)}</td>
+                    <td>
+                      {r.status === 'pending' ? (
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button 
+                            className="btn btn-xs btn-primary" 
+                            title="Approve"
+                            onClick={() => updateMutation.mutate({ id: r.id, status: 'approved' })}
+                          >
+                            <IconCheck size={14} /> Approve
+                          </button>
+                          <button 
+                            className="btn btn-xs btn-danger" 
+                            title="Reject"
+                            onClick={() => updateMutation.mutate({ id: r.id, status: 'rejected' })}
+                          >
+                            <IconX size={14} /> Reject
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <IconCheck size={14} /> Handled
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))
               )}
-              {r.status === 'pending' && (
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                  <button onClick={() => updateReview(r.id, 'approved')} style={{ padding: '0.4rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#22c55e', color: '#fff', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>
-                    ✓ Approve
-                  </button>
-                  <button onClick={() => updateReview(r.id, 'rejected')} style={{ padding: '0.4rem 1rem', borderRadius: '0.5rem', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>
-                    ✕ Reject
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
+            </tbody>
+          </table>
         </div>
-      )}
 
-      {total > 20 && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '1.5rem' }}>
-          <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} style={{ padding: '0.4rem 0.8rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--card-bg)', color: 'var(--text)', cursor: page <= 1 ? 'not-allowed' : 'pointer' }}>← Prev</button>
-          <span style={{ padding: '0.4rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Page {page} of {Math.ceil(total / 20)}</span>
-          <button disabled={page >= Math.ceil(total / 20)} onClick={() => setPage(p => p + 1)} style={{ padding: '0.4rem 0.8rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--card-bg)', color: 'var(--text)', cursor: page >= Math.ceil(total / 20) ? 'not-allowed' : 'pointer' }}>Next →</button>
+        {totalPages > 1 && (
+          <div className="pagination">
+            <button 
+              disabled={page === 1} 
+              onClick={() => setPage(p => p - 1)} 
+              className="page-btn"
+            >
+              <IconChevronLeft size={16} />
+            </button>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 8px' }}>
+              Page {page} of {totalPages}
+            </span>
+            <button 
+              disabled={page === totalPages} 
+              onClick={() => setPage(p => p + 1)} 
+              className="page-btn"
+            >
+              <IconChevronRight size={16} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Summary Stats Overlay (Optional - matching premium look) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginTop: 24 }}>
+        <div className="stat-card" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--forest-light)', color: 'var(--forest)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <IconStar size={24} />
+          </div>
+          <div>
+            <div className="stat-label">Avg. Rating</div>
+            <div className="stat-value" style={{ fontSize: '1.4rem' }}>4.8</div>
+          </div>
         </div>
-      )}
-    </div>
+        <div className="stat-card" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(237, 207, 135, 0.1)', color: 'var(--gold-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <IconMessageCircle size={24} />
+          </div>
+          <div>
+            <div className="stat-label">Comments</div>
+            <div className="stat-value" style={{ fontSize: '1.4rem' }}>{total}</div>
+          </div>
+        </div>
+        <div className="stat-card" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(37, 99, 235, 0.05)', color: 'var(--info)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <IconClock size={24} />
+          </div>
+          <div>
+            <div className="stat-label">Pending Action</div>
+            <div className="stat-value" style={{ fontSize: '1.4rem' }}>
+              {reviews.filter(r => r.status === 'pending').length}
+            </div>
+          </div>
+        </div>
+      </div>
+    </AdminLayout>
   );
 }

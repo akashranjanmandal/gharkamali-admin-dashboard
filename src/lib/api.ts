@@ -250,6 +250,9 @@ export const AdminAPI = {
   rewards: (p?: any) => req(`/admin/rewards${qs(p)}`),
   createReward: (b: any) => req('/admin/rewards', { method: 'POST', body: JSON.stringify(b) }),
 
+  search: (q: string) => req(`/admin/search?q=${q}`),
+  assignGardenerZone: (gardenerId: number, zoneIds: number[]) => req(`/admin/gardeners/${gardenerId}/zones`, { method: 'POST', body: JSON.stringify({ zone_ids: zoneIds }) }),
+
   slaConfig: () => req('/admin/sla/config'),
   updateSlaConfig: (b: any) => req('/admin/sla/config', { method: 'PUT', body: JSON.stringify(b) }),
   slaBreaches: (p?: any) => req(`/admin/sla/breaches${qs(p)}`),
@@ -280,6 +283,7 @@ export const AdminAPI = {
     req(`/supervisor/gardeners/${id}/performance${qs({ period })}`),
 
   priceHikeSchedules: () => req('/admin/price-hike/schedules'),
+  triggerPriceHike: (b: any) => req('/admin/price-hike', { method: 'POST', body: JSON.stringify(b) }),
 
   // Shop Management
   shopCategories: () => req('/admin/shop/categories'),
@@ -300,6 +304,12 @@ export const AdminAPI = {
   createTagline: (form: FormData) => req('/admin/taglines', { method: 'POST', body: form }),
   updateTagline: (id: number, form: FormData) => req(`/admin/taglines/${id}`, { method: 'PUT', body: form }),
   deleteTagline: (id: number) => req(`/admin/taglines/${id}`, { method: 'DELETE' }),
+
+  // Tags
+  tags: () => req('/admin/tags'),
+  createTag: (b: any) => req('/admin/tags', { method: 'POST', body: JSON.stringify(b) }),
+  updateTag: (id: number, b: any) => req(`/admin/tags/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  deleteTag: (id: number) => req(`/admin/tags/${id}`, { method: 'DELETE' }),
 
   // Booking Logs
   bookingLogs: (bookingId: number) => req(`/admin/bookings/${bookingId}/logs`),

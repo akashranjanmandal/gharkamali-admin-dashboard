@@ -41,22 +41,19 @@ export default function GardenerDetailPage() {
     })();
   }, [gardenerId]);
 
-  const assignZone = async (zoneId: number) => {
-    try {
-      await AdminAPI.assignGardenerZone(gardenerId, zoneId);
-      toast.success('Zone assigned');
-      const z = await AdminAPI.gardenerZones(gardenerId).catch(() => []);
-      setZones(Array.isArray(z) ? z : []);
-    } catch { toast.error('Failed to assign zone'); }
-  };
+  const [selectedZones, setSelectedZones] = useState<number[]>([]);
 
-  const removeZone = async (zoneId: number) => {
+  useEffect(() => {
+    setSelectedZones(zones.map((z: any) => z.zone_id || z.id));
+  }, [zones]);
+
+  const saveZones = async () => {
     try {
-      await AdminAPI.removeGardenerZone(gardenerId, zoneId);
-      toast.success('Zone removed');
+      await AdminAPI.assignGardenerZone(gardenerId, selectedZones);
+      toast.success('Zones updated');
       const z = await AdminAPI.gardenerZones(gardenerId).catch(() => []);
       setZones(Array.isArray(z) ? z : []);
-    } catch { toast.error('Failed to remove zone'); }
+    } catch { toast.error('Failed to update zones'); }
   };
 
   const saveBankDetails = async () => {
@@ -157,14 +154,34 @@ export default function GardenerDetailPage() {
               ))}
             </div>
           )}
-          <h4 style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.85rem', marginTop: '1rem', marginBottom: '0.5rem' }}>Add Zone</h4>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-            {allZones.filter((az: any) => !zones.some((z: any) => (z.zone_id || z.id) === az.id)).map((az: any) => (
-              <button key={az.id} onClick={() => assignZone(az.id)} style={{ padding: '0.35rem 0.8rem', borderRadius: '20px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', cursor: 'pointer', fontSize: '0.8rem' }}>
-                + {az.name}
-              </button>
+          <h4 style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.85rem', marginTop: '1rem', marginBottom: '0.5rem' }}>Assigned Zones</h4>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
+            {zones.map((z: any) => (
+              <span key={z.id || z.zone_id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.8rem', borderRadius: '20px', background: 'rgba(59,130,246,0.1)', color: '#3b82f6', fontSize: '0.8rem', fontWeight: 600 }}>
+                {z.zone?.name || z.name || `Zone ${z.zone_id}`}
+              </span>
             ))}
           </div>
+          <h4 style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>Manage Zones</h4>
+          <div style={{ display: 'grid', gap: '0.5rem', marginBottom: '1rem' }}>
+            {allZones.map((az: any) => (
+              <label key={az.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={selectedZones.includes(az.id)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedZones(prev => [...prev, az.id]);
+                    } else {
+                      setSelectedZones(prev => prev.filter(id => id !== az.id));
+                    }
+                  }}
+                />
+                {az.name}
+              </label>
+            ))}
+          </div>
+          <button onClick={saveZones} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#22c55e', color: '#fff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>Save Zones</button>
         </div>
       )}
 
