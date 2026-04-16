@@ -56,6 +56,15 @@ export default function GardenerDetailPage() {
     } catch { toast.error('Failed to update zones'); }
   };
 
+  const removeZone = async (zoneId: number) => {
+    try {
+      await AdminAPI.removeGardenerZone(gardenerId, zoneId);
+      toast.success('Zone removed');
+      const z = await AdminAPI.gardenerZones(gardenerId).catch(() => []);
+      setZones(Array.isArray(z) ? z : []);
+    } catch { toast.error('Failed to remove zone'); }
+  };
+
   const saveBankDetails = async () => {
     try {
       await AdminAPI.updateGardener(gardenerId, bankData);

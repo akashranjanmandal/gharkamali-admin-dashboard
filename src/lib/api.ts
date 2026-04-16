@@ -351,8 +351,6 @@ export const AdminAPI = {
 
   // Gardener Zones
   gardenerZones: (id: number) => req(`/admin/gardeners/${id}/zones`),
-  assignGardenerZone: (id: number, zone_id: number) =>
-    req(`/admin/gardeners/${id}/zones`, { method: 'POST', body: JSON.stringify({ zone_id }) }),
   removeGardenerZone: (id: number, zone_id: number) =>
     req(`/admin/gardeners/${id}/zones/${zone_id}`, { method: 'DELETE' }),
 
