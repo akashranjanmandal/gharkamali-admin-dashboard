@@ -21,12 +21,15 @@ export default function AdminShopProductsPage() {
   const saveMut = useMutation({ 
     mutationFn: (data: any) => {
       const fd = new FormData();
-      const skip = ['image', 'created_at', 'updated_at', 'createdAt', 'updatedAt', 'category'];
+      const skip = ['created_at', 'updated_at', 'createdAt', 'updatedAt', 'category', 'images'];
       Object.entries(data).forEach(([k, v]) => {
         if (skip.includes(k)) return;
-        if (k === 'image' && v instanceof File) fd.append('image', v);
-        else if (Array.isArray(v)) fd.append(k, JSON.stringify(v));
-        else fd.append(k, String(v));
+        if (k === 'image' && v instanceof File) {
+          fd.append('image', v);
+        } else if (v !== null && v !== undefined) {
+          if (Array.isArray(v)) fd.append(k, JSON.stringify(v));
+          else fd.append(k, String(v));
+        }
       });
       return modal.id ? AdminAPI.updateShopProduct(modal.id, fd) : AdminAPI.createShopProduct(fd);
     }, 
