@@ -26,6 +26,9 @@ export default function AdminBlogsPage() {
     onError: (e: any) => toast.error(e.message) 
   });
 
+  const { data: catsData } = useQuery({ queryKey: ['blog-categories'], queryFn: () => AdminAPI.getBlogCategories() });
+  const existingCats: string[] = Array.isArray(catsData) ? catsData : [];
+
   const deleteMut = useMutation({ mutationFn: (id: number) => AdminAPI.deleteBlog(id), onSuccess: () => { toast.success('Deleted'); qc.invalidateQueries({ queryKey: ['admin-blogs'] }); }, onError: (e: any) => toast.error(e.message) });
   const f = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }));
 
@@ -63,7 +66,16 @@ export default function AdminBlogsPage() {
             </div>
             <div className="modal-body">
               <div className="form-group"><label>Title *</label><input className="input" value={form.title||''} onChange={e=>f('title',e.target.value)} /></div>
-              <div className="form-row"><div className="form-group"><label>Slug *</label><input className="input" value={form.slug||''} onChange={e=>f('slug',e.target.value)} placeholder="my-blog-post" /></div><div className="form-group"><label>Category</label><input className="input" value={form.category||''} onChange={e=>f('category',e.target.value)} /></div></div>
+              <div className="form-row">
+                <div className="form-group"><label>Slug *</label><input className="input" value={form.slug||''} onChange={e=>f('slug',e.target.value)} placeholder="my-blog-post" /></div>
+                <div className="form-group">
+                  <label>Category</label>
+                  <input className="input" list="cat-list" value={form.category||''} onChange={e=>f('category',e.target.value)} />
+                  <datalist id="cat-list">
+                    {existingCats.map(c=><option key={c} value={c} />)}
+                  </datalist>
+                </div>
+              </div>
               <div className="form-group"><label>Excerpt</label><textarea className="input" value={form.excerpt||''} onChange={e=>f('excerpt',e.target.value)} rows={2} style={{resize:'vertical'}} /></div>
               <div className="form-group"><label>Content (HTML)</label><textarea className="input" value={form.content||''} onChange={e=>f('content',e.target.value)} rows={6} style={{resize:'vertical',fontFamily:'monospace'}} /></div>
               <div className="form-group">

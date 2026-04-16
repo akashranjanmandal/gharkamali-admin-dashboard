@@ -250,7 +250,6 @@ export const AdminAPI = {
   rewards: (p?: any) => req(`/admin/rewards${qs(p)}`),
   createReward: (b: any) => req('/admin/rewards', { method: 'POST', body: JSON.stringify(b) }),
 
-  search: (q: string) => req(`/admin/search?q=${q}`),
   assignGardenerZone: (gardenerId: number, zoneIds: number[]) => req(`/admin/gardeners/${gardenerId}/zones`, { method: 'POST', body: JSON.stringify({ zone_ids: zoneIds }) }),
 
   slaConfig: () => req('/admin/sla/config'),
@@ -259,6 +258,7 @@ export const AdminAPI = {
   resolveBreach: (id: number) => req(`/admin/sla/breaches/${id}/resolve`, { method: 'PUT' }),
 
   blogs: (p?: any) => req(`/admin/blogs${qs(p)}`),
+  getBlogCategories: () => req('/blogs/categories', { auth: false }),
   createBlog: (form: FormData) => req('/admin/blogs', { method: 'POST', body: form }),
   updateBlog: (id: number, form: FormData) => req(`/admin/blogs/${id}`, { method: 'PUT', body: form }),
   deleteBlog: (id: number) => req(`/admin/blogs/${id}`, { method: 'DELETE' }),
