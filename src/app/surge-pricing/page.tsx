@@ -20,11 +20,11 @@ export default function SurgePricingPage() {
   });
 
   const toggleZone = (id: number) => {
-    setForm(p => ({ ...p, zone_ids: p.zone_ids.includes(id) ? p.zone_ids.filter(x => x !== id) : [...p.zone_ids, id] }));
+    setForm((p: any) => ({ ...p, zone_ids: p.zone_ids.includes(id) ? p.zone_ids.filter((x: any) => x !== id) : [...p.zone_ids, id] }));
   };
 
   const togglePlan = (id: number) => {
-    setForm(p => ({ ...p, plan_ids: p.plan_ids.includes(id) ? p.plan_ids.filter(x => x !== id) : [...p.plan_ids, id] }));
+    setForm((p: any) => ({ ...p, plan_ids: p.plan_ids.includes(id) ? p.plan_ids.filter((x: any) => x !== id) : [...p.plan_ids, id] }));
   };
 
   return (
@@ -34,9 +34,9 @@ export default function SurgePricingPage() {
         <p style={{color:'var(--text-muted)',fontSize:'0.875rem',marginTop:4}}>Apply price hikes to zones or plans</p>
       </div>
       <div className="card">
-        <div style={{display:'grid',gap:'1rem'}}>
-          <div><label>Hike Percentage *</label><input type="number" value={form.percentage} onChange={(e)=>setForm(p=>({...p,percentage:e.target.value}))} placeholder="e.g. 10" /></div>
-          <div><label>Reason *</label><input type="text" value={form.reason} onChange={(e)=>setForm(p=>({...p,reason:e.target.value}))} placeholder="e.g. High demand" /></div>
+        <div style={{display:'grid',gap:'1rem', padding: 20}}>
+          <div><label>Hike Percentage *</label><input type="number" className="input" value={form.percentage} onChange={(e)=>setForm((p: any)=>({...p,percentage:e.target.value}))} placeholder="e.g. 10" /></div>
+          <div><label>Reason *</label><input type="text" className="input" value={form.reason} onChange={(e)=>setForm((p: any)=>({...p,reason:e.target.value}))} placeholder="e.g. High demand" /></div>
           <div>
             <label>Apply to Zones</label>
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:'0.5rem',marginTop:'0.5rem'}}>

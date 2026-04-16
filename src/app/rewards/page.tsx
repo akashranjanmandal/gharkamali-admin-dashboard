@@ -23,7 +23,7 @@ export default function RewardsPage() {
       <div style={{marginBottom:24,display:'flex',justifyContent:'space-between',alignItems:'center'}}><div><h1 className="page-title">Rewards & Penalties</h1></div><button onClick={()=>setModal(true)} className="btn btn-primary">+ Create Reward</button></div>
       <div className="card">
         <div className="table-wrap">
-          <table>
+          <table className="admin-table">
             <thead><tr><th>Gardener</th><th>Type</th><th>Amount</th><th>Reason</th><th>Booking</th><th>Date</th></tr></thead>
             <tbody>
               {rewards.length===0?<tr><td colSpan={6} style={{textAlign:'center',color:'var(--text-muted)',padding:'32px'}}>No rewards yet</td></tr>:
@@ -44,15 +44,17 @@ export default function RewardsPage() {
       {modal&&(
         <div className="modal-overlay" onClick={()=>setModal(false)}>
           <div className="modal-box" onClick={e=>e.stopPropagation()}>
-            <h2 style={{fontWeight:800,fontSize:'1.2rem',marginBottom:20}}>Create Reward / Penalty</h2>
-            <div className="form-group"><label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5}}>Gardener ID *</label><input type="number" className="input" value={form.gardener_id} onChange={e=>setForm(p=>({...p,gardener_id:e.target.value}))} placeholder="Enter gardener user ID" /></div>
-            <div className="form-row">
-              <div className="form-group"><label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5}}>Type</label><select className="input" value={form.type} onChange={e=>setForm(p=>({...p,type:e.target.value}))} style={{appearance:'none'}}><option value="reward">Reward</option><option value="penalty">Penalty</option></select></div>
-              <div className="form-group"><label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5}}>Amount (₹) *</label><input type="number" className="input" value={form.amount} onChange={e=>setForm(p=>({...p,amount:e.target.value}))} /></div>
+            <div className="modal-header"><h3>Create Reward / Penalty</h3><button onClick={()=>setModal(false)} className="modal-close">×</button></div>
+            <div className="modal-body">
+              <div className="form-group"><label>Gardener ID *</label><input type="number" className="input" value={form.gardener_id} onChange={e=>setForm((p: any)=>({...p,gardener_id:e.target.value}))} placeholder="Enter gardener user ID" /></div>
+              <div className="form-row">
+                <div className="form-group"><label>Type</label><select className="input" value={form.type} onChange={e=>setForm((p: any)=>({...p,type:e.target.value}))} style={{appearance:'none'}}><option value="reward">Reward</option><option value="penalty">Penalty</option></select></div>
+                <div className="form-group"><label>Amount (₹) *</label><input type="number" className="input" value={form.amount} onChange={e=>setForm((p: any)=>({...p,amount:e.target.value}))} /></div>
+              </div>
+              <div className="form-group"><label>Reason *</label><input className="input" value={form.reason} onChange={e=>setForm((p: any)=>({...p,reason:e.target.value}))} placeholder="e.g. Excellent service quality" /></div>
+              <div className="form-group"><label>Booking ID (optional)</label><input type="number" className="input" value={form.booking_id} onChange={e=>setForm((p: any)=>({...p,booking_id:e.target.value}))} /></div>
             </div>
-            <div className="form-group"><label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5}}>Reason *</label><input className="input" value={form.reason} onChange={e=>setForm(p=>({...p,reason:e.target.value}))} placeholder="e.g. Excellent service quality" /></div>
-            <div className="form-group"><label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5}}>Booking ID (optional)</label><input type="number" className="input" value={form.booking_id} onChange={e=>setForm(p=>({...p,booking_id:e.target.value}))} /></div>
-            <div style={{display:'flex',gap:10,marginTop:8}}><button onClick={()=>setModal(false)} className="btn btn-ghost" style={{flex:1}}>Cancel</button><button onClick={()=>saveMut.mutate()} disabled={saveMut.isPending||!form.gardener_id||!form.amount||!form.reason} className="btn btn-primary" style={{flex:2}}>{saveMut.isPending?'Creating…':'Create'}</button></div>
+            <div className="modal-footer"><button onClick={()=>setModal(false)} className="btn btn-ghost">Cancel</button><button onClick={()=>saveMut.mutate()} disabled={saveMut.isPending||!form.gardener_id||!form.amount||!form.reason} className="btn btn-primary">{saveMut.isPending?'Creating…':'Create'}</button></div>
           </div>
         </div>
       )}

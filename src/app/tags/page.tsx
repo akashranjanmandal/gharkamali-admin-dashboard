@@ -24,6 +24,8 @@ export default function TagsPage() {
     onError: (e: any) => toast.error(e.message)
   });
 
+  const f = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }));
+
   return (
     <AdminLayout>
       <div style={{marginBottom:24,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
@@ -53,14 +55,14 @@ export default function TagsPage() {
 
       {modal && (
         <div className="modal-overlay" onClick={()=>{setModal(null);setForm({name:'',description:'',color:'#22c55e',is_active:true});}}>
-          <div className="modal" onClick={(e)=>e.stopPropagation()}>
+          <div className="modal-box" onClick={(e)=>e.stopPropagation()}>
             <div className="modal-header"><h3>{modal.new?'New Tag':'Edit Tag'}</h3><button onClick={()=>{setModal(null);setForm({name:'',description:'',color:'#22c55e',is_active:true});}} className="modal-close">×</button></div>
             <div className="modal-body">
               <div style={{display:'grid',gap:'1rem'}}>
-                <div><label>Name *</label><input type="text" value={form.name} onChange={(e)=>setForm(p=>({...p,name:e.target.value}))} placeholder="Tag name" /></div>
-                <div><label>Description</label><textarea value={form.description} onChange={(e)=>setForm(p=>({...p,description:e.target.value}))} placeholder="Optional description" rows={3}></textarea></div>
-                <div><label>Color</label><input type="color" value={form.color} onChange={(e)=>setForm(p=>({...p,color:e.target.value}))} /></div>
-                <div><label><input type="checkbox" checked={form.is_active} onChange={(e)=>setForm(p=>({...p,is_active:e.target.checked}))} /> Active</label></div>
+                <div className="form-group"><label>Name *</label><input type="text" className="input" value={form.name} onChange={(e)=>f('name',e.target.value)} placeholder="Tag name" /></div>
+                <div className="form-group"><label>Description</label><textarea className="input" value={form.description} onChange={(e)=>f('description',e.target.value)} placeholder="Optional description" rows={3}></textarea></div>
+                <div className="form-group"><label>Color</label><input type="color" className="input" style={{height:40,padding:2}} value={form.color} onChange={(e)=>f('color',e.target.value)} /></div>
+                <div className="form-group" style={{display:'flex',alignItems:'center',gap:8}}><input type="checkbox" id="t_active" checked={form.is_active} onChange={(e)=>f('is_active',e.target.checked)} /><label htmlFor="t_active" style={{marginBottom:0}}>Active and visible</label></div>
               </div>
             </div>
             <div className="modal-footer">
