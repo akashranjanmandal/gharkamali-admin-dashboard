@@ -122,6 +122,7 @@ export default function ReviewsPage() {
                 <th>Rating</th>
                 <th>Entity / Subject</th>
                 <th>Status</th>
+                <th>Show on Site</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -176,6 +177,14 @@ export default function ReviewsPage() {
                       </div>
                     </td>
                     <td>{getStatusBadge(r.status)}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={(r as any).is_website_visible === 1 || (r as any).is_website_visible === true}
+                        onChange={(e) => updateMutation.mutate({ id: r.id, status: r.status, is_website_visible: e.target.checked ? 1 : 0 } as any)}
+                        style={{ width: 18, height: 18, cursor: 'pointer' }}
+                      />
+                    </td>
                     <td>
                       {r.status === 'pending' ? (
                         <div style={{ display: 'flex', gap: 8 }}>

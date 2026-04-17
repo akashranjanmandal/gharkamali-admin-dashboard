@@ -94,7 +94,7 @@ export default function AdminTaglinesPage() {
       </div>
 
       {modal && (
-        <div className="modal-overlay" onClick={() => setModal(null)}>
+        <div className="modal-overlay">
           <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
             <div className="modal-header">
               <h3>{modal.new ? 'Add Tagline' : 'Edit Tagline'}</h3>

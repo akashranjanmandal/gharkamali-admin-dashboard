@@ -54,7 +54,7 @@ export default function TagsPage() {
       </div>
 
       {modal && (
-        <div className="modal-overlay" onClick={()=>{setModal(null);setForm({name:'',description:'',color:'#22c55e',is_active:true});}}>
+        <div className="modal-overlay">
           <div className="modal-box" onClick={(e)=>e.stopPropagation()}>
             <div className="modal-header"><h3>{modal.new?'New Tag':'Edit Tag'}</h3><button onClick={()=>{setModal(null);setForm({name:'',description:'',color:'#22c55e',is_active:true});}} className="modal-close">×</button></div>
             <div className="modal-body">

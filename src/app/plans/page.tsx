@@ -18,7 +18,7 @@ export default function AdminPlansPage() {
 
   return (
     <AdminLayout>
-      <div style={{marginBottom:24,display:'flex',justifyContent:'space-between',alignItems:'center'}}><div><h1 className="page-title">Service Plans</h1></div><button onClick={() => { setForm({name:'',tagline:'',price_subtitle:'Every month',plan_summary:'',button_text:'Select',features:[],plan_type:'subscription',price:'',visits_per_month:'',max_plants:'',duration_days:'30',weekend_surge_price:0,is_best_value:0}); setModal({new:true}); }} className="btn btn-primary">+ New Plan</button></div>
+      <div style={{marginBottom:24,display:'flex',justifyContent:'space-between',alignItems:'center'}}><div><h1 className="page-title">Service Plans</h1></div><button onClick={() => { setForm({name:'',tagline:'',price_subtitle:'Every month',plan_summary:'',button_text:'Select',features:[],plan_type:'subscription',price:'',visits_per_month:'',max_plants:'',duration_days:'30',weekend_surge_price:0,is_best_value:0,is_featured:0}); setModal({new:true}); }} className="btn btn-primary">+ New Plan</button></div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:16}}>
         {isLoading?Array(4).fill(null).map((_,i)=><div key={i} className="skeleton" style={{height:180,borderRadius:20}}/>):items.map((item:any)=>(
           <div key={item.id} style={{background:'#fff',borderRadius:24,border:'1px solid var(--border)',overflow:'hidden',display:'flex',flexDirection:'column'}}>
@@ -52,7 +52,7 @@ export default function AdminPlansPage() {
         ))}
       </div>
       {modal&&(
-        <div className="modal-overlay" onClick={()=>setModal(null)}>
+        <div className="modal-overlay">
           <div className="modal-box" onClick={e=>e.stopPropagation()}>
             <div className="modal-header">
               <h3>{modal.new?'New Plan':'Edit Plan'}</h3>
@@ -60,13 +60,20 @@ export default function AdminPlansPage() {
             </div>
             <div className="modal-body">
               <div className="form-group"><label>Name *</label><input className="input" value={form.name||''} onChange={e=>f('name',e.target.value)} /></div>
+              <div className="form-group"><label>Tagline (Shown on home page)</label><input className="input" value={form.tagline||''} onChange={e=>f('tagline',e.target.value)} /></div>
               <div className="form-row">
                 <div className="form-group"><label>Price Subtitle (e.g. Every month)</label><input className="input" value={form.price_subtitle||''} onChange={e=>f('price_subtitle',e.target.value)} /></div>
                 <div className="form-group"><label>Plan Summary (e.g. Up to 20 Plants)</label><input className="input" value={form.plan_summary||''} onChange={e=>f('plan_summary',e.target.value)} /></div>
               </div>
-              <div className="form-group" style={{display:'flex',alignItems:'center',gap:8,marginBottom:16}}>
-                <input type="checkbox" id="is_best_value" checked={form.is_best_value===1} onChange={e=>f('is_best_value',e.target.checked?1:0)} />
-                <label htmlFor="is_best_value" style={{marginBottom:0,cursor:'pointer'}}>Show "Best Value" tag (Sets green theme)</label>
+              <div className="form-group" style={{display:'flex',alignItems:'center',gap:24,marginBottom:16}}>
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                  <input type="checkbox" id="is_best_value" checked={form.is_best_value===1} onChange={e=>f('is_best_value',e.target.checked?1:0)} />
+                  <label htmlFor="is_best_value" style={{marginBottom:0,cursor:'pointer'}}>Show "Best Value" tag</label>
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                  <input type="checkbox" id="is_featured" checked={form.is_featured===1} onChange={e=>f('is_featured',e.target.checked?1:0)} />
+                  <label htmlFor="is_featured" style={{marginBottom:0,cursor:'pointer'}}>Feature on Home Page</label>
+                </div>
               </div>
               <div className="form-group">
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:5}}><label style={{marginBottom:0}}>Features (One item per line)</label><button type="button" onClick={()=>f('features',['2 visits per month','Up to 20 Plants','Regular pruning','Soil aeration','Monitoring (Plant Health)','Basic pest check','Balcony cleaning','5% discount on add-ons','Additional Plants in Subscription: ₹40 per plant per month','Repotting (upto 12inch) ₹30 per plant','Repotting (above 12inch) ₹75 per plant','Perfect for Maintaining a Small Garden Balcony','1 Free Plant'])} style={{fontSize:'0.65rem',color:'var(--forest)',background:'none',border:'none',cursor:'pointer',fontWeight:600,textDecoration:'underline'}}>Load Standard Template</button></div>

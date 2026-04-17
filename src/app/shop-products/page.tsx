@@ -148,7 +148,7 @@ export default function AdminShopProductsPage() {
 
       {/* Product Modal */}
       {modal && (
-        <div className="modal-overlay" onClick={() => setModal(null)}>
+        <div className="modal-overlay">
           <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 640 }}>
             <div className="modal-header">
               <h3>{modal.new ? 'Add New Product' : 'Edit Product'}</h3>

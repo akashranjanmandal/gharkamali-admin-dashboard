@@ -144,7 +144,7 @@ export default function AdminSubscriptionsPage() {
       </div>
 
       {selected && (
-        <div className="modal-overlay" onClick={() => setSelected(null)}>
+        <div className="modal-overlay">
           <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 640 }}>
             <div className="modal-header">
               <h3>Subscription Details</h3>
@@ -269,7 +269,7 @@ export default function AdminSubscriptionsPage() {
       )}
       {/* Booking Details Modal */}
       {selectedBookingId && (
-        <div className="modal-overlay" onClick={() => setSelectedBookingId(null)} style={{ zIndex: 2000 }}>
+        <div className="modal-overlay" style={{ zIndex: 2000 }}>
           <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 720 }}>
             <div className="modal-header">
               <h3>Booking <span style={{ fontFamily: 'monospace', color: 'var(--forest)' }}>#{bookingDetail?.booking_number || '...'}</span></h3>

@@ -153,7 +153,7 @@ export default function AdminGardenersPage() {
       </div>
 
       {selectedId && (
-        <div className="modal-overlay" onClick={() => setSelectedId(null)}>
+        <div className="modal-overlay">
           <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 700 }}>
             <div className="modal-header">
               <h3>Partner Profile</h3>
@@ -255,7 +255,7 @@ export default function AdminGardenersPage() {
 
       {/* Delete Confirmation Modal */}
       {confirmDelete && (
-        <div className="modal-overlay" onClick={() => setConfirmDelete(null)}>
+        <div className="modal-overlay">
           <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
             <div className="modal-header">
               <h3 style={{ color: '#dc2626' }}>⚠️ Delete Gardener</h3>
