@@ -45,8 +45,20 @@ const CHART_OPTS: any = {
 
 export default function AnalyticsPage() {
   const [period, setPeriod] = useState('30');
-  const { data: an, isLoading } = useQuery({ queryKey: ['admin-analytics', period], queryFn: () => AdminAPI.analytics({ period }) });
-  const { data: util } = useQuery({ queryKey: ['admin-utilization', period], queryFn: () => AdminAPI.utilization({ period }) });
+  const [selectedZone, setSelectedZone] = useState('');
+
+  const { data: zonesRaw } = useQuery({ queryKey: ['admin-zones'], queryFn: () => AdminAPI.zones() });
+  const zones: any[] = Array.isArray(zonesRaw) ? zonesRaw : (zonesRaw as any)?.data ?? [];
+  const selectedZoneName = zones.find((z:any) => String(z.id) === selectedZone)?.name || 'All Service Areas';
+
+  const { data: an, isLoading } = useQuery({
+    queryKey: ['admin-analytics', period, selectedZone],
+    queryFn: () => AdminAPI.analytics({ period, zone_id: selectedZone || undefined }),
+  });
+  const { data: util } = useQuery({
+    queryKey: ['admin-utilization', period, selectedZone],
+    queryFn: () => AdminAPI.utilization({ period, zone_id: selectedZone || undefined }),
+  });
   const a: any = an;
   const u: any = util;
 
@@ -123,11 +135,21 @@ export default function AnalyticsPage() {
         <div>
           <h1 className="page-title">Analytics</h1>
           <p style={{ color:'var(--text-muted)', fontSize:'0.875rem', marginTop:4 }}>Platform performance & insights</p>
+          <p style={{ color:'var(--text-muted)', fontSize:'0.85rem', marginTop:4 }}>Showing analytics for <strong>{selectedZoneName}</strong></p>
         </div>
-        <div style={{ display:'flex', gap:4, background:'#fff', padding:4, borderRadius:12, border:'1px solid var(--border)' }}>
-          {[['7','7 Days'],['30','30 Days'],['90','90 Days'],['365','1 Year']].map(([v,l])=>(
-            <button key={v} onClick={()=>setPeriod(v)} style={{ padding:'6px 14px', borderRadius:9, border:'none', background:period===v?'var(--forest)':'transparent', color:period===v?'#fff':'var(--text-muted)', fontWeight:600, fontSize:'0.78rem', cursor:'pointer', fontFamily:'var(--font)', transition:'all 0.15s' }}>{l}</button>
-          ))}
+        <div style={{ display:'flex', gap:12, flexWrap:'wrap', alignItems:'center' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, background:'#fff', padding:'8px 12px', borderRadius:12, border:'1px solid var(--border)' }}>
+            <label htmlFor="zone-filter" style={{ fontSize:'0.82rem', fontWeight:700, color:'var(--text-muted)' }}>Service Area:</label>
+            <select id="zone-filter" value={selectedZone} onChange={e => setSelectedZone(e.target.value)} className="input" style={{ minWidth:200, borderRadius:10, padding:'8px 12px', border:'1px solid var(--border)', background:'#f9fafb', color:'var(--text)', fontWeight:600, cursor:'pointer' }}>
+              <option value="">All Service Areas</option>
+              {zones.length === 0 ? <option value="" disabled>No service areas available</option> : zones.map(z => <option key={z.id} value={String(z.id)}>{z.name}</option>)}
+            </select>
+          </div>
+          <div style={{ display:'flex', gap:4, flexWrap:'wrap', background:'#fff', padding:4, borderRadius:12, border:'1px solid var(--border)' }}>
+            {[['7','7 Days'],['30','30 Days'],['90','90 Days'],['365','1 Year']].map(([v,l])=>(
+              <button key={v} onClick={()=>setPeriod(v)} style={{ padding:'6px 14px', borderRadius:9, border:'none', background:period===v?'var(--forest)':'transparent', color:period===v?'#fff':'var(--text-muted)', fontWeight:600, fontSize:'0.78rem', cursor:'pointer', fontFamily:'var(--font)', transition:'all 0.15s' }}>{l}</button>
+            ))}
+          </div>
         </div>
       </div>
 
