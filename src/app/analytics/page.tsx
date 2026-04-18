@@ -57,11 +57,11 @@ export default function AnalyticsPage() {
 
   const { data: an, isLoading } = useQuery({
     queryKey: ['admin-analytics', period, selectedZone],
-    queryFn: () => AdminAPI.analytics({ period, zone_id: selectedZone || undefined }),
+    queryFn: () => AdminAPI.analytics({ period, geofence_id: selectedZone || undefined }),
   });
   const { data: util } = useQuery({
     queryKey: ['admin-utilization', period, selectedZone],
-    queryFn: () => AdminAPI.utilization({ period, zone_id: selectedZone || undefined }),
+    queryFn: () => AdminAPI.utilization({ period, geofence_id: selectedZone || undefined }),
   });
   const a: any = an;
   const u: any = util;
@@ -154,7 +154,7 @@ export default function AnalyticsPage() {
         <div>
           <h1 className="page-title">Analytics</h1>
           <p style={{ color:'var(--text-muted)', fontSize:'0.875rem', marginTop:4 }}>Platform performance & insights</p>
-          <p style={{ color:'var(--text-muted)', fontSize:'0.85rem', marginTop:4 }}>Showing analytics for <strong>{selectedZoneName}</strong></p>
+          <p style={{ color:'var(--text-muted)', fontSize:'0.85rem', marginTop:4 }}>Showing analytics for <strong>{a?.selectedCity ? `${selectedZoneName} (${a.selectedCity})` : selectedZoneName}</strong></p>
         </div>
         <div style={{ display:'flex', gap:12, flexWrap:'wrap', alignItems:'center' }}>
           <div style={{ display:'flex', alignItems:'center', gap:8, background:'#fff', padding:'8px 12px', borderRadius:12, border:'1px solid var(--border)' }}>
