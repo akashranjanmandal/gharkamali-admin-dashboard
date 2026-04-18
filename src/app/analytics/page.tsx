@@ -66,6 +66,8 @@ export default function AnalyticsPage() {
   const zonePerformance = (a?.bookingsByZone || []).map((z: any) => ({
     ...z, zone_name: z.zone, total_bookings: Number(z.total || 0), completed_bookings: 0,
   }));
+  const shopOrdersByZone = (a?.shopOrdersByZone || []);
+  const shopOrdersByCity = (a?.shopOrdersByCity || []);
   const newCustomersByDay = (a?.newUsersTrend || []).filter((r: any) => r.role === 'customer');
   const bookingsByStatus = a?.bookingStatusDist || [];
   const totalBookings = (a?.bookingsByZone || []).reduce((n: number, z: any) => n + Number(z.total || 0), 0);
@@ -81,6 +83,11 @@ export default function AnalyticsPage() {
   const shopRevenue         = Number(revenueBreakdown.shop_revenue         || 0);
   const subscriptionRevenue = Number(revenueBreakdown.subscription_revenue || 0);
   const totalAnalyticsRevenue = bookingRevenue + shopRevenue + subscriptionRevenue;
+
+  // ── Zone-specific revenue ──────────────────────────────────────────────────
+  const zoneAllRevenue = (a?.bookingsByZone || []).reduce((n: number, z: any) => n + Number(z.revenue || 0), 0);
+  const shopZoneRevenue = shopOrdersByZone.reduce((n: number, z: any) => n + Number(z.revenue || 0), 0);
+  const zoneShopOrders = shopOrdersByZone.reduce((n: number, z: any) => n + Number(z.total || 0), 0);
 
   // ── Chart datasets ─────────────────────────────────────────────────────────
   const revenueData = {
@@ -115,17 +122,25 @@ export default function AnalyticsPage() {
     labels: subscriptionsByPlan.map((p:any) => p.name),
     datasets: [{ data:subscriptionsByPlan.map((p:any)=>Number(p.active_count||0)), backgroundColor:['#03411a','#2563eb','#d97706','#16a34a','#9333ea'], borderWidth:0, hoverOffset:8 }],
   };
+  const shopOrdersZoneData = {
+    labels: shopOrdersByZone.map((z:any) => z.zone),
+    datasets: [{ label:'Orders', data:shopOrdersByZone.map((z:any)=>Number(z.total||0)), backgroundColor:'rgba(147,51,234,0.7)', borderRadius:6, borderSkipped:false }],
+  };
+  const shopRevenueZoneData = {
+    labels: shopOrdersByZone.map((z:any) => z.zone),
+    datasets: [{ label:'Revenue (₹)', data:shopOrdersByZone.map((z:any)=>Number(z.revenue||0)), backgroundColor:'rgba(37,99,235,0.7)', borderRadius:6, borderSkipped:false }],
+  };
 
   // ── KPI Cards ──────────────────────────────────────────────────────────────
   const KPIS = [
-    { label:'Total Revenue',      value: totalAnalyticsRevenue ? `₹${Number(totalAnalyticsRevenue).toLocaleString('en-IN')}` : '—', icon:<IcRevenue/>, color:'#03411a', sub:`${period}-day period`, trend:18 },
-    { label:'Total Bookings',     value: totalBookings ? totalBookings.toLocaleString('en-IN') : '—', icon:<IcBooking/>, color:'#2563eb', sub:'Service bookings', trend:12 },
-    { label:'New Customers',      value: newCustomers ? newCustomers.toLocaleString('en-IN') : '—',  icon:<IcUsers/>,  color:'#16a34a', sub:'New sign-ups', trend:8  },
-    { label:'Avg Rating',         value: a?.avgRating ? `${Number(a.avgRating).toFixed(1)} ★` : '—', icon:<IcStar/>, color:'#d97706', sub:'Out of 5.0' },
-    { label:'Completion Rate',    value: a?.completionRate != null ? `${Number(a.completionRate).toFixed(0)}%` : '—', icon:<IcPercent/>, color:'#16a34a', sub:'Of all bookings', trend:3 },
-    { label:'Shop Orders',        value: shopStats.total_orders ? Number(shopStats.total_orders).toLocaleString('en-IN') : '—', icon:<IcShop/>, color:'#9333ea', sub:'Marketplace orders' },
-    { label:'Active Subscriptions', value: a?.activeSubscriptions != null ? Number(a.activeSubscriptions).toLocaleString('en-IN') : '—', icon:<IcSubs/>, color:'#0891b2', sub:'Currently active' },
-    { label:'Active Gardeners',   value: a?.activeGardeners != null ? Number(a.activeGardeners).toLocaleString('en-IN') : (u?.activeGardeners?.toLocaleString('en-IN')), icon:<IcLeaf/>, color:'#d97706', sub:'Approved & active' },
+    { label:'Total Revenue',        value: totalAnalyticsRevenue ? `₹${Number(totalAnalyticsRevenue).toLocaleString('en-IN')}` : '—', icon:<IcRevenue/>, color:'#03411a', sub:`${period}-day period`, trend:18 },
+    { label:'Booking Revenue',      value: bookingRevenue ? `₹${Number(bookingRevenue).toLocaleString('en-IN')}` : '—', icon:<IcBooking/>, color:'#2563eb', sub:'Service bookings' },
+    { label:'Shop Revenue',         value: shopRevenue ? `₹${Number(shopRevenue).toLocaleString('en-IN')}` : '—', icon:<IcShop/>, color:'#9333ea', sub:'Marketplace orders' },
+    { label:'Total Bookings',       value: totalBookings ? totalBookings.toLocaleString('en-IN') : '—', icon:<IcBooking/>, color:'#2563eb', sub:'Service requests', trend:12 },
+    { label:'Shop Orders',          value: shopStats.total_orders ? Number(shopStats.total_orders).toLocaleString('en-IN') : '—', icon:<IcShop/>, color:'#9333ea', sub:'Marketplace' },
+    { label:'Avg Rating',           value: a?.avgRating ? `${Number(a.avgRating).toFixed(1)} ★` : '—', icon:<IcStar/>, color:'#d97706', sub:'Out of 5.0' },
+    { label:'Completion Rate',      value: a?.completionRate != null ? `${Number(a.completionRate).toFixed(0)}%` : '—', icon:<IcPercent/>, color:'#16a34a', sub:'Booking completion', trend:3 },
+    { label:'Active Subscriptions', value: a?.activeSubscriptions != null ? Number(a.activeSubscriptions).toLocaleString('en-IN') : '—', icon:<IcSubs/>, color:'#0891b2', sub:'Active plans' },
   ];
 
   return (
@@ -333,6 +348,66 @@ export default function AnalyticsPage() {
                     </tr>
                   );
                 })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Shop Orders by Zone */}
+      {shopOrdersByZone.length > 0 && (
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:20 }}>
+          <div className="card">
+            <div className="card-header"><h2>Shop Orders by Zone</h2><span style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>Order count</span></div>
+            <div className="card-body" style={{ height:260 }}>
+              <Bar data={shopOrdersZoneData} options={{ ...CHART_OPTS, scales:{ x:{grid:{display:false},ticks:{font:{size:10,family:'Poppins'},color:'var(--text-muted)'}}, y:{grid:{color:'rgba(147,51,234,0.05)'},ticks:{font:{size:10,family:'Poppins'},color:'var(--text-muted)'}} } }} />
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-header"><h2>Shop Revenue by Zone</h2><span style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>Revenue break-up</span></div>
+            <div className="card-body" style={{ height:260 }}>
+              <Bar data={shopRevenueZoneData} options={{ ...CHART_OPTS, scales:{ x:{grid:{display:false},ticks:{font:{size:10,family:'Poppins'},color:'var(--text-muted)'}}, y:{grid:{color:'rgba(37,99,235,0.05)'},ticks:{font:{size:10,family:'Poppins'},color:'var(--text-muted)',callback:(v:any)=>`₹${Number(v).toLocaleString('en-IN')}`}} } }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Shop Orders by Zone - Table View */}
+      {shopOrdersByZone.length > 0 && (
+        <div className="card">
+          <div className="card-header"><h2>Shop Orders by Zone - Details</h2></div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Zone / City</th><th style={{ textAlign:'right' }}>Total Orders</th><th style={{ textAlign:'right' }}>Revenue (₹)</th><th style={{ textAlign:'right' }}>Avg Order Value</th><th style={{ textAlign:'right' }}>Share %</th></tr></thead>
+              <tbody>
+                {shopOrdersByZone.map((z:any, idx:number) => {
+                  const totalOrders = shopOrdersByZone.reduce((n:number, zz:any) => n + Number(zz.total||0), 0);
+                  const share = totalOrders > 0 ? ((Number(z.total||0) / totalOrders) * 100).toFixed(1) : 0;
+                  const avgVal = Number(z.total||0) > 0 ? (Number(z.revenue||0) / Number(z.total||0)).toFixed(0) : 0;
+                  return (
+                    <tr key={idx}>
+                      <td style={{ fontWeight:600 }}>{z.zone} {z.city && <span style={{ color:'var(--text-muted)', fontSize:'0.8rem', fontWeight:400 }}>({z.city})</span>}</td>
+                      <td style={{ textAlign:'right', fontWeight:700 }}>{Number(z.total||0).toLocaleString('en-IN')}</td>
+                      <td style={{ textAlign:'right', fontWeight:700, color:'var(--forest)' }}>₹{Number(z.revenue||0).toLocaleString('en-IN')}</td>
+                      <td style={{ textAlign:'right', color:'var(--text-muted)' }}>₹{Number(avgVal).toLocaleString('en-IN')}</td>
+                      <td style={{ textAlign:'right' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:6, justifyContent:'flex-end' }}>
+                          <div style={{ width:40, height:6, background:'var(--border)', borderRadius:99, overflow:'hidden' }}>
+                            <div style={{ height:'100%', width:`${share}%`, background:'#9333ea', borderRadius:99 }} />
+                          </div>
+                          <span style={{ fontSize:'0.8rem', fontWeight:700, minWidth:36, textAlign:'right' }}>{share}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                <tr style={{ borderTop:'2px solid var(--border)', fontWeight:700 }}>
+                  <td>Total</td>
+                  <td style={{ textAlign:'right' }}>{zoneShopOrders.toLocaleString('en-IN')}</td>
+                  <td style={{ textAlign:'right', color:'var(--forest)' }}>₹{shopZoneRevenue.toLocaleString('en-IN')}</td>
+                  <td style={{ textAlign:'right' }}>₹{zoneShopOrders > 0 ? (shopZoneRevenue / zoneShopOrders).toFixed(0).toLocaleString('en-IN') : '—'}</td>
+                  <td style={{ textAlign:'right' }}>100%</td>
+                </tr>
               </tbody>
             </table>
           </div>
