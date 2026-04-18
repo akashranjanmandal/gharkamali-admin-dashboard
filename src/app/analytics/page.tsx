@@ -47,10 +47,10 @@ export default function AnalyticsPage() {
   const [period, setPeriod] = useState('30');
   const [selectedZone, setSelectedZone] = useState('');
 
-  const { data: zonesRaw } = useQuery({ queryKey: ['admin-zones'], queryFn: () => AdminAPI.zones() });
-  // Filter to only active service zones with polygon data
+  const { data: zonesRaw } = useQuery({ queryKey: ['admin-geofences'], queryFn: () => AdminAPI.geofences() });
+  // Filter to only active geofence zones
   const zones: any[] = (Array.isArray(zonesRaw) ? zonesRaw : (zonesRaw as any)?.data ?? [])
-    .filter((z:any) => z.is_active !== false && ((z.polygon_coords && z.polygon_coords.length > 0) || (z.polygon_coordinates && z.polygon_coordinates.length > 0)))
+    .filter((z:any) => z.is_active !== false)
     .sort((a:any, b:any) => (a.name || '').localeCompare(b.name || ''));
   
   const selectedZoneName = zones.find((z:any) => String(z.id) === selectedZone)?.name || 'All Service Areas';
