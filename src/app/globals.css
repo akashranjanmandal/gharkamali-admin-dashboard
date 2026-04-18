@@ -250,3 +250,82 @@ select.input { cursor: pointer; }
 /* Stat label/value helpers */
 .stat-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
 .stat-value  { font-size: 1.9rem; font-weight: 800; color: var(--text); letter-spacing: -0.02em; line-height: 1; }
+
+/* ═══════════════════════════════════════════════════════
+   NOTIFICATIONS (Socket.io Toast)
+   ═══════════════════════════════════════════════════════ */
+.notification-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  padding: 16px 20px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  max-width: 400px;
+  width: 100%;
+  pointer-events: auto;
+  position: relative;
+  transition: all 0.3s var(--ease);
+}
+
+.notification-toast.animate-enter { animation: notif-slide-in 0.5s var(--ease); }
+.notification-toast.animate-leave { animation: notif-slide-out 0.4s var(--ease); }
+
+@keyframes notif-slide-in {
+  from { transform: translateX(120%) scale(0.9); opacity: 0; }
+  to { transform: translateX(0) scale(1); opacity: 1; }
+}
+
+@keyframes notif-slide-out {
+  from { transform: translateX(0) scale(1); opacity: 1; }
+  to { transform: translateX(120%) scale(0.9); opacity: 0; }
+}
+
+.notif-icon {
+  width: 44px;
+  height: 44px;
+  background: var(--bg-subtle);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.notification-toast.success .notif-icon { background: rgba(22, 163, 74, 0.1); }
+.notification-toast.error .notif-icon { background: rgba(220, 38, 38, 0.1); }
+.notification-toast.warning .notif-icon { background: rgba(217, 119, 6, 0.1); }
+.notification-toast.info .notif-icon { background: rgba(37, 99, 235, 0.1); }
+
+.notif-content {
+  flex: 1;
+}
+
+.notif-title {
+  font-weight: 700;
+  color: var(--forest);
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.notif-body {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.notif-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-faint);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+  transition: color 0.2s;
+}
+
+.notif-close:hover { color: var(--forest); }

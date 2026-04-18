@@ -335,6 +335,9 @@ export const AdminAPI = {
   settings: () => req('/admin/settings'),
   updateSetting: (key: string, value: string) => req(`/admin/settings/${key}`, { method: 'PUT', body: JSON.stringify({ value }) }),
 
+  sendBroadcast: (b: { title: string; body: string; type: string; geofence_id?: number; target_role?: string }) =>
+    req('/admin/notifications/broadcast', { method: 'POST', body: JSON.stringify(b) }),
+
   // Order Tracking
   updateOrderTracking: (id: number, b: any) => req(`/admin/shop/orders/${id}/tracking`, { method: 'PUT', body: JSON.stringify(b) }),
 

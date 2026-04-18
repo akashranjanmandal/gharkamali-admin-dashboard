@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
 import { useAdmin } from '@/store/admin';
 import { AdminAPI } from '@/lib/api';
+import AdminNotificationListener from './AdminNotificationListener';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -59,6 +60,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="admin-layout">
+      <AdminNotificationListener />
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
