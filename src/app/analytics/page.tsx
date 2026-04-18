@@ -409,7 +409,7 @@ export default function AnalyticsPage() {
                   <td>Total</td>
                   <td style={{ textAlign:'right' }}>{zoneShopOrders.toLocaleString('en-IN')}</td>
                   <td style={{ textAlign:'right', color:'var(--forest)' }}>₹{shopZoneRevenue.toLocaleString('en-IN')}</td>
-                  <td style={{ textAlign:'right' }}>₹{zoneShopOrders > 0 ? (shopZoneRevenue / zoneShopOrders).toFixed(0).toLocaleString('en-IN') : '—'}</td>
+                  <td style={{ textAlign:'right' }}>₹{zoneShopOrders > 0 ? Number((shopZoneRevenue / zoneShopOrders).toFixed(0)).toLocaleString('en-IN') : '—'}</td>
                   <td style={{ textAlign:'right' }}>100%</td>
                 </tr>
               </tbody>
