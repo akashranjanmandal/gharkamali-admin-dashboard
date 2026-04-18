@@ -213,8 +213,8 @@ export const AdminAPI = {
 
   bookings: (p?: any) => req(`/admin/bookings${qs(p)}`),
   bookingDetail: (id: number) => req(`/admin/bookings/${id}`),
-  checkGardenerAvailability: (date: string, gardener_id?: number, zone_id?: number) =>
-    req(`/bookings/check-availability${qs({ date, gardener_id, zone_id })}`),
+  checkGardenerAvailability: (date: string, gardener_id?: number, geofence_id?: number) =>
+    req(`/bookings/check-availability${qs({ date, gardener_id, geofence_id })}`),
   reassignBooking: (id: number, gardener_id: number, reason?: string) =>
     req(`/admin/bookings/${id}/reassign`, {
       method: 'PATCH',
@@ -250,7 +250,7 @@ export const AdminAPI = {
   rewards: (p?: any) => req(`/admin/rewards${qs(p)}`),
   createReward: (b: any) => req('/admin/rewards', { method: 'POST', body: JSON.stringify(b) }),
 
-  assignGardenerZone: (gardenerId: number, zoneIds: number[]) => req(`/admin/gardeners/${gardenerId}/zones`, { method: 'POST', body: JSON.stringify({ zone_ids: zoneIds }) }),
+  assignGardenerZone: (gardener_id: number, geofence_ids: number[]) => req(`/admin/gardeners/${gardener_id}/zones`, { method: 'POST', body: JSON.stringify({ geofence_ids }) }),
 
   slaConfig: () => req('/admin/sla/config'),
   updateSlaConfig: (b: any) => req('/admin/sla/config', { method: 'PUT', body: JSON.stringify(b) }),
@@ -351,8 +351,8 @@ export const AdminAPI = {
 
   // Gardener Zones
   gardenerZones: (id: number) => req(`/admin/gardeners/${id}/zones`),
-  removeGardenerZone: (id: number, zone_id: number) =>
-    req(`/admin/gardeners/${id}/zones/${zone_id}`, { method: 'DELETE' }),
+  removeGardenerZone: (id: number, geofence_id: number) =>
+    req(`/admin/gardeners/${id}/zones/${geofence_id}`, { method: 'DELETE' }),
 
   // Toggle gardener active status
   toggleGardener: (id: number) => req(`/admin/gardeners/${id}/toggle`, { method: 'PATCH' }),

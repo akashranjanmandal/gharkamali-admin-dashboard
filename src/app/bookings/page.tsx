@@ -51,6 +51,7 @@ export default function AdminBookingsPage() {
       b.customer?.phone?.includes(term) ||
       b.gardener?.name?.toLowerCase().includes(term) ||
       b.zone?.name?.toLowerCase().includes(term) ||
+      b.geofence?.name?.toLowerCase().includes(term) ||
       b.status?.toLowerCase().includes(term)
     );
   });
@@ -75,7 +76,7 @@ export default function AdminBookingsPage() {
       Customer: b.customer?.name,
       Phone: b.customer?.phone,
       Gardener: b.gardener?.name || 'Unassigned',
-      Zone: b.zone?.name,
+      Geofence: b.geofence?.name || b.zone?.name || '—',
       ScheduledDate: b.scheduled_date,
       ScheduledTime: b.scheduled_time || 'Flexible',
       Status: b.status,
@@ -116,7 +117,7 @@ export default function AdminBookingsPage() {
       <div className="card">
         <div className="table-wrap">
           <table className="admin-table">
-            <thead><tr><th>Booking #</th><th>Customer</th><th>Gardener</th><th>Zone</th><th>Date</th><th>Status</th><th>Amount</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Booking #</th><th>Customer</th><th>Gardener</th><th>Geofence</th><th>Date</th><th>Status</th><th>Amount</th><th>Actions</th></tr></thead>
             <tbody>
               {isLoading ? Array(8).fill(null).map((_, i) => <tr key={i}><td colSpan={8}><div className="skeleton skel-text" style={{ width: '100%' }} /></td></tr>) :
                 bookings.length === 0 ? <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '48px' }}>No bookings found</td></tr> :
@@ -125,7 +126,7 @@ export default function AdminBookingsPage() {
                     <td><span style={{ fontWeight: 700, color: 'var(--forest)', fontFamily: 'monospace', fontSize: '0.82rem' }}>{b.booking_number}</span></td>
                     <td><div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{b.customer?.name}</div><div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>+91 {b.customer?.phone}</div></td>
                     <td>{b.gardener ? <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{b.gardener.name}</div> : <span style={{ color: 'var(--text-faint)', fontSize: '0.8rem' }}>Unassigned</span>}</td>
-                    <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{b.zone?.name ?? '—'}</td>
+                    <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{b.geofence?.name || b.zone?.name ?? '—'}</td>
                     <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                       {b.scheduled_date && new Date(b.scheduled_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                       {b.scheduled_time && <span style={{ color: 'var(--gold-deep)', fontWeight: 600 }}> at {b.scheduled_time}</span>}
@@ -181,7 +182,11 @@ export default function AdminBookingsPage() {
                   <label>Select New Gardener *</label>
                   <select className="input" value={gardenerId} onChange={e=>setGardenerId(e.target.value)} style={{appearance:'none', border: isBusy ? '2px solid var(--error)' : '' }}>
                     <option value="">Choose a gardener…</option>
-                    {gardeners.map((g:any)=><option key={g.id} value={g.id}>{g.name} — {g.zone?.name ?? 'No zone'}</option>)}
+                    {gardeners.map((g: any) => (
+                      <option key={g.id} value={g.id}>
+                        {g.name} — {g.assignedGeofences?.map((ag: any) => ag.geofence?.name).filter(Boolean).join(', ') || g.zone?.name || 'No geofence'}
+                      </option>
+                    ))}
                   </select>
                   {loading && <div style={{ position: 'absolute', right: 40, top: 38 }}><div className="spin-sm" /></div>}
                   {isBusy && <div style={{ color: 'var(--error)', fontSize: '0.75rem', fontWeight: 700, marginTop: 4 }}>⚠️ This gardener is busy at {reassignModal.scheduled_time} (± 2h)</div>}

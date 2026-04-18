@@ -9,7 +9,7 @@ import { IconFilter, IconDownload, IconSearch, IconX, IconCalendar, IconUser, Ic
 export default function AdminSubscriptionsPage() {
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState('');
-  const [zoneId, setZoneId] = useState('');
+  const [geofenceId, setGeofenceId] = useState('');
   const [planId, setPlanId] = useState('');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<any>(null);
@@ -17,18 +17,18 @@ export default function AdminSubscriptionsPage() {
   const [selectedBookingId, setSelectedBookingId] = useState<number | null>(null);
 
   const { data, isLoading } = useQuery({ 
-    queryKey: ['admin-subscriptions', page, status, zoneId, planId, search], 
+    queryKey: ['admin-subscriptions', page, status, geofenceId, planId, search], 
     queryFn: () => AdminAPI.subscriptions({ 
       page, 
       limit: 20, 
       status: status || undefined,
-      zone_id: zoneId || undefined,
+      geofence_id: geofenceId || undefined,
       plan_id: planId || undefined,
       search: search || undefined
     }) 
   });
 
-  const { data: zonesRaw } = useQuery({ queryKey: ['admin-zones'], queryFn: () => AdminAPI.zones() });
+  const { data: geofencesRaw } = useQuery({ queryKey: ['admin-geofences'], queryFn: () => AdminAPI.geofences() });
   const { data: plansRaw } = useQuery({ queryKey: ['admin-plans'], queryFn: () => AdminAPI.plans() });
 
   const { data: subHistory, isLoading: isHistoryLoading } = useQuery({
@@ -44,10 +44,7 @@ export default function AdminSubscriptionsPage() {
   });
 
   const subsRaw: any[] = (data as any)?.subscriptions || (Array.isArray(data) ? data : []);
-  // Filter to only active service zones with polygon data
-  const zones: any[] = (Array.isArray(zonesRaw) ? zonesRaw : (zonesRaw as any)?.data ?? [])
-    .filter((z:any) => z.is_active !== false && ((z.polygon_coords && z.polygon_coords.length > 0) || (z.polygon_coordinates && z.polygon_coordinates.length > 0)))
-    .sort((a:any, b:any) => (a.name || '').localeCompare(b.name || ''));
+  const geofences: any[] = Array.isArray(geofencesRaw) ? geofencesRaw : (geofencesRaw as any)?.data ?? [];
   const plans: any[] = Array.isArray(plansRaw) ? plansRaw : (plansRaw as any)?.data ?? [];
 
   // Client-side "all columns" filtering
@@ -59,6 +56,7 @@ export default function AdminSubscriptionsPage() {
       s.customer?.name?.toLowerCase().includes(term) ||
       s.customer?.phone?.includes(term) ||
       s.plan?.name?.toLowerCase().includes(term) ||
+      s.geofence?.name?.toLowerCase().includes(term) ||
       s.zone?.name?.toLowerCase().includes(term) ||
       s.status?.toLowerCase().includes(term)
     );
@@ -75,7 +73,7 @@ export default function AdminSubscriptionsPage() {
       Customer: s.customer?.name,
       Phone: s.customer?.phone,
       Plan: s.plan?.name,
-      Zone: s.zone?.name,
+      Geofence: s.geofence?.name || s.zone?.name || '—',
       Plants: s.plant_count,
       Status: s.status,
       AutoRenew: s.auto_renew ? 'Yes' : 'No',
@@ -107,9 +105,9 @@ export default function AdminSubscriptionsPage() {
           <option value="">All Statuses</option>
           {Object.keys(STATUS_COLOR).map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
         </select>
-        <select value={zoneId} onChange={e => { setZoneId(e.target.value); setPage(1); }} className="input" style={{ width: 'auto', minWidth: 140 }}>
-          <option value="">All Zones</option>
-          {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
+        <select value={geofenceId} onChange={e => { setGeofenceId(e.target.value); setPage(1); }} className="input" style={{ width: 'auto', minWidth: 140 }}>
+          <option value="">All Geofences</option>
+          {geofences.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
         </select>
         <select value={planId} onChange={e => { setPlanId(e.target.value); setPage(1); }} className="input" style={{ width: 'auto', minWidth: 140 }}>
           <option value="">All Plans</option>
@@ -120,7 +118,7 @@ export default function AdminSubscriptionsPage() {
       <div className="card">
         <div className="table-wrap">
           <table className="admin-table">
-            <thead><tr><th>Customer</th><th>Plan</th><th>Zone</th><th>Plants</th><th>Status</th><th>Auto Renew</th><th>Start</th><th>Next Visit</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Customer</th><th>Plan</th><th>Geofence</th><th>Plants</th><th>Status</th><th>Auto Renew</th><th>Start</th><th>Next Visit</th><th>Actions</th></tr></thead>
             <tbody>
               {isLoading ? Array(8).fill(null).map((_, i) => <tr key={i}><td colSpan={9}><div className="skeleton skel-text" /></td></tr>) :
                 subs.length === 0 ? <tr><td colSpan={9} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '48px' }}>No subscriptions found matching criteria</td></tr> :
@@ -131,7 +129,7 @@ export default function AdminSubscriptionsPage() {
                       <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>+91 {s.customer?.phone}</div>
                     </td>
                     <td style={{ fontWeight: 600 }}>{s.plan?.name}</td>
-                    <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{s.zone?.name || '—'}</td>
+                    <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{s.geofence?.name || s.zone?.name || '—'}</td>
                     <td style={{ fontWeight: 600 }}>{s.plant_count}</td>
                     <td><span className={`badge ${STATUS_COLOR[s.status] || 'badge-gray'}`}>{s.status}</span></td>
                     <td>{s.auto_renew ? <span className="badge badge-green">Yes</span> : <span className="badge badge-gray">No</span>}</td>
@@ -257,7 +255,7 @@ export default function AdminSubscriptionsPage() {
                 <div style={{ display: 'flex', gap: 12, alignItems: 'start' }}>
                   <IconMapPin size={20} style={{ color: 'var(--forest)', marginTop: 2 }} />
                   <div>
-                    <div style={{ fontWeight: 700 }}>{selected.zone?.name || 'Universal Zone'}</div>
+                    <div style={{ fontWeight: 700 }}>{selected.geofence?.name || selected.zone?.name || 'Universal Zone'}</div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4 }}>{selected.service_address || 'Address information not linked to subscription'}</div>
                   </div>
                 </div>

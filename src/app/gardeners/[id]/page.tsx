@@ -24,7 +24,7 @@ export default function GardenerDetailPage() {
         const [g, z, az] = await Promise.all([
           AdminAPI.gardenerDetail(gardenerId),
           AdminAPI.gardenerZones(gardenerId).catch(() => []),
-          AdminAPI.zones().catch(() => []),
+          AdminAPI.geofences().catch(() => []),
         ]);
         setGardener(g);
         setZones(Array.isArray(z) ? z : []);
@@ -44,7 +44,7 @@ export default function GardenerDetailPage() {
   const [selectedZones, setSelectedZones] = useState<number[]>([]);
 
   useEffect(() => {
-    setSelectedZones(zones.map((z: any) => z.zone_id || z.id));
+    setSelectedZones(zones.map((z: any) => z.geofence_id || z.id));
   }, [zones]);
 
   const saveZones = async () => {
@@ -56,10 +56,10 @@ export default function GardenerDetailPage() {
     } catch { toast.error('Failed to update zones'); }
   };
 
-  const removeZone = async (zoneId: number) => {
+  const removeZone = async (geofenceId: number) => {
     try {
-      await AdminAPI.removeGardenerZone(gardenerId, zoneId);
-      toast.success('Zone removed');
+      await AdminAPI.removeGardenerZone(gardenerId, geofenceId);
+      toast.success('Geofence removed');
       const z = await AdminAPI.gardenerZones(gardenerId).catch(() => []);
       setZones(Array.isArray(z) ? z : []);
     } catch { toast.error('Failed to remove zone'); }
@@ -156,9 +156,9 @@ export default function GardenerDetailPage() {
           ) : (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
               {zones.map((z: any) => (
-                <span key={z.id || z.zone_id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.8rem', borderRadius: '20px', background: 'rgba(59,130,246,0.1)', color: '#3b82f6', fontSize: '0.8rem', fontWeight: 600 }}>
-                  {z.zone?.name || z.name || `Zone ${z.zone_id}`}
-                  <button onClick={() => removeZone(z.zone_id || z.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.9rem', padding: 0, lineHeight: 1 }}>×</button>
+                <span key={z.id || z.geofence_id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.8rem', borderRadius: '20px', background: 'rgba(59,130,246,0.1)', color: '#3b82f6', fontSize: '0.8rem', fontWeight: 600 }}>
+                  {z.geofence?.name || z.name || `Geofence ${z.geofence_id}`}
+                  <button onClick={() => removeZone(z.geofence_id || z.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.9rem', padding: 0, lineHeight: 1 }}>×</button>
                 </span>
               ))}
             </div>
@@ -166,8 +166,8 @@ export default function GardenerDetailPage() {
           <h4 style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.85rem', marginTop: '1rem', marginBottom: '0.5rem' }}>Assigned Zones</h4>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
             {zones.map((z: any) => (
-              <span key={z.id || z.zone_id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.8rem', borderRadius: '20px', background: 'rgba(59,130,246,0.1)', color: '#3b82f6', fontSize: '0.8rem', fontWeight: 600 }}>
-                {z.zone?.name || z.name || `Zone ${z.zone_id}`}
+              <span key={z.id || z.geofence_id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.8rem', borderRadius: '20px', background: 'rgba(59,130,246,0.1)', color: '#3b82f6', fontSize: '0.8rem', fontWeight: 600 }}>
+                {z.geofence?.name || z.name || `Geofence ${z.geofence_id}`}
               </span>
             ))}
           </div>

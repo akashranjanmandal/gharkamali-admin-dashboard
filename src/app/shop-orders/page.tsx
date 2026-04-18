@@ -114,6 +114,7 @@ export default function AdminShopOrdersPage() {
             <tr>
               <th>Order #</th>
               <th>Customer</th>
+              <th>Geofence</th>
               <th>Items</th>
               <th>Total</th>
               <th>Payment</th>
@@ -134,6 +135,7 @@ export default function AdminShopOrdersPage() {
                   <div style={{ fontWeight: 700 }}>{o.customer?.name || 'Unknown'}</div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{o.customer?.phone}</div>
                 </td>
+                <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{o.geofence?.name || '—'}</td>
                 <td>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {(o.items || []).slice(0, 2).map((item: any, i: number) => (
@@ -199,6 +201,7 @@ export default function AdminShopOrdersPage() {
                   </div>
                   <div>
                     <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12 }}>Shipping Address</h4>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--forest)', marginBottom: 4 }}>{selected.geofence?.name || 'No Geofence'}</div>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'start' }}>
                       <IconTruck size={18} style={{ color: 'var(--forest)', marginTop: 2, flexShrink: 0 }} />
                       <div style={{ fontSize: '0.85rem', color: 'var(--text)' }}>{selected.shipping_address}</div>
