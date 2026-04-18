@@ -48,7 +48,11 @@ export default function AnalyticsPage() {
   const [selectedZone, setSelectedZone] = useState('');
 
   const { data: zonesRaw } = useQuery({ queryKey: ['admin-zones'], queryFn: () => AdminAPI.zones() });
-  const zones: any[] = Array.isArray(zonesRaw) ? zonesRaw : (zonesRaw as any)?.data ?? [];
+  // Filter to only active service zones (not geofences)
+  const zones: any[] = (Array.isArray(zonesRaw) ? zonesRaw : (zonesRaw as any)?.data ?? [])
+    .filter((z:any) => z.is_active !== false && z.polygon_coordinates) // Service zones have polygon_coordinates
+    .sort((a:any, b:any) => (a.name || '').localeCompare(b.name || ''));
+  
   const selectedZoneName = zones.find((z:any) => String(z.id) === selectedZone)?.name || 'All Service Areas';
 
   const { data: an, isLoading } = useQuery({

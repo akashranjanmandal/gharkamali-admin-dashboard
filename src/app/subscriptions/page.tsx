@@ -44,7 +44,10 @@ export default function AdminSubscriptionsPage() {
   });
 
   const subsRaw: any[] = (data as any)?.subscriptions || (Array.isArray(data) ? data : []);
-  const zones: any[] = Array.isArray(zonesRaw) ? zonesRaw : (zonesRaw as any)?.data ?? [];
+  // Filter to only active service zones (not geofences)
+  const zones: any[] = (Array.isArray(zonesRaw) ? zonesRaw : (zonesRaw as any)?.data ?? [])
+    .filter((z:any) => z.is_active !== false && z.polygon_coordinates)
+    .sort((a:any, b:any) => (a.name || '').localeCompare(b.name || ''));
   const plans: any[] = Array.isArray(plansRaw) ? plansRaw : (plansRaw as any)?.data ?? [];
 
   // Client-side "all columns" filtering
