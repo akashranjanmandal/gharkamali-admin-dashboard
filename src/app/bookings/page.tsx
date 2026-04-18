@@ -126,7 +126,7 @@ export default function AdminBookingsPage() {
                     <td><span style={{ fontWeight: 700, color: 'var(--forest)', fontFamily: 'monospace', fontSize: '0.82rem' }}>{b.booking_number}</span></td>
                     <td><div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{b.customer?.name}</div><div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>+91 {b.customer?.phone}</div></td>
                     <td>{b.gardener ? <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{b.gardener.name}</div> : <span style={{ color: 'var(--text-faint)', fontSize: '0.8rem' }}>Unassigned</span>}</td>
-                    <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{b.geofence?.name || b.zone?.name ?? '—'}</td>
+                    <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{(b.geofence?.name || b.zone?.name) ?? '—'}</td>
                     <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                       {b.scheduled_date && new Date(b.scheduled_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                       {b.scheduled_time && <span style={{ color: 'var(--gold-deep)', fontWeight: 600 }}> at {b.scheduled_time}</span>}
