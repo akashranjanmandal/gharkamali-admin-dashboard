@@ -5,6 +5,7 @@ import Sidebar from './Sidebar';
 import { useAdmin } from '@/store/admin';
 import { AdminAPI } from '@/lib/api';
 import AdminNotificationListener from './AdminNotificationListener';
+import NotificationBell from './NotificationBell';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -147,6 +148,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <NotificationBell />
             <a href="https://gkmapp.netlify.app/" target="_blank" rel="noopener noreferrer"
               style={{ padding: '6px 14px', borderRadius: 99, border: '1.5px solid var(--border)', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
