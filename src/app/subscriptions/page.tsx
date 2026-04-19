@@ -56,7 +56,7 @@ export default function AdminSubscriptionsPage() {
       s.customer?.name?.toLowerCase().includes(term) ||
       s.customer?.phone?.includes(term) ||
       s.plan?.name?.toLowerCase().includes(term) ||
-      s.geofence?.name?.toLowerCase().includes(term) ||
+      s.geofenceRef?.name?.toLowerCase().includes(term) ||
       s.zone?.name?.toLowerCase().includes(term) ||
       s.status?.toLowerCase().includes(term)
     );
@@ -73,7 +73,7 @@ export default function AdminSubscriptionsPage() {
       Customer: s.customer?.name,
       Phone: s.customer?.phone,
       Plan: s.plan?.name,
-      Geofence: s.geofence?.name || s.zone?.name || '—',
+      Geofence: s.geofenceRef?.name || s.zone?.name || '—',
       Plants: s.plant_count,
       Status: s.status,
       AutoRenew: s.auto_renew ? 'Yes' : 'No',
@@ -129,7 +129,7 @@ export default function AdminSubscriptionsPage() {
                       <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>+91 {s.customer?.phone}</div>
                     </td>
                     <td style={{ fontWeight: 600 }}>{s.plan?.name}</td>
-                    <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{s.geofence?.name || s.zone?.name || '—'}</td>
+                    <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{s.geofenceRef?.name || s.zone?.name || '—'}</td>
                     <td style={{ fontWeight: 600 }}>{s.plant_count}</td>
                     <td><span className={`badge ${STATUS_COLOR[s.status] || 'badge-gray'}`}>{s.status}</span></td>
                     <td>{s.auto_renew ? <span className="badge badge-green">Yes</span> : <span className="badge badge-gray">No</span>}</td>
@@ -255,7 +255,7 @@ export default function AdminSubscriptionsPage() {
                 <div style={{ display: 'flex', gap: 12, alignItems: 'start' }}>
                   <IconMapPin size={20} style={{ color: 'var(--forest)', marginTop: 2 }} />
                   <div>
-                    <div style={{ fontWeight: 700 }}>{selected.geofence?.name || selected.zone?.name || 'Universal Zone'}</div>
+                    <div style={{ fontWeight: 700 }}>{selected.geofenceRef?.name || selected.zone?.name || 'Universal Zone'}</div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4 }}>{selected.service_address || 'Address information not linked to subscription'}</div>
                   </div>
                 </div>
