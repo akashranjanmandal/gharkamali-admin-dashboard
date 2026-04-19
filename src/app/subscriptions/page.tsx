@@ -43,7 +43,7 @@ export default function AdminSubscriptionsPage() {
     enabled: !!selectedBookingId
   });
 
-  const subsRaw: any[] = (data as any)?.subscriptions || (Array.isArray(data) ? data : []);
+  const subsRaw: any[] = (data as any)?.items || (data as any)?.subscriptions || (Array.isArray(data) ? data : []);
   const geofences: any[] = Array.isArray(geofencesRaw) ? geofencesRaw : (geofencesRaw as any)?.data ?? [];
   const plans: any[] = Array.isArray(plansRaw) ? plansRaw : (plansRaw as any)?.data ?? [];
 
