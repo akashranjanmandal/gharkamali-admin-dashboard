@@ -1,6 +1,7 @@
 'use client';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { useRef, useEffect } from 'react';
 import { useAdmin } from '@/store/admin';
 
 // Premium SVG Icons - no emojis
@@ -78,6 +79,22 @@ const NAV = [
 export default function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const { user, logout } = useAdmin();
+  const navRef = useRef<HTMLElement>(null);
+  const scrollPos = useRef(0);
+
+  // Save scroll before navigation
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const save = () => { scrollPos.current = nav.scrollTop; };
+    nav.addEventListener('scroll', save, { passive: true });
+    return () => nav.removeEventListener('scroll', save);
+  }, []);
+
+  // Restore scroll after navigation
+  useEffect(() => {
+    if (navRef.current) navRef.current.scrollTop = scrollPos.current;
+  }, [pathname]);
 
   return (
     <aside className={`admin-sidebar${open ? ' open' : ''}`}>
@@ -101,7 +118,7 @@ export default function Sidebar({ open, onClose }: { open?: boolean; onClose?: (
       </div>
 
       {/* Nav */}
-      <nav className="sidebar-nav">
+      <nav ref={navRef} className="sidebar-nav">
         {NAV.map(group => (
           <div key={group.section}>
             <div className="sidebar-section">{group.section}</div>
