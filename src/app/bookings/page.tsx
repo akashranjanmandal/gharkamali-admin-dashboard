@@ -303,6 +303,31 @@ export default function AdminBookingsPage() {
                     </div>
                   )}
 
+                  {/* Service Proof Section */}
+                  {(bookingDetail.before_image || bookingDetail.after_image) && (
+                    <div style={{ marginTop: 24, padding: 16, background: 'var(--bg)', borderRadius: 16 }}>
+                      <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12, letterSpacing: 1 }}>📸 Service Proof</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                        {bookingDetail.before_image && (
+                          <div>
+                            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>Before</div>
+                            <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)', aspectRatio: '1/1' }}>
+                              <img src={bookingDetail.before_image} alt="Before" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
+                          </div>
+                        )}
+                        {bookingDetail.after_image && (
+                          <div>
+                            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>After</div>
+                            <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)', aspectRatio: '1/1' }}>
+                              <img src={bookingDetail.after_image} alt="After" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div style={{ marginTop: 24, padding: '20px 0', borderTop: '1.5px solid var(--border)' }}>
                     <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 20, letterSpacing: 1 }}>Service Activity Logs</h4>
                     <div style={{ position: 'relative', paddingLeft: 28 }}>
