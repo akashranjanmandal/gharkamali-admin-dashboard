@@ -120,6 +120,31 @@ export default function BookingDetailPage() {
         </div>
       </div>
 
+      {/* Service Proof Section */}
+      {(booking.before_image || booking.after_image) && (
+        <div style={{ background: 'var(--card-bg)', borderRadius: '0.75rem', border: '1px solid var(--border)', padding: '1.25rem', marginBottom: '1.5rem' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)', marginBottom: '1rem' }}>📸 Service Proof</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+            {booking.before_image && (
+              <div>
+                <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Before Service</p>
+                <div style={{ borderRadius: '0.75rem', overflow: 'hidden', border: '1px solid var(--border)', aspectRatio: '4/3' }}>
+                  <img src={booking.before_image} alt="Before" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              </div>
+            )}
+            {booking.after_image && (
+              <div>
+                <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>After Service</p>
+                <div style={{ borderRadius: '0.75rem', overflow: 'hidden', border: '1px solid var(--border)', aspectRatio: '4/3' }}>
+                  <img src={booking.after_image} alt="After" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Booking Logs Timeline */}
       <div style={{ background: 'var(--card-bg)', borderRadius: '0.75rem', border: '1px solid var(--border)', padding: '1.25rem' }}>
         <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)', marginBottom: '1rem' }}>📋 Activity Timeline</h3>
