@@ -10,11 +10,23 @@ export default function GardenerDetailPage() {
   const gardenerId = Number(params.id);
   const [gardener, setGardener] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'overview' | 'bookings' | 'zones' | 'bank'>('overview');
+  const [tab, setTab] = useState<'overview' | 'bookings' | 'zones' | 'bank' | 'documents'>('overview');
   const [zones, setZones] = useState<any[]>([]);
   const [allZones, setAllZones] = useState<any[]>([]);
   const [bankEditing, setBankEditing] = useState(false);
   const [bankData, setBankData] = useState({ bank_account: '', bank_ifsc: '', bank_name: '' });
+  const [docs, setDocs] = useState<any[]>([]);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [notesInput, setNotesInput] = useState<Record<number, string>>({});
+
+  const loadDocs = async () => {
+    setDocsLoading(true);
+    try {
+      const d = await AdminAPI.gardenerDocuments(gardenerId).catch(() => []);
+      setDocs(Array.isArray(d) ? d : []);
+    } finally { setDocsLoading(false); }
+  };
 
   useEffect(() => {
     if (!gardenerId) return;
@@ -40,6 +52,10 @@ export default function GardenerDetailPage() {
       setLoading(false);
     })();
   }, [gardenerId]);
+
+  useEffect(() => {
+    if (tab === 'documents') loadDocs();
+  }, [tab]);
 
   const [selectedZones, setSelectedZones] = useState<number[]>([]);
 
@@ -125,10 +141,10 @@ export default function GardenerDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-        {(['overview', 'zones', 'bank'] as const).map(t => (
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        {(['overview', 'zones', 'bank', 'documents'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: tab === t ? 'none' : '1px solid var(--border)', background: tab === t ? '#3b82f6' : 'var(--card-bg)', color: tab === t ? '#fff' : 'var(--text)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, textTransform: 'capitalize' }}>
-            {t === 'bank' ? 'Bank Details' : t}
+            {t === 'bank' ? 'Bank Details' : t === 'documents' ? '📄 KYC Documents' : t}
           </button>
         ))}
       </div>
@@ -224,6 +240,122 @@ export default function GardenerDetailPage() {
               <button onClick={() => setBankEditing(false)} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', cursor: 'pointer', fontSize: '0.85rem' }}>Cancel</button>
             </div>
           )}
+        </div>
+      )}
+
+      {tab === 'documents' && (
+        <div style={{ background: 'var(--card-bg)', borderRadius: '0.75rem', border: '1px solid var(--border)', padding: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <h3 style={{ fontWeight: 600, color: 'var(--text)' }}>KYC Documents</h3>
+            <button onClick={loadDocs} style={{ padding: '0.35rem 0.8rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', cursor: 'pointer', fontSize: '0.8rem' }}>↻ Refresh</button>
+          </div>
+
+          {docsLoading ? (
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Loading documents…</p>
+          ) : docs.length === 0 ? (
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No documents uploaded yet.</p>
+          ) : (
+            <div style={{ display: 'grid', gap: '1.25rem' }}>
+              {(['aadhaar', 'pan', 'passbook', 'cancelled_cheque'] as const).map(type => {
+                const doc = docs.find((d: any) => d.doc_type === type);
+                const docLabels: Record<string, string> = { aadhaar: 'Aadhaar Card', pan: 'PAN Card', passbook: 'Bank Passbook', cancelled_cheque: 'Cancelled Cheque' };
+                const statusColors: Record<string, { bg: string; text: string }> = {
+                  verified: { bg: 'rgba(34,197,94,0.12)', text: '#22c55e' },
+                  rejected: { bg: 'rgba(239,68,68,0.12)', text: '#ef4444' },
+                  pending:  { bg: 'rgba(234,179,8,0.12)',  text: '#eab308' },
+                };
+                const sc = statusColors[doc?.status || 'pending'];
+
+                return (
+                  <div key={type} style={{ display: 'flex', gap: '1rem', padding: '1rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--bg)', alignItems: 'flex-start' }}>
+                    {/* Thumbnail */}
+                    <div style={{ flexShrink: 0 }}>
+                      {doc ? (
+                        <img
+                          src={doc.image_url}
+                          alt={docLabels[type]}
+                          onClick={() => setPreviewUrl(doc.image_url)}
+                          style={{ width: '90px', height: '70px', objectFit: 'cover', borderRadius: '0.4rem', border: '1px solid var(--border)', cursor: 'zoom-in' }}
+                        />
+                      ) : (
+                        <div style={{ width: '90px', height: '70px', borderRadius: '0.4rem', border: '2px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: '1.5rem' }}>📄</div>
+                      )}
+                    </div>
+
+                    {/* Info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.9rem', marginBottom: '0.25rem' }}>{docLabels[type]}</div>
+                      {doc ? (
+                        <>
+                          <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700, background: sc.bg, color: sc.text, marginBottom: '0.5rem', textTransform: 'capitalize' }}>
+                            {doc.status || 'pending'}
+                          </span>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                            Uploaded: {new Date(doc.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </div>
+                          {/* Admin notes input */}
+                          <textarea
+                            placeholder="Add note (optional)…"
+                            value={notesInput[doc.id] ?? (doc.admin_notes || '')}
+                            onChange={e => setNotesInput(prev => ({ ...prev, [doc.id]: e.target.value }))}
+                            rows={2}
+                            style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '0.4rem', border: '1px solid var(--border)', background: 'var(--card-bg)', color: 'var(--text)', fontSize: '0.8rem', resize: 'vertical', marginBottom: '0.5rem' }}
+                          />
+                          {/* Action buttons */}
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await AdminAPI.updateDocumentStatus(gardenerId, doc.id, 'verified', notesInput[doc.id]);
+                                  toast.success('Document verified');
+                                  loadDocs();
+                                } catch { toast.error('Failed to update'); }
+                              }}
+                              disabled={doc.status === 'verified'}
+                              style={{ padding: '0.35rem 0.8rem', borderRadius: '0.4rem', border: 'none', background: doc.status === 'verified' ? 'var(--border)' : '#22c55e', color: doc.status === 'verified' ? 'var(--text-secondary)' : '#fff', cursor: doc.status === 'verified' ? 'default' : 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                            >
+                              ✓ Verify
+                            </button>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await AdminAPI.updateDocumentStatus(gardenerId, doc.id, 'rejected', notesInput[doc.id]);
+                                  toast.success('Document rejected');
+                                  loadDocs();
+                                } catch { toast.error('Failed to update'); }
+                              }}
+                              disabled={doc.status === 'rejected'}
+                              style={{ padding: '0.35rem 0.8rem', borderRadius: '0.4rem', border: 'none', background: doc.status === 'rejected' ? 'var(--border)' : '#ef4444', color: doc.status === 'rejected' ? 'var(--text-secondary)' : '#fff', cursor: doc.status === 'rejected' ? 'default' : 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                            >
+                              ✗ Reject
+                            </button>
+                            <button
+                              onClick={() => window.open(doc.image_url, '_blank')}
+                              style={{ padding: '0.35rem 0.8rem', borderRadius: '0.4rem', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', cursor: 'pointer', fontSize: '0.8rem' }}
+                            >
+                              ↗ Open
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.25rem' }}>Not uploaded by gardener yet</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Image preview overlay */}
+      {previewUrl && (
+        <div
+          onClick={() => setPreviewUrl(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out' }}
+        >
+          <img src={previewUrl} alt="Document preview" style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: '0.5rem', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} />
         </div>
       )}
     </div>

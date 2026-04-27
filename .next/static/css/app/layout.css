@@ -37,7 +37,7 @@ button, input, textarea, select { font-family: var(--font); }
   width: var(--sidebar-w); background: #fff;
   border-right: 1px solid var(--border);
   position: fixed; top: 0; left: 0; bottom: 0;
-  overflow-y: auto; z-index: 200;
+  overflow: hidden; z-index: 200;
   display: flex; flex-direction: column;
   box-shadow: 2px 0 20px rgba(3,65,26,0.04);
 }
@@ -56,7 +56,7 @@ button, input, textarea, select { font-family: var(--font); }
 .sidebar-logo { padding: 18px 18px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
 .sidebar-logo-icon { width: 36px; height: 36px; background: var(--forest); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .sidebar-logo-text { font-weight: 800; color: var(--forest); font-size: 0.95rem; letter-spacing: -0.01em; }
-.sidebar-nav { padding: 10px 8px; flex: 1 1; }
+.sidebar-nav { padding: 10px 8px; flex: 1 1; overflow-y: auto; overflow-x: hidden; }
 .sidebar-section { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); padding: 12px 10px 5px; }
 .sidebar-link { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 10px; font-size: 0.83rem; font-weight: 500; color: var(--text-2); cursor: pointer; transition: all 0.15s var(--ease); margin-bottom: 1px; }
 .sidebar-link:hover { background: var(--forest-light); color: var(--forest); }
@@ -255,6 +255,85 @@ select.input { cursor: pointer; }
 /* Stat label/value helpers */
 .stat-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
 .stat-value  { font-size: 1.9rem; font-weight: 800; color: var(--text); letter-spacing: -0.02em; line-height: 1; }
+
+/* ═══════════════════════════════════════════════════════
+   NOTIFICATIONS (Socket.io Toast)
+   ═══════════════════════════════════════════════════════ */
+.notification-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  padding: 16px 20px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  max-width: 400px;
+  width: 100%;
+  pointer-events: auto;
+  position: relative;
+  transition: all 0.3s var(--ease);
+}
+
+.notification-toast.animate-enter { animation: notif-slide-in 0.5s var(--ease); }
+.notification-toast.animate-leave { animation: notif-slide-out 0.4s var(--ease); }
+
+@keyframes notif-slide-in {
+  from { transform: translateX(120%) scale(0.9); opacity: 0; }
+  to { transform: translateX(0) scale(1); opacity: 1; }
+}
+
+@keyframes notif-slide-out {
+  from { transform: translateX(0) scale(1); opacity: 1; }
+  to { transform: translateX(120%) scale(0.9); opacity: 0; }
+}
+
+.notif-icon {
+  width: 44px;
+  height: 44px;
+  background: var(--bg-subtle);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.notification-toast.success .notif-icon { background: rgba(22, 163, 74, 0.1); }
+.notification-toast.error .notif-icon { background: rgba(220, 38, 38, 0.1); }
+.notification-toast.warning .notif-icon { background: rgba(217, 119, 6, 0.1); }
+.notification-toast.info .notif-icon { background: rgba(37, 99, 235, 0.1); }
+
+.notif-content {
+  flex: 1 1;
+}
+
+.notif-title {
+  font-weight: 700;
+  color: var(--forest);
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.notif-body {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.notif-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-faint);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+  transition: color 0.2s;
+}
+
+.notif-close:hover { color: var(--forest); }
 
 /*!************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[2].use[1]!./node_modules/next/dist/build/webpack/loaders/next-font-loader/index.js??ruleSet[1].rules[13].oneOf[2].use[2]!./node_modules/next/font/google/target.css?{"path":"src\\app\\layout.tsx","import":"Poppins","arguments":[{"subsets":["latin"],"weight":["400","500","600","700","800"],"display":"swap"}],"variableName":"poppins"} ***!

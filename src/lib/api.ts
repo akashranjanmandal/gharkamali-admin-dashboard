@@ -202,6 +202,9 @@ export const AdminAPI = {
       method: 'POST', body: JSON.stringify({ user_id: id })
     }),
   deleteGardener: (id: number) => req(`/admin/gardeners/${id}`, { method: 'DELETE' }),
+  gardenerDocuments: (id: number) => req(`/admin/gardeners/${id}/documents`),
+  updateDocumentStatus: (gardenerId: number, docId: number, status: 'verified' | 'rejected' | 'pending', admin_notes?: string) =>
+    req(`/admin/gardeners/${gardenerId}/documents/${docId}`, { method: 'PATCH', body: JSON.stringify({ status, ...(admin_notes ? { admin_notes } : {}) }) }),
 
   geofences: () => req('/admin/geofence'),
   createGeofence: (b: any) => req('/admin/geofence', { method: 'POST', body: JSON.stringify(b) }),
