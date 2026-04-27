@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
@@ -15,6 +15,10 @@ export default function AdminGardenersPage() {
   const [searchInput, setSearchInput] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<any>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [docs, setDocs] = useState<any[]>([]);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [docNotes, setDocNotes] = useState<Record<number, string>>({});
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-gardeners', filter, page, search],
@@ -58,6 +62,25 @@ export default function AdminGardenersPage() {
     },
     onError: (e: any) => { toast.error(e.message); setConfirmDelete(null); },
   });
+
+  useEffect(() => {
+    if (!selectedId) { setDocs([]); setDocNotes({}); return; }
+    setDocsLoading(true);
+    AdminAPI.gardenerDocuments(selectedId)
+      .then(d => setDocs(Array.isArray(d) ? d : []))
+      .catch(() => setDocs([]))
+      .finally(() => setDocsLoading(false));
+  }, [selectedId]);
+
+  const updateDocStatus = async (docId: number, status: 'verified' | 'rejected') => {
+    if (!selectedId) return;
+    try {
+      await AdminAPI.updateDocumentStatus(selectedId, docId, status, docNotes[docId]);
+      toast.success(status === 'verified' ? 'Document verified ✓' : 'Document rejected');
+      const d = await AdminAPI.gardenerDocuments(selectedId).catch(() => []);
+      setDocs(Array.isArray(d) ? d : []);
+    } catch (e: any) { toast.error(e.message); }
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -235,6 +258,73 @@ export default function AdminGardenersPage() {
                       </div>
                     </div>
                   </div>
+                  {/* KYC Documents */}
+                  <div style={{ marginTop: 28 }}>
+                    <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 14 }}>KYC Documents</h4>
+                    {docsLoading ? (
+                      <div style={{ display: 'flex', gap: 12 }}>{[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ width: 100, height: 90, borderRadius: 10 }} />)}</div>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                        {(['aadhaar', 'pan', 'passbook', 'cancelled_cheque'] as const).map(type => {
+                          const doc = docs.find(d => d.doc_type === type);
+                          const labels: Record<string, string> = { aadhaar: 'Aadhaar', pan: 'PAN Card', passbook: 'Passbook', cancelled_cheque: 'Cancelled Cheque' };
+                          const sc: Record<string, { bg: string; color: string }> = {
+                            verified:  { bg: 'rgba(34,197,94,0.12)',  color: '#16a34a' },
+                            rejected:  { bg: 'rgba(220,38,38,0.12)',  color: '#dc2626' },
+                            pending:   { bg: 'rgba(234,179,8,0.12)',  color: '#ca8a04' },
+                          };
+                          const badge = sc[doc?.status ?? 'pending'];
+                          return (
+                            <div key={type} style={{ border: '1px solid var(--border)', borderRadius: 12, padding: 12, background: 'var(--bg)' }}>
+                              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>{labels[type]}</div>
+                              {doc ? (
+                                <>
+                                  <img
+                                    src={doc.image_url}
+                                    alt={labels[type]}
+                                    onClick={() => setPreviewUrl(doc.image_url)}
+                                    style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 8, cursor: 'zoom-in', border: '1px solid var(--border)', marginBottom: 8 }}
+                                  />
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                    <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: badge.bg, color: badge.color, textTransform: 'capitalize' }}>
+                                      {doc.status || 'pending'}
+                                    </span>
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                      {new Date(doc.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                    </span>
+                                  </div>
+                                  <input
+                                    type="text"
+                                    placeholder="Note (optional)"
+                                    value={docNotes[doc.id] ?? (doc.admin_notes || '')}
+                                    onChange={e => setDocNotes(p => ({ ...p, [doc.id]: e.target.value }))}
+                                    style={{ width: '100%', padding: '5px 8px', borderRadius: 6, border: '1px solid var(--border)', fontSize: '0.75rem', marginBottom: 8, background: '#fff', color: 'var(--text)' }}
+                                  />
+                                  <div style={{ display: 'flex', gap: 6 }}>
+                                    <button
+                                      onClick={() => updateDocStatus(doc.id, 'verified')}
+                                      disabled={doc.status === 'verified'}
+                                      style={{ flex: 1, padding: '5px 0', borderRadius: 6, border: 'none', background: doc.status === 'verified' ? '#e2e8f0' : '#22c55e', color: doc.status === 'verified' ? '#94a3b8' : '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: doc.status === 'verified' ? 'default' : 'pointer' }}
+                                    >✓ Verify</button>
+                                    <button
+                                      onClick={() => updateDocStatus(doc.id, 'rejected')}
+                                      disabled={doc.status === 'rejected'}
+                                      style={{ flex: 1, padding: '5px 0', borderRadius: 6, border: 'none', background: doc.status === 'rejected' ? '#e2e8f0' : '#ef4444', color: doc.status === 'rejected' ? '#94a3b8' : '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: doc.status === 'rejected' ? 'default' : 'pointer' }}
+                                    >✗ Reject</button>
+                                  </div>
+                                </>
+                              ) : (
+                                <div style={{ height: 100, borderRadius: 8, border: '2px dashed var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, color: 'var(--text-muted)' }}>
+                                  <span style={{ fontSize: '1.5rem' }}>📄</span>
+                                  <span style={{ fontSize: '0.72rem' }}>Not uploaded</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Partner details not found</div>}
             </div>
@@ -270,6 +360,12 @@ export default function AdminGardenersPage() {
               <button onClick={() => deleteMut.mutate(confirmDelete.id)} className="btn btn-danger" disabled={deleteMut.isPending}>Delete Forever</button>
             </div>
           </div>
+        </div>
+      )}
+      {previewUrl && (
+        <div onClick={() => setPreviewUrl(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out' }}>
+          <img src={previewUrl} alt="Document" style={{ maxWidth: '88vw', maxHeight: '88vh', borderRadius: 10, boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }} onClick={e => e.stopPropagation()} />
+          <button onClick={() => setPreviewUrl(null)} style={{ position: 'absolute', top: 20, right: 24, background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', borderRadius: '50%', width: 36, height: 36, fontSize: '1.1rem', cursor: 'pointer' }}>✕</button>
         </div>
       )}
     </AdminLayout>
