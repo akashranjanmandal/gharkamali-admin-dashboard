@@ -1,17 +1,71 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
+import * as XLSX from 'xlsx';
 
 const PRODUCT_ICONS = ['soil', 'pest', 'pot', 'fert', 'plant', 'tool'];
+
+const TEMPLATE_COLS = ['name','category_name','price','mrp','stock_quantity','description','badge','icon_key','tags','is_active'];
+
+function downloadTemplate() {
+  const ws = XLSX.utils.aoa_to_sheet([
+    TEMPLATE_COLS,
+    ['Premium Potting Mix', 'Soil & Substrate', '299', '399', '100', 'Rich potting mix for indoor plants', 'Bestseller', 'soil', 'indoor,potting', 'true'],
+    ['Neem Oil Spray', 'Pest Control', '199', '249', '50', 'Organic neem oil for pest control', '', 'pest', 'organic,pest', 'true'],
+  ]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Products');
+  XLSX.writeFile(wb, 'GKM_Products_Template.xlsx');
+}
 
 export default function AdminShopProductsPage() {
   const qc = useQueryClient();
   const [modal, setModal] = useState<any>(null);
   const [form, setForm] = useState<any>({});
+  const [importModal, setImportModal] = useState(false);
+  const [importRows, setImportRows] = useState<any[]>([]);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importResult, setImportResult] = useState<any>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportResult(null);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = new Uint8Array(ev.target!.result as ArrayBuffer);
+        const wb = XLSX.read(data, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        if (rows.length === 0) { toast.error('No data rows found in file'); return; }
+        setImportRows(rows);
+      } catch {
+        toast.error('Could not parse file. Please use the provided template.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = '';
+  };
+
+  const runImport = async () => {
+    if (importRows.length === 0) return;
+    setImportLoading(true);
+    try {
+      const result: any = await AdminAPI.bulkImportProducts(importRows);
+      setImportResult(result);
+      qc.invalidateQueries({ queryKey: ['admin-shop-products'] });
+      toast.success(`${result.created} products imported!`);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+    setImportLoading(false);
+  };
 
   const { data: products, isLoading: loadingProducts } = useQuery({ queryKey: ['admin-shop-products'], queryFn: AdminAPI.shopProducts });
   const { data: categories, isLoading: loadingCats } = useQuery({ queryKey: ['admin-shop-categories'], queryFn: AdminAPI.shopCategories });
@@ -56,8 +110,9 @@ export default function AdminShopProductsPage() {
           <h1 className="page-title" style={{ marginBottom: 4 }}>Shop Management</h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Manage your gardening product catalog and categories</p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <Link href="/shop-categories" className="btn btn-outline" style={{ height: 44, display: 'flex', alignItems: 'center' }}>Manage Categories</Link>
+          <button onClick={() => { setImportRows([]); setImportResult(null); setImportModal(true); }} className="btn btn-outline" style={{ height: 44 }}>⬆ Import Excel / CSV</button>
           <button onClick={() => { setForm({ name: '', price: '', mrp: '', stock_quantity: 50, icon_key: 'plant', is_active: true }); setModal({ new: true }); }} className="btn btn-primary" style={{ height: 44 }}>+ Add Product</button>
         </div>
       </div>
@@ -225,6 +280,128 @@ export default function AdminShopProductsPage() {
             <div className="modal-footer">
               <button onClick={() => setModal(null)} className="btn btn-ghost">Cancel</button>
               <button onClick={() => saveMut.mutate(form)} disabled={saveMut.isPending} className="btn btn-primary">{saveMut.isPending ? 'Saving…' : 'Save Product'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {importModal && (
+        <div className="modal-overlay">
+          <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 760 }}>
+            <div className="modal-header">
+              <h3>📥 Import Products via Excel / CSV</h3>
+              <button className="modal-close" onClick={() => setImportModal(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+
+              {/* Step 1: Download template */}
+              <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 10, padding: '12px 16px', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1d4ed8' }}>Step 1 — Download the template</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 3 }}>Fill in your products, then upload the file below. Supports <strong>.xlsx</strong> and <strong>.csv</strong>.</div>
+                </div>
+                <button onClick={downloadTemplate} className="btn btn-outline btn-sm" style={{ whiteSpace: 'nowrap' }}>⬇ Download Template</button>
+              </div>
+
+              {/* Required columns info */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase' }}>Expected Columns</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {[
+                    { col: 'name', req: true }, { col: 'price', req: true }, { col: 'category_name', req: false },
+                    { col: 'mrp', req: false }, { col: 'stock_quantity', req: false }, { col: 'description', req: false },
+                    { col: 'badge', req: false }, { col: 'icon_key', req: false }, { col: 'tags', req: false }, { col: 'is_active', req: false },
+                  ].map(({ col, req }) => (
+                    <span key={col} style={{ padding: '2px 10px', borderRadius: 99, fontSize: '0.75rem', fontWeight: 600, background: req ? 'rgba(239,68,68,0.1)' : 'var(--bg)', color: req ? '#dc2626' : 'var(--text-muted)', border: '1px solid var(--border)' }}>
+                      {col}{req ? ' *' : ''}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Step 2: Upload file */}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase' }}>Step 2 — Upload your file</div>
+                <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: 'none' }} onChange={handleFilePick} />
+                <div
+                  onClick={() => fileRef.current?.click()}
+                  style={{ border: '2px dashed var(--border)', borderRadius: 10, padding: '28px 20px', textAlign: 'center', cursor: 'pointer', background: 'var(--bg)', transition: 'border-color 0.2s' }}
+                >
+                  <div style={{ fontSize: '2rem', marginBottom: 8 }}>📂</div>
+                  <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>Click to select file</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>.xlsx, .xls, .csv accepted</div>
+                </div>
+              </div>
+
+              {/* Preview */}
+              {importRows.length > 0 && !importResult && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>Preview — {importRows.length} rows found</div>
+                    <button onClick={() => { setImportRows([]); if (fileRef.current) fileRef.current.value = ''; }} style={{ fontSize: '0.75rem', color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer' }}>✕ Clear</button>
+                  </div>
+                  <div style={{ overflowX: 'auto', borderRadius: 8, border: '1px solid var(--border)' }}>
+                    <table className="admin-table" style={{ minWidth: 600, fontSize: '0.78rem' }}>
+                      <thead>
+                        <tr>
+                          {Object.keys(importRows[0]).map(col => <th key={col} style={{ fontSize: '0.72rem' }}>{col}</th>)}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importRows.slice(0, 5).map((row, i) => (
+                          <tr key={i}>
+                            {Object.values(row).map((val: any, j) => (
+                              <td key={j} style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {String(val)}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                        {importRows.length > 5 && (
+                          <tr><td colSpan={Object.keys(importRows[0]).length} style={{ textAlign: 'center', color: 'var(--text-muted)', fontStyle: 'italic' }}>…and {importRows.length - 5} more rows</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Result summary */}
+              {importResult && (
+                <div style={{ borderRadius: 10, border: '1px solid var(--border)', overflow: 'hidden' }}>
+                  <div style={{ padding: '12px 16px', background: importResult.failed === 0 ? 'rgba(34,197,94,0.08)' : 'rgba(234,179,8,0.08)', display: 'flex', gap: 24 }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#16a34a' }}>{importResult.created}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Imported</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '1.6rem', fontWeight: 800, color: importResult.failed > 0 ? '#dc2626' : 'var(--text-muted)' }}>{importResult.failed}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Failed</div>
+                    </div>
+                  </div>
+                  {importResult.errors?.length > 0 && (
+                    <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#dc2626', marginBottom: 6 }}>Failed rows:</div>
+                      {importResult.errors.map((e: any, i: number) => (
+                        <div key={i} style={{ fontSize: '0.75rem', color: 'var(--text-muted)', padding: '3px 0', borderBottom: '1px dashed var(--border)' }}>
+                          <strong>{e.row}</strong> — {e.reason}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button onClick={() => setImportModal(false)} className="btn btn-ghost">Close</button>
+              {importRows.length > 0 && !importResult && (
+                <button onClick={runImport} disabled={importLoading} className="btn btn-primary">
+                  {importLoading ? `Importing ${importRows.length} products…` : `⬆ Import ${importRows.length} Products`}
+                </button>
+              )}
+              {importResult && (
+                <button onClick={() => { setImportRows([]); setImportResult(null); }} className="btn btn-outline">Import Another File</button>
+              )}
             </div>
           </div>
         </div>

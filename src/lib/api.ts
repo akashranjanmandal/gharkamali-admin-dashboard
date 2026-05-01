@@ -298,6 +298,7 @@ export const AdminAPI = {
   createShopProduct: (form: FormData) => req('/admin/shop/products', { method: 'POST', body: form }),
   updateShopProduct: (id: number, form: FormData) => req(`/admin/shop/products/${id}`, { method: 'PUT', body: form }),
   deleteShopProduct: (id: number) => req(`/admin/shop/products/${id}`, { method: 'DELETE' }),
+  bulkImportProducts: (products: any[]) => req('/admin/shop/products/bulk-import', { method: 'POST', body: JSON.stringify({ products }) }),
 
   shopOrders: (p?: any) => req(`/admin/shop/orders${qs(p)}`),
   updateOrderStatus: (id: number, status: string) => req(`/admin/shop/orders/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
