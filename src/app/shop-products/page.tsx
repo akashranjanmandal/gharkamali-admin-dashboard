@@ -100,6 +100,26 @@ export default function AdminShopProductsPage() {
 
   const f = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }));
 
+  // Features helpers
+  const [featInput, setFeatInput] = useState('');
+  const addFeature = () => {
+    const val = featInput.trim();
+    if (!val) return;
+    f('features', [...(form.features || []), val]);
+    setFeatInput('');
+  };
+  const removeFeature = (i: number) => f('features', (form.features || []).filter((_: any, idx: number) => idx !== i));
+
+  // FAQ helpers
+  const [faqQ, setFaqQ] = useState('');
+  const [faqA, setFaqA] = useState('');
+  const addFaq = () => {
+    if (!faqQ.trim() || !faqA.trim()) return;
+    f('faqs', [...(form.faqs || []), { q: faqQ.trim(), a: faqA.trim() }]);
+    setFaqQ(''); setFaqA('');
+  };
+  const removeFaq = (i: number) => f('faqs', (form.faqs || []).filter((_: any, idx: number) => idx !== i));
+
   const prodList = Array.isArray(products) ? products : [];
   const catList = Array.isArray(categories) ? categories : [];
 
@@ -113,7 +133,7 @@ export default function AdminShopProductsPage() {
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <Link href="/shop-categories" className="btn btn-outline" style={{ height: 44, display: 'flex', alignItems: 'center' }}>Manage Categories</Link>
           <button onClick={() => { setImportRows([]); setImportResult(null); setImportModal(true); }} className="btn btn-outline" style={{ height: 44 }}>⬆ Import Excel / CSV</button>
-          <button onClick={() => { setForm({ name: '', price: '', mrp: '', stock_quantity: 50, icon_key: 'plant', is_active: true }); setModal({ new: true }); }} className="btn btn-primary" style={{ height: 44 }}>+ Add Product</button>
+          <button onClick={() => { setForm({ name: '', price: '', mrp: '', stock_quantity: 50, icon_key: 'plant', is_active: true, features: [], faqs: [], tags: [] }); setFeatInput(''); setFaqQ(''); setFaqA(''); setModal({ new: true }); }} className="btn btn-primary" style={{ height: 44 }}>+ Add Product</button>
         </div>
       </div>
 
@@ -189,7 +209,7 @@ export default function AdminShopProductsPage() {
                 <td><span className={`badge ${p.is_active ? 'badge-forest' : 'badge-gold'}`}>{p.is_active ? 'Active' : 'Inactive'}</span></td>
                 <td style={{ textAlign: 'right' }}>
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                    <button onClick={() => { setForm({ ...p, category_id: p.category_id }); setModal(p); }} className="btn btn-sm btn-ghost" style={{ padding: '6px 12px' }}>Edit</button>
+                    <button onClick={() => { setForm({ ...p, category_id: p.category_id, features: p.features || [], faqs: p.faqs || [], tags: p.tags || [] }); setFeatInput(''); setFaqQ(''); setFaqA(''); setModal(p); }} className="btn btn-sm btn-ghost" style={{ padding: '6px 12px' }}>Edit</button>
                     <button onClick={() => window.confirm('Deactivate product?') && deleteMut.mutate(p.id)} className="btn btn-sm btn-danger-ghost" style={{ padding: '6px' }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                     </button>
@@ -240,8 +260,54 @@ export default function AdminShopProductsPage() {
                 <div className="form-group"><label>Stock Quantity *</label><input type="number" className="input" value={form.stock_quantity || ''} onChange={e => f('stock_quantity', e.target.value)} /></div>
                 <div className="form-group"><label>Badge (e.g. Bestseller)</label><input className="input" value={form.badge || ''} onChange={e => f('badge', e.target.value)} /></div>
               </div>
-              <div className="form-group"><label>Description</label><textarea className="input" rows={4} value={form.description || ''} onChange={e => f('description', e.target.value)} placeholder="Detailed description of the product..." /></div>
-              <div className="form-group"><label>Tags (comma separated for search)</label><input className="input" value={form.tags ? (Array.isArray(form.tags) ? form.tags.join(', ') : form.tags) : ''} onChange={e => f('tags', e.target.value.split(',').map((s: string) => s.trim()).filter(Boolean))} placeholder="indoor, pet-friendly, low-light" /></div>
+              <div className="form-group"><label>Short Description</label><textarea className="input" rows={3} value={form.description || ''} onChange={e => f('description', e.target.value)} placeholder="Brief description shown on the product card and top of detail page..." /></div>
+              <div className="form-group"><label>Long Description</label><textarea className="input" rows={5} value={form.long_description || ''} onChange={e => f('long_description', e.target.value)} placeholder="Full detailed description shown in the Description tab..." /></div>
+
+              {/* ── FEATURES ── */}
+              <div className="form-group">
+                <label>Product Features / Highlights</label>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Shown as tick-mark bullet points on the product page. Add one at a time.</p>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                  <input className="input" style={{ flex: 1 }} value={featInput} onChange={e => setFeatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addFeature())} placeholder="e.g. 100% organic & safe" />
+                  <button type="button" onClick={addFeature} className="btn btn-outline btn-sm" style={{ whiteSpace: 'nowrap' }}>+ Add</button>
+                </div>
+                {(form.features || []).length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {(form.features || []).map((feat: string, i: number) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                        <span style={{ fontSize: '0.85rem', flex: 1, color: 'var(--text)' }}>✓ {feat}</span>
+                        <button type="button" onClick={() => removeFeature(i)} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: '1rem', lineHeight: 1, padding: '0 2px' }}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* ── FAQs ── */}
+              <div className="form-group">
+                <label>Product FAQs</label>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Shown in the FAQ tab on the product detail page. Add question + answer pairs.</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
+                  <input className="input" value={faqQ} onChange={e => setFaqQ(e.target.value)} placeholder="Question — e.g. Is this safe for indoor use?" />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <textarea className="input" style={{ flex: 1, minHeight: 70, resize: 'vertical' }} value={faqA} onChange={e => setFaqA(e.target.value)} placeholder="Answer..." />
+                    <button type="button" onClick={addFaq} className="btn btn-outline btn-sm" style={{ whiteSpace: 'nowrap', alignSelf: 'flex-end' }}>+ Add FAQ</button>
+                  </div>
+                </div>
+                {(form.faqs || []).length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {(form.faqs || []).map((faq: any, i: number) => (
+                      <div key={i} style={{ padding: '10px 14px', background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)', position: 'relative' }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--forest)', marginBottom: 4 }}>Q. {faq.q}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>A. {faq.a}</div>
+                        <button type="button" onClick={() => removeFaq(i)} style={{ position: 'absolute', top: 8, right: 10, background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: '1rem' }}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="form-group"><label>Tags <span style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: '0.75rem' }}>(comma separated — used for search)</span></label><input className="input" value={form.tags ? (Array.isArray(form.tags) ? form.tags.join(', ') : form.tags) : ''} onChange={e => f('tags', e.target.value.split(',').map((s: string) => s.trim()).filter(Boolean))} placeholder="indoor, pet-friendly, low-light, organic" /></div>
               {/* Location-based availability */}
               <div className="form-group">
                 <label style={{ display:'flex', alignItems:'center', gap:8 }}>
