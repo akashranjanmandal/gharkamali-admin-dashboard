@@ -2,11 +2,13 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 
 export default function AdminComplaintsPage() {
   const qc = useQueryClient();
+  const router = useRouter();
   const [status, setStatus] = useState('open');
   const [modal, setModal] = useState<any>(null);
   const [resolution, setResolution] = useState('');
@@ -47,7 +49,16 @@ export default function AdminComplaintsPage() {
                     <td><div style={{fontWeight:600,fontSize:'0.875rem'}}>{c.customer?.name}</div><div style={{fontSize:'0.72rem',color:'var(--text-muted)'}}>+91 {c.customer?.phone}</div></td>
                     <td style={{fontSize:'0.82rem',textTransform:'capitalize'}}>{c.type?.replace(/_/g,' ')}</td>
                     <td><span className={`badge ${PRIORITY_COLOR[c.priority]||'badge-gray'}`}>{c.priority}</span></td>
-                    <td style={{fontSize:'0.78rem',color:'var(--text-muted)',fontFamily:'monospace'}}>{c.booking?.booking_number||'—'}</td>
+                    <td>
+                      {c.booking_id ? (
+                        <button
+                          onClick={() => router.push(`/bookings/${c.booking_id}`)}
+                          style={{background:'none',border:'1px solid var(--forest)',color:'var(--forest)',borderRadius:6,padding:'3px 10px',fontSize:'0.75rem',fontWeight:700,cursor:'pointer',fontFamily:'monospace'}}
+                        >
+                          {c.booking?.booking_number || `#${c.booking_id}`}
+                        </button>
+                      ) : <span style={{color:'var(--text-muted)',fontSize:'0.78rem'}}>—</span>}
+                    </td>
                     <td style={{fontSize:'0.82rem'}}>{c.assignedTo?.name || <span style={{color:'var(--text-muted)'}}>Unassigned</span>}</td>
                     <td style={{fontSize:'0.78rem',color:'var(--text-muted)'}}>{c.created_at&&new Date(c.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</td>
                     <td>
@@ -63,11 +74,21 @@ export default function AdminComplaintsPage() {
         <div className="modal-overlay" onClick={()=>setModal(null)}>
           <div className="modal-box" onClick={e=>e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Update Complaint</h3>
+              <h3>Complaint #{modal.id}</h3>
               <button className="modal-close" onClick={()=>setModal(null)}>✕</button>
             </div>
             <div className="modal-body">
-              <p style={{color:'var(--text-muted)',fontSize:'0.82rem',marginBottom:14,textTransform:'capitalize'}}>{modal.type?.replace(/_/g,' ')} · {modal.customer?.name}</p>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14,flexWrap:'wrap',gap:8}}>
+                <p style={{color:'var(--text-muted)',fontSize:'0.82rem',margin:0,textTransform:'capitalize'}}>{modal.type?.replace(/_/g,' ')} · {modal.customer?.name}</p>
+                {modal.booking_id && (
+                  <button
+                    onClick={()=>{setModal(null); router.push(`/bookings/${modal.booking_id}`);}}
+                    style={{display:'inline-flex',alignItems:'center',gap:5,background:'var(--forest)',color:'#fff',border:'none',borderRadius:7,padding:'5px 12px',fontSize:'0.78rem',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap'}}
+                  >
+                    🧾 View Order {modal.booking?.booking_number ? `· ${modal.booking.booking_number}` : `#${modal.booking_id}`}
+                  </button>
+                )}
+              </div>
               <div style={{padding:'12px 14px',background:'var(--bg)',borderRadius:10,marginBottom:16,fontSize:'0.875rem',color:'var(--text-2)',lineHeight:1.6}}>{modal.description}</div>
               
               <div className="form-group">
