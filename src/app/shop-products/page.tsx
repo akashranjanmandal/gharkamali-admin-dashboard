@@ -260,6 +260,16 @@ export default function AdminShopProductsPage() {
                 <div className="form-group"><label>Stock Quantity *</label><input type="number" className="input" value={form.stock_quantity || ''} onChange={e => f('stock_quantity', e.target.value)} /></div>
                 <div className="form-group"><label>Badge (e.g. Bestseller)</label><input className="input" value={form.badge || ''} onChange={e => f('badge', e.target.value)} /></div>
               </div>
+              <div className="form-group">
+                <label>GST Rate</label>
+                <select className="input" value={form.gst_rate ?? 0} onChange={e => f('gst_rate', Number(e.target.value))}>
+                  <option value={0}>No GST (0%)</option>
+                  <option value={5}>5% GST</option>
+                  <option value={12}>12% GST</option>
+                  <option value={18}>18% GST</option>
+                </select>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>Applied only when customer opts to claim GST at checkout. Within UP: split as SGST + CGST. Other states: IGST.</p>
+              </div>
               <div className="form-group"><label>Short Description</label><textarea className="input" rows={3} value={form.description || ''} onChange={e => f('description', e.target.value)} placeholder="Brief description shown on the product card and top of detail page..." /></div>
               <div className="form-group"><label>Long Description</label><textarea className="input" rows={5} value={form.long_description || ''} onChange={e => f('long_description', e.target.value)} placeholder="Full detailed description shown in the Description tab..." /></div>
 
