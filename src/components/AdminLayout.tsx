@@ -10,7 +10,7 @@ import NotificationBell from './NotificationBell';
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useAdmin();
+  const { isAuthenticated, isLoading, user } = useAdmin();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any>(null);
@@ -19,10 +19,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const searchTimeout = useRef<any>(null);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated && pathname !== '/login') {
-      router.replace('/login');
+    if (isLoading || pathname === '/login') return;
+    if (!isAuthenticated) { router.replace('/login'); return; }
+    // Supervisors should never see admin-only pages
+    if (user?.role === 'supervisor' && !pathname.startsWith('/supervisor')) {
+      router.replace('/supervisor/dashboard');
     }
-  }, [isAuthenticated, isLoading, pathname]);
+  }, [isAuthenticated, isLoading, pathname, user]);
 
   // Close search on click outside
   useEffect(() => {

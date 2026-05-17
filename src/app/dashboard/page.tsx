@@ -23,9 +23,9 @@ function StatusBadge({ s }: { s: string }) {
   return <span className={`badge ${m[s]||'badge-gray'}`}>{s?.replace(/_/g,' ')}</span>;
 }
 
-function StatCard({ label, value, icon, color = 'var(--forest)', sub, trend }: any) {
-  return (
-    <div className="stat-card">
+function StatCard({ label, value, icon, color = 'var(--forest)', sub, trend, href }: any) {
+  const body = (
+    <div className="stat-card" style={href ? { cursor: 'pointer', transition: 'transform 0.15s ease, box-shadow 0.15s ease' } : undefined}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
         <div style={{ width: 44, height: 44, borderRadius: 13, background: `${color}14`, border: `1px solid ${color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', color }}>
           {icon}
@@ -42,6 +42,7 @@ function StatCard({ label, value, icon, color = 'var(--forest)', sub, trend }: a
       {sub && <div style={{ fontSize: '0.72rem', color: 'var(--text-faint)', marginTop: 6, fontWeight: 500 }}>{sub}</div>}
     </div>
   );
+  return href ? <Link href={href} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>{body}</Link> : body;
 }
 
 export default function AdminDashboardPage() {
@@ -70,14 +71,14 @@ export default function AdminDashboardPage() {
   };
 
   const STATS = [
-    { label: 'Total Customers',   value: s?.totalCustomers?.toLocaleString('en-IN'),  icon: <IcUsers />,   color: 'var(--forest)', sub: 'All registered',      trend: 12 },
-    { label: 'Active Gardeners',  value: s?.totalGardeners?.toLocaleString('en-IN'),  icon: <IcLeaf />,    color: '#2563eb',       sub: 'Currently active',    trend: 5  },
-    { label: 'Bookings Today',    value: s?.todayBookings?.toLocaleString('en-IN'),    icon: <IcCal />,     color: '#d97706',       sub: 'Scheduled visits',    trend: -2 },
-    { label: 'Revenue (30d)',     value: s?.totalRevenue != null ? `₹${Number(s.totalRevenue).toLocaleString('en-IN')}` : '—', icon: <IcCash />, color: '#16a34a', sub: 'Last 30 days', trend: 18 },
-    { label: 'Avg Rating',        value: an?.avgRating ? `${Number(an.avgRating).toFixed(1)}` : '—', icon: <IcStar />, color: 'var(--earth)', sub: 'Customer satisfaction' },
-    { label: 'Open Complaints',   value: openComplaints.length,                       icon: <IcAlert />,   color: '#dc2626',       sub: 'Need attention'        },
-    { label: 'Active Subs',       value: s?.activeSubscriptions?.toLocaleString('en-IN'), icon: <IcRefresh />, color: '#9333ea', sub: 'Recurring plans' },
-    { label: 'Pending Approvals', value: s?.pendingGardeners ?? 0,                    icon: <IcLeaf />,    color: '#0891b2',       sub: 'Gardeners waiting'     },
+    { label: 'Total Customers',   value: s?.totalCustomers?.toLocaleString('en-IN'),  icon: <IcUsers />,   color: 'var(--forest)', sub: 'All registered',      trend: 12, href: '/customers' },
+    { label: 'Active Gardeners',  value: s?.totalGardeners?.toLocaleString('en-IN'),  icon: <IcLeaf />,    color: '#2563eb',       sub: 'Currently active',    trend: 5,  href: '/gardeners' },
+    { label: 'Bookings Today',    value: s?.todayBookings?.toLocaleString('en-IN'),    icon: <IcCal />,     color: '#d97706',       sub: 'Scheduled visits',    trend: -2, href: '/bookings' },
+    { label: 'Revenue (30d)',     value: s?.totalRevenue != null ? `₹${Number(s.totalRevenue).toLocaleString('en-IN')}` : '—', icon: <IcCash />, color: '#16a34a', sub: 'Last 30 days', trend: 18, href: '/payments' },
+    { label: 'Avg Rating',        value: an?.avgRating ? `${Number(an.avgRating).toFixed(1)}` : '—', icon: <IcStar />, color: 'var(--earth)', sub: 'Customer satisfaction', href: '/reviews' },
+    { label: 'Open Complaints',   value: openComplaints.length,                       icon: <IcAlert />,   color: '#dc2626',       sub: 'Need attention',        href: '/complaints' },
+    { label: 'Active Subs',       value: s?.activeSubscriptions?.toLocaleString('en-IN'), icon: <IcRefresh />, color: '#9333ea', sub: 'Recurring plans', href: '/subscriptions' },
+    { label: 'Pending Approvals', value: s?.pendingGardeners ?? 0,                    icon: <IcLeaf />,    color: '#0891b2',       sub: 'Gardeners waiting',     href: '/gardeners?status=pending' },
   ];
 
   return (

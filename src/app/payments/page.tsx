@@ -6,6 +6,25 @@ import { AdminAPI } from '@/lib/api';
 import { exportToCSV } from '@/lib/utils';
 import { IconSearch, IconDownload, IconX, IconCreditCard, IconUser, IconCalendar, IconCheck, IconAlertCircle } from '@tabler/icons-react';
 
+// Accepts ISO string, MySQL "YYYY-MM-DD HH:mm:ss", epoch ms/sec, or various API field names
+function fmtDateSafe(row: any, fmt: 'short' | 'full' = 'short'): string {
+  const raw = row?.created_at ?? row?.createdAt ?? row?.created ?? row?.paid_at ?? row?.timestamp;
+  if (!raw && raw !== 0) return '—';
+  let d: Date;
+  if (typeof raw === 'number') d = new Date(raw < 1e12 ? raw * 1000 : raw);
+  else if (typeof raw === 'string') {
+    // Convert "YYYY-MM-DD HH:mm:ss" → ISO so Safari/iOS also parse it
+    const iso = raw.includes('T') || /[zZ]|[+-]\d{2}:?\d{2}$/.test(raw)
+      ? raw
+      : raw.replace(' ', 'T') + 'Z';
+    d = new Date(iso);
+  } else d = new Date(raw);
+  if (isNaN(d.getTime())) return '—';
+  return fmt === 'full'
+    ? d.toLocaleString('en-IN', { dateStyle: 'full', timeStyle: 'medium' })
+    : d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
 export default function PaymentsAdmin() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -112,7 +131,7 @@ export default function PaymentsAdmin() {
                     <td style={{ fontSize: '0.82rem', textTransform: 'capitalize', color: 'var(--text-muted)' }}>{p.payment_for?.replace(/_/g, ' ')}</td>
                     <td><span className={`badge ${STATUS_BADGE[p.status] || 'badge-outline'}`}>{p.status}</span></td>
                     <td style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                      {new Date(p.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      {fmtDateSafe(p)}
                     </td>
                     <td style={{ textAlign: 'right' }}><button className="btn btn-xs btn-ghost">Details</button></td>
                   </tr>
@@ -160,7 +179,7 @@ export default function PaymentsAdmin() {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: 12 }}>
                   <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>TIMESTAMP</span>
-                  <span style={{ fontSize: '0.82rem' }}><IconCalendar size={14} style={{ verticalAlign: 'text-bottom', marginRight: 4 }} /> {new Date(selected.created_at).toLocaleString('en-IN', { dateStyle: 'full', timeStyle: 'medium' })}</span>
+                  <span style={{ fontSize: '0.82rem' }}><IconCalendar size={14} style={{ verticalAlign: 'text-bottom', marginRight: 4 }} /> {fmtDateSafe(selected, 'full')}</span>
                 </div>
                 {selected.gateway_response && (
                   <div style={{ marginTop: 8, padding: 12, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.72rem', fontFamily: 'monospace', maxHeight: 100, overflow: 'auto' }}>

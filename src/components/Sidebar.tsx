@@ -76,24 +76,23 @@ const NAV = [
   ]},
 ];
 
+const SCROLL_KEY = 'gkm_sidebar_scroll';
+
 export default function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const { user, logout } = useAdmin();
   const navRef = useRef<HTMLElement>(null);
-  const scrollPos = useRef(0);
 
-  // Save scroll before navigation
+  // Restore scroll on mount (AdminLayout is per-page so it remounts on nav).
+  // Using sessionStorage survives remount; useRef does not.
   useEffect(() => {
     const nav = navRef.current;
     if (!nav) return;
-    const save = () => { scrollPos.current = nav.scrollTop; };
+    const saved = sessionStorage.getItem(SCROLL_KEY);
+    if (saved) nav.scrollTop = parseInt(saved, 10) || 0;
+    const save = () => sessionStorage.setItem(SCROLL_KEY, String(nav.scrollTop));
     nav.addEventListener('scroll', save, { passive: true });
     return () => nav.removeEventListener('scroll', save);
-  }, []);
-
-  // Restore scroll after navigation
-  useEffect(() => {
-    if (navRef.current) navRef.current.scrollTop = scrollPos.current;
   }, [pathname]);
 
   return (

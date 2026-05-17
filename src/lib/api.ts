@@ -244,6 +244,7 @@ export const AdminAPI = {
   supervisors: () => req('/admin/supervisors'),
   createSupervisor: (b: any) => req('/admin/supervisors', { method: 'POST', body: JSON.stringify(b) }),
   updateSupervisor: (id: number, b: any) => req(`/admin/supervisors/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  deleteSupervisor: (id: number) => req(`/admin/supervisors/${id}`, { method: 'DELETE' }),
 
   faqs: () => req('/admin/faqs'),
   createFaq: (b: any) => req('/admin/faqs', { method: 'POST', body: JSON.stringify(b) }),
@@ -266,10 +267,17 @@ export const AdminAPI = {
   updateBlog: (id: number, form: FormData) => req(`/admin/blogs/${id}`, { method: 'PUT', body: form }),
   deleteBlog: (id: number) => req(`/admin/blogs/${id}`, { method: 'DELETE' }),
 
-  // Complaints admin: GET /complaints (not /admin/complaints)
+  // Complaints / Ticketing
   complaints: (p?: any) => req(`/complaints${qs(p)}`),
+  complaintDetail: (id: number) => req(`/complaints/${id}`),
   updateComplaint: (id: number, b: any) => req(`/complaints/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
   complaintStats: () => req('/complaints/stats'),
+  addComplaintComment: (id: number, form: FormData) => req(`/complaints/${id}/comments`, { method: 'POST', body: form }),
+  complaintDepartments: () => req('/complaints/departments'),
+  createComplaintDepartment: (b: any) => req('/admin/complaints/departments', { method: 'POST', body: JSON.stringify(b) }),
+  updateComplaintDepartment: (id: number, b: any) => req(`/admin/complaints/departments/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  deleteComplaintDepartment: (id: number) => req(`/admin/complaints/departments/${id}`, { method: 'DELETE' }),
+  complaintAssignees: () => req('/admin/complaints/assignees'),
 
   // City SEO
   cityPages: () => req('/cities'),
@@ -363,6 +371,38 @@ export const AdminAPI = {
 
   // Toggle gardener active status
   toggleGardener: (id: number) => req(`/admin/gardeners/${id}/toggle`, { method: 'PATCH' }),
+};
+
+// ─── SUPERVISOR PORTAL ────────────────────────────────────────────────────────
+// All endpoints scoped server-side to gardeners assigned to the logged-in supervisor.
+export const SupervisorAPI = {
+  dashboard: () => req('/supervisor/dashboard'),
+  gardeners: (p?: any) => req(`/supervisor/gardeners${qs(p)}`),
+  unassignedGardeners: () => req('/supervisor/gardeners/unassigned'),
+  gardenerDetail: (id: number) => req(`/supervisor/gardeners/${id}`),
+  updateGardener: (id: number, b: any) =>
+    req(`/supervisor/gardeners/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  approveGardener: (id: number) =>
+    req(`/supervisor/gardeners/${id}/approve`, { method: 'POST' }),
+  rejectGardener: (id: number) =>
+    req(`/supervisor/gardeners/${id}/reject`, { method: 'POST' }),
+  toggleGardener: (id: number, is_active: boolean) =>
+    req(`/supervisor/gardeners/${id}/toggle`, { method: 'POST', body: JSON.stringify({ is_active }) }),
+  assignGardener: (id: number) =>
+    req(`/supervisor/gardeners/${id}/assign`, { method: 'POST' }),
+  unassignGardener: (id: number) =>
+    req(`/supervisor/gardeners/${id}/unassign`, { method: 'POST' }),
+  assignZones: (id: number, geofence_ids: number[]) =>
+    req(`/supervisor/gardeners/${id}/zones`, { method: 'POST', body: JSON.stringify({ geofence_ids }) }),
+  bookings: (p?: any) => req(`/supervisor/bookings${qs(p)}`),
+  rewards: () => req('/supervisor/rewards'),
+  giveReward: (b: { gardener_id: number; type: 'reward' | 'penalty'; amount: number; reason?: string }) =>
+    req('/supervisor/rewards', { method: 'POST', body: JSON.stringify(b) }),
+  complaints: () => req('/supervisor/complaints'),
+  updateComplaint: (id: number, b: any) =>
+    req(`/complaints/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  // Public geofences are reachable without admin role
+  geofences: () => req('/geofences', { auth: false }),
 };
 
 // ─── PUBLIC APIs ──────────────────────────────────────────────────────────────

@@ -225,6 +225,8 @@ export default function AdminShopOrdersPage() {
                   ))}
                 </div>
 
+                <InvoiceBlock order={selected} />
+
                 <div className="form-group" style={{ padding: 16, background: 'var(--bg)', borderRadius: 12 }}>
                   <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12 }}>Update Order Status</label>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -288,5 +290,79 @@ export default function AdminShopOrdersPage() {
         </div>
       )}
     </AdminLayout>
+  );
+}
+
+function InvoiceBlock({ order }: { order: any }) {
+  const applyGst = order.apply_gst === true || order.apply_gst === 1;
+  const gstAmt = Number(order.gst_amount) || 0;
+  const total = Number(order.total_amount) || 0;
+  const items: any[] = order.items || [];
+  const productSubtotal = items.reduce((acc, it) => acc + (Number(it.price) || 0) * (Number(it.quantity) || 0), 0);
+  const serviceTotal = Math.max(0, total - productSubtotal - gstAmt);
+  const state = String(order.shipping_state || '').toLowerCase();
+  const isUP = state.includes('uttar') || state === 'up';
+  const effectiveRate = gstAmt > 0 && productSubtotal > 0
+    ? Math.round((gstAmt / productSubtotal) * 100)
+    : (items.find((it: any) => it.product?.gst_rate)?.product?.gst_rate || 0);
+
+  return (
+    <div style={{ marginBottom: 24, padding: 16, border: '1px solid var(--border)', borderRadius: 12, background: '#fff' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', margin: 0 }}>Tax Invoice / GST</h4>
+        <span className={`badge ${applyGst ? 'badge-forest' : 'badge-gold'}`}>
+          {applyGst ? '✓ GST Claimed' : 'GST Not Claimed'}
+        </span>
+      </div>
+
+      {applyGst && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12, padding: 12, background: 'var(--bg)', borderRadius: 8, fontSize: '0.82rem' }}>
+          <div>
+            <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Business</div>
+            <div style={{ fontWeight: 700 }}>{order.billing_business_name || '—'}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>GSTIN</div>
+            <div style={{ fontWeight: 700, fontFamily: 'monospace' }}>{order.billing_gstin || '—'}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Shipping State</div>
+            <div style={{ fontWeight: 700 }}>{order.shipping_state || '—'}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tax Type</div>
+            <div style={{ fontWeight: 700 }}>{isUP ? 'SGST + CGST (intra-state)' : 'IGST (inter-state)'}</div>
+          </div>
+        </div>
+      )}
+
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+        <tbody>
+          <tr><td style={{ padding: '4px 0', color: 'var(--text-muted)' }}>Products subtotal</td><td style={{ textAlign: 'right', fontWeight: 600 }}>₹{productSubtotal.toFixed(2)}</td></tr>
+          {serviceTotal > 0 && (
+            <tr><td style={{ padding: '4px 0', color: 'var(--text-muted)' }}>Services / Mali</td><td style={{ textAlign: 'right', fontWeight: 600 }}>₹{serviceTotal.toFixed(2)}</td></tr>
+          )}
+          {applyGst && gstAmt > 0 && isUP && (
+            <>
+              <tr><td style={{ padding: '4px 0', color: 'var(--forest)' }}>SGST{effectiveRate ? ` @ ${(effectiveRate / 2).toFixed(effectiveRate % 2 ? 1 : 0)}%` : ''}</td><td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--forest)' }}>₹{(gstAmt / 2).toFixed(2)}</td></tr>
+              <tr><td style={{ padding: '4px 0', color: 'var(--forest)' }}>CGST{effectiveRate ? ` @ ${(effectiveRate / 2).toFixed(effectiveRate % 2 ? 1 : 0)}%` : ''}</td><td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--forest)' }}>₹{(gstAmt / 2).toFixed(2)}</td></tr>
+            </>
+          )}
+          {applyGst && gstAmt > 0 && !isUP && (
+            <tr><td style={{ padding: '4px 0', color: 'var(--forest)' }}>IGST{effectiveRate ? ` @ ${effectiveRate}%` : ''}</td><td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--forest)' }}>₹{gstAmt.toFixed(2)}</td></tr>
+          )}
+          <tr style={{ borderTop: '1px solid var(--border)' }}>
+            <td style={{ padding: '8px 0', fontWeight: 800 }}>Grand Total</td>
+            <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--forest)', fontSize: '1rem' }}>₹{total.toFixed(2)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      {!applyGst && (
+        <div style={{ marginTop: 10, padding: 10, background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.25)', borderRadius: 8, fontSize: '0.78rem', color: 'var(--text-2)' }}>
+          Customer did not opt in for a GST invoice on this order.
+        </div>
+      )}
+    </div>
   );
 }

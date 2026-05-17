@@ -152,58 +152,19 @@ export default function AdminBookingsPage() {
       </div>
 
       {/* Reassign Modal */}
-      {reassignModal && (() => {
-        const [slots, setSlots] = useState<string[]>([]);
-        const [loading, setLoading] = useState(false);
-
-        useEffect(() => {
-          if (gardenerId && reassignModal.scheduled_date) {
-             setLoading(true);
-             AdminAPI.checkGardenerAvailability(reassignModal.scheduled_date, parseInt(gardenerId))
-               .then(s => setSlots(s))
-               .finally(() => setLoading(false));
-          } else {
-             setSlots([]);
-          }
-        }, [gardenerId, reassignModal.scheduled_date]);
-
-        const isBusy = gardenerId && reassignModal.scheduled_time && !loading && !slots.includes(reassignModal.scheduled_time.slice(0,5));
-
-        return (
-          <div className="modal-overlay" onClick={()=>setReassignModal(null)}>
-            <div className="modal-box" onClick={e=>e.stopPropagation()}>
-              <div className="modal-header">
-                <h3>Reassign Booking</h3>
-                <button className="modal-close" onClick={()=>setReassignModal(null)}>✕</button>
-              </div>
-              <div className="modal-body">
-                <p style={{color:'var(--text-muted)',fontSize:'0.82rem',marginBottom:16}}><span style={{fontFamily:'monospace',fontWeight:700,color:'var(--forest)'}}>{reassignModal.booking_number}</span> · Current: {reassignModal.gardener?.name ?? 'Unassigned'}</p>
-                <div className="form-group" style={{ position: 'relative' }}>
-                  <label>Select New Gardener *</label>
-                  <select className="input" value={gardenerId} onChange={e=>setGardenerId(e.target.value)} style={{appearance:'none', border: isBusy ? '2px solid var(--error)' : '' }}>
-                    <option value="">Choose a gardener…</option>
-                    {gardeners.map((g: any) => (
-                      <option key={g.id} value={g.id}>
-                        {g.name} — {g.assignedGeofences?.map((ag: any) => ag.geofence?.name).filter(Boolean).join(', ') || g.zone?.name || 'No geofence'}
-                      </option>
-                    ))}
-                  </select>
-                  {loading && <div style={{ position: 'absolute', right: 40, top: 38 }}><div className="spin-sm" /></div>}
-                  {isBusy && <div style={{ color: 'var(--error)', fontSize: '0.75rem', fontWeight: 700, marginTop: 4 }}>⚠️ This gardener is busy at {reassignModal.scheduled_time} (± 2h)</div>}
-                </div>
-                <div className="form-group">
-                  <label>Reason (optional)</label>
-                  <input className="input" value={reason} onChange={e=>setReason(e.target.value)} placeholder="e.g. Original gardener called sick" />
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button onClick={()=>setReassignModal(null)} className="btn btn-ghost">Cancel</button>
-                <button onClick={()=>reassignMut.mutate()} disabled={!gardenerId||reassignMut.isPending} className="btn btn-primary">{reassignMut.isPending?'Reassigning…':'Confirm Reassign'}</button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      {reassignModal && (
+        <ReassignModal
+          booking={reassignModal}
+          gardeners={gardeners}
+          gardenerId={gardenerId}
+          setGardenerId={setGardenerId}
+          reason={reason}
+          setReason={setReason}
+          onClose={() => setReassignModal(null)}
+          onConfirm={() => reassignMut.mutate()}
+          isPending={reassignMut.isPending}
+        />
+      )}
       {/* Booking Details Modal */}
       {selectedId && (
         <div className="modal-overlay" onClick={() => setSelectedId(null)}>
@@ -374,5 +335,76 @@ export default function AdminBookingsPage() {
         </div>
       )}
     </AdminLayout>
+  );
+}
+
+function ReassignModal({
+  booking, gardeners, gardenerId, setGardenerId, reason, setReason,
+  onClose, onConfirm, isPending,
+}: {
+  booking: any;
+  gardeners: any[];
+  gardenerId: string;
+  setGardenerId: (v: string) => void;
+  reason: string;
+  setReason: (v: string) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+  isPending: boolean;
+}) {
+  const [slots, setSlots] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (gardenerId && booking.scheduled_date) {
+      setLoading(true);
+      AdminAPI.checkGardenerAvailability(booking.scheduled_date, parseInt(gardenerId))
+        .then((s: any) => setSlots(Array.isArray(s) ? s : []))
+        .finally(() => setLoading(false));
+    } else {
+      setSlots([]);
+    }
+  }, [gardenerId, booking.scheduled_date]);
+
+  const isBusy = !!(gardenerId && booking.scheduled_time && !loading && !slots.includes(booking.scheduled_time.slice(0, 5)));
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Reassign Booking</h3>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: 16 }}>
+            <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--forest)' }}>{booking.booking_number}</span> · Current: {booking.gardener?.name ?? 'Unassigned'}
+          </p>
+          <div className="form-group" style={{ position: 'relative' }}>
+            <label>Select New Gardener *</label>
+            <select className="input" value={gardenerId} onChange={e => setGardenerId(e.target.value)}
+              style={{ appearance: 'none', border: isBusy ? '2px solid var(--error)' : '' }}>
+              <option value="">Choose a gardener…</option>
+              {gardeners.map((g: any) => (
+                <option key={g.id} value={g.id}>
+                  {g.name} — {g.assignedGeofences?.map((ag: any) => ag.geofence?.name).filter(Boolean).join(', ') || g.zone?.name || 'No geofence'}
+                </option>
+              ))}
+            </select>
+            {loading && <div style={{ position: 'absolute', right: 40, top: 38 }}><div className="spin-sm" /></div>}
+            {isBusy && <div style={{ color: 'var(--error)', fontSize: '0.75rem', fontWeight: 700, marginTop: 4 }}>⚠️ This gardener is busy at {booking.scheduled_time} (± 2h)</div>}
+          </div>
+          <div className="form-group">
+            <label>Reason (optional)</label>
+            <input className="input" value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Original gardener called sick" />
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button onClick={onClose} className="btn btn-ghost">Cancel</button>
+          <button onClick={onConfirm} disabled={!gardenerId || isPending} className="btn btn-primary">
+            {isPending ? 'Reassigning…' : 'Confirm Reassign'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

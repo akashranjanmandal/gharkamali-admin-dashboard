@@ -5,6 +5,7 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
+import { v, firstError } from '@/lib/validators';
 import * as XLSX from 'xlsx';
 
 const PRODUCT_ICONS = ['soil', 'pest', 'pot', 'fert', 'plant', 'tool'];
@@ -30,6 +31,8 @@ export default function AdminShopProductsPage() {
   const [importRows, setImportRows] = useState<any[]>([]);
   const [importLoading, setImportLoading] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
+  // category_name (lowercased) → resolution: existing category name OR '__SKIP__' OR '' (unresolved)
+  const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,6 +47,7 @@ export default function AdminShopProductsPage() {
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: '' });
         if (rows.length === 0) { toast.error('No data rows found in file'); return; }
+        setCategoryMap({});
         setImportRows(rows);
       } catch {
         toast.error('Could not parse file. Please use the provided template.');
@@ -55,9 +59,25 @@ export default function AdminShopProductsPage() {
 
   const runImport = async () => {
     if (importRows.length === 0) return;
+    // Apply category mappings + drop rows the user chose to skip
+    const transformed = importRows
+      .map(r => {
+        const raw = String(r.category_name || '').trim();
+        if (!raw) return r; // backend lets it through as uncategorized
+        const key = raw.toLowerCase();
+        const mapped = categoryMap[key];
+        // If a mapping exists, use it. If it's the same name already in catList, keep it.
+        if (mapped === '__SKIP__') return null;
+        if (mapped && mapped !== '__SKIP__') return { ...r, category_name: mapped };
+        return r;
+      })
+      .filter(Boolean) as any[];
+
+    if (transformed.length === 0) { toast.error('All rows were skipped'); return; }
+
     setImportLoading(true);
     try {
-      const result: any = await AdminAPI.bulkImportProducts(importRows);
+      const result: any = await AdminAPI.bulkImportProducts(transformed);
       setImportResult(result);
       qc.invalidateQueries({ queryKey: ['admin-shop-products'] });
       toast.success(`${result.created} products imported!`);
@@ -72,8 +92,20 @@ export default function AdminShopProductsPage() {
   const { data: geofences } = useQuery({ queryKey: ['admin-geofences'], queryFn: AdminAPI.geofences });
   const geoList: any[] = Array.isArray(geofences) ? geofences : [];
 
-  const saveMut = useMutation({ 
+  const validateProduct = (d: any): string | null => firstError([
+    v.text(d.name, { field: 'name', min: 2, max: 200 }),
+    v.amount(d.price, { field: 'price', min: 0, max: 1_000_000 }),
+    v.amount(d.mrp, { field: 'mrp', min: 0, max: 1_000_000, optional: true }),
+    v.integer(d.stock_quantity, { field: 'stock', min: 0, max: 1_000_000, optional: true }),
+    v.enumIn(Number(d.gst_rate ?? 0), [0, 5, 12, 18, 28], { field: 'gst_rate', optional: true }),
+    v.text(d.description, { field: 'description', max: 1000, optional: true }),
+    v.image(d.image instanceof File ? d.image : null, { maxMB: 5 }),
+  ]);
+
+  const saveMut = useMutation({
     mutationFn: (data: any) => {
+      const err = validateProduct(data);
+      if (err) return Promise.reject(new Error(err));
       const fd = new FormData();
       const skip = ['created_at', 'updated_at', 'createdAt', 'updatedAt', 'category', 'images'];
       Object.entries(data).forEach(([k, v]) => {
@@ -408,12 +440,67 @@ export default function AdminShopProductsPage() {
                 </div>
               </div>
 
+              {/* Unknown category mapping (gates import) */}
+              {importRows.length > 0 && !importResult && (() => {
+                const known = new Set(catList.map((c: any) => String(c.name).toLowerCase().trim()));
+                const seen = new Map<string, number>(); // displayName → count
+                importRows.forEach(r => {
+                  const raw = String(r.category_name || '').trim();
+                  if (!raw) return;
+                  if (known.has(raw.toLowerCase())) return;
+                  seen.set(raw, (seen.get(raw) || 0) + 1);
+                });
+                const unknown = Array.from(seen.entries());
+                const unresolved = unknown.filter(([name]) => !categoryMap[name.toLowerCase()]);
+
+                if (unknown.length === 0) return null;
+                return (
+                  <div style={{ marginBottom: 16, border: '1px solid rgba(234,88,12,0.3)', background: 'rgba(234,88,12,0.06)', borderRadius: 10, padding: 14 }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#b45309', marginBottom: 4 }}>
+                      ⚠️ {unknown.length} unknown categor{unknown.length === 1 ? 'y' : 'ies'} found
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 10 }}>
+                      Map each unknown category to an existing one, or skip those rows. Import is disabled until every unknown category is resolved.
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {unknown.map(([name, count]) => {
+                        const k = name.toLowerCase();
+                        return (
+                          <div key={name} style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 10, alignItems: 'center', background: '#fff', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px' }}>
+                            <div>
+                              <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.85rem' }}>{name}</div>
+                              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{count} row{count === 1 ? '' : 's'}</div>
+                            </div>
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>→</span>
+                            <select
+                              className="input"
+                              style={{ minWidth: 160 }}
+                              value={categoryMap[k] || ''}
+                              onChange={e => setCategoryMap(m => ({ ...m, [k]: e.target.value }))}
+                            >
+                              <option value="">— Choose action —</option>
+                              <optgroup label="Map to existing category">
+                                {catList.map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                              </optgroup>
+                              <option value="__SKIP__">⊘ Skip these rows</option>
+                            </select>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {unresolved.length === 0 && (
+                      <div style={{ fontSize: '0.75rem', color: '#15803d', fontWeight: 700, marginTop: 8 }}>✓ All categories resolved — you can import now.</div>
+                    )}
+                  </div>
+                );
+              })()}
+
               {/* Preview */}
               {importRows.length > 0 && !importResult && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                     <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>Preview — {importRows.length} rows found</div>
-                    <button onClick={() => { setImportRows([]); if (fileRef.current) fileRef.current.value = ''; }} style={{ fontSize: '0.75rem', color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer' }}>✕ Clear</button>
+                    <button onClick={() => { setImportRows([]); setCategoryMap({}); if (fileRef.current) fileRef.current.value = ''; }} style={{ fontSize: '0.75rem', color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer' }}>✕ Clear</button>
                   </div>
                   <div style={{ overflowX: 'auto', borderRadius: 8, border: '1px solid var(--border)' }}>
                     <table className="admin-table" style={{ minWidth: 600, fontSize: '0.78rem' }}>
@@ -470,13 +557,30 @@ export default function AdminShopProductsPage() {
 
             <div className="modal-footer">
               <button onClick={() => setImportModal(false)} className="btn btn-ghost">Close</button>
-              {importRows.length > 0 && !importResult && (
-                <button onClick={runImport} disabled={importLoading} className="btn btn-primary">
-                  {importLoading ? `Importing ${importRows.length} products…` : `⬆ Import ${importRows.length} Products`}
-                </button>
-              )}
+              {importRows.length > 0 && !importResult && (() => {
+                const known = new Set(catList.map((c: any) => String(c.name).toLowerCase().trim()));
+                const blockingUnknown = importRows.some(r => {
+                  const raw = String(r.category_name || '').trim();
+                  if (!raw) return false;
+                  if (known.has(raw.toLowerCase())) return false;
+                  return !categoryMap[raw.toLowerCase()];
+                });
+                return (
+                  <button
+                    onClick={runImport}
+                    disabled={importLoading || blockingUnknown}
+                    title={blockingUnknown ? 'Resolve unknown categories above first' : ''}
+                    className="btn btn-primary">
+                    {importLoading
+                      ? `Importing ${importRows.length} products…`
+                      : blockingUnknown
+                        ? '⚠ Resolve categories to enable import'
+                        : `⬆ Import ${importRows.length} Products`}
+                  </button>
+                );
+              })()}
               {importResult && (
-                <button onClick={() => { setImportRows([]); setImportResult(null); }} className="btn btn-outline">Import Another File</button>
+                <button onClick={() => { setImportRows([]); setImportResult(null); setCategoryMap({}); }} className="btn btn-outline">Import Another File</button>
               )}
             </div>
           </div>

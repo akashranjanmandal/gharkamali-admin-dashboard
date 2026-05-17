@@ -1,7 +1,7 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
   "/dashboard/page": "app/dashboard/page.js",
-  "/gardeners/page": "app/gardeners/page.js",
   "/bookings/page": "app/bookings/page.js",
-  "/reviews/page": "app/reviews/page.js"
+  "/supervisors/page": "app/supervisors/page.js",
+  "/supervisor/add-gardener/page": "app/supervisor/add-gardener/page.js",
+  "/supervisor/dashboard/page": "app/supervisor/dashboard/page.js"
 }
