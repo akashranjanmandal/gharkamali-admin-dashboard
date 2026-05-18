@@ -21,6 +21,8 @@ const EMPTY_FORM = {
   name: '', city: '', state: '',
   base_price: '', price_per_plant: '0', min_plants: '1',
   product_markup: '0',
+  visit_minutes: '60',
+  time_addon_minutes: '30', time_addon_price: '0',
   is_active: true,
   polygon_coords: [] as LatLng[],
 };
@@ -44,6 +46,9 @@ export default function GeofencingPage() {
         price_per_plant: parseFloat(form.price_per_plant) || 0,
         min_plants: parseInt(form.min_plants) || 1,
         product_markup: parseFloat(form.product_markup) || 0,
+        visit_minutes: parseInt(form.visit_minutes) || 60,
+        time_addon_minutes: parseInt(form.time_addon_minutes) || 30,
+        time_addon_price: parseFloat(form.time_addon_price) || 0,
         is_active: form.is_active,
         polygon_coords: form.polygon_coords,
       };
@@ -73,6 +78,9 @@ export default function GeofencingPage() {
       price_per_plant: String(g.price_per_plant ?? '0'),
       min_plants: String(g.min_plants ?? '1'),
       product_markup: String(g.product_markup ?? '0'),
+      visit_minutes: String(g.visit_minutes ?? '60'),
+      time_addon_minutes: String(g.time_addon_minutes ?? '30'),
+      time_addon_price: String(g.time_addon_price ?? '0'),
       is_active: g.is_active,
       polygon_coords: pts,
     });
@@ -158,6 +166,8 @@ export default function GeofencingPage() {
                           { l: 'Per Plant', v: g.price_per_plant != null ? `₹${g.price_per_plant}` : '—' },
                           { l: 'Min Plants', v: g.min_plants ?? '—' },
                           { l: 'Prod Surge', v: g.product_markup != null ? `+₹${g.product_markup}` : '—' },
+                          { l: 'Visit Duration', v: `${g.visit_minutes || 60}m` },
+                          { l: 'Time Addon', v: (g.time_addon_price && Number(g.time_addon_price) > 0) ? `+${g.time_addon_minutes || 30}m / ₹${g.time_addon_price}` : 'Disabled' },
                         ].map(s => (
                           <div key={s.l} style={{ background: 'var(--bg)', borderRadius: 8, padding: '6px 4px', textAlign: 'center' }}>
                             <div style={{ fontSize: '0.55rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 2 }}>{s.l}</div>
@@ -252,6 +262,29 @@ export default function GeofencingPage() {
                 <div className="form-group">
                   <label>Min Plants</label>
                   <input type="number" className="input" value={form.min_plants} onChange={e => f('min_plants', e.target.value)} placeholder="1" min="1" />
+                </div>
+              </div>
+
+              {/* Default visit duration — applies to ALL bookings in this zone (subscription + on-demand) */}
+              <div className="form-row" style={{ gridTemplateColumns: '1fr' }}>
+                <div className="form-group">
+                  <label>Default Visit Duration (mins)</label>
+                  <input type="number" className="input" value={form.visit_minutes} onChange={e => f('visit_minutes', e.target.value)} placeholder="60" min="1" />
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>Countdown timer the gardener app shows once a visit starts (OTP verified). Applies to every booking in this zone. Customer-purchased time extensions are added on top.</p>
+                </div>
+              </div>
+
+              {/* Time-extension addon (per zone) */}
+              <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                <div className="form-group">
+                  <label>Time Addon Block (mins)</label>
+                  <input type="number" className="input" value={form.time_addon_minutes} onChange={e => f('time_addon_minutes', e.target.value)} placeholder="30" min="1" />
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>How many minutes the customer gets per &quot;Add Time&quot; tap on an on-demand visit.</p>
+                </div>
+                <div className="form-group">
+                  <label>Time Addon Price (₹)</label>
+                  <input type="number" className="input" value={form.time_addon_price} onChange={e => f('time_addon_price', e.target.value)} placeholder="0" min="0" />
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>Charged per block. Leave at 0 to disable time addons in this zone.</p>
                 </div>
               </div>
 

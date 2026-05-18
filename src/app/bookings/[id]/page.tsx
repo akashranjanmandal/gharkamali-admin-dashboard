@@ -20,6 +20,30 @@ const EVENT_ICONS: Record<string, string> = {
   cancelled: '❌', failed: '⚠️', reassigned: '🔄', rescheduled: '📅',
 };
 
+// Canonical gardener checklist — keep in sync with
+// GharKaMali_Gardener_App/lib/presentation/screens/job_detail_screen.dart (_checklistItems)
+const GARDENER_CHECKLIST_ITEMS = [
+  'Watering done',
+  'Weeding done',
+  'Pruning / trimming done',
+  'Fertilizer applied',
+  'Pest check done',
+  'Garden cleaned up',
+];
+
+function parseGardenerNotes(raw: any): { tasks: string[]; notes: string | null } {
+  if (!raw) return { tasks: [], notes: null };
+  if (typeof raw === 'object') {
+    return { tasks: Array.isArray(raw.tasks) ? raw.tasks : [], notes: raw.notes || null };
+  }
+  try {
+    const parsed = JSON.parse(String(raw));
+    return { tasks: Array.isArray(parsed.tasks) ? parsed.tasks : [], notes: parsed.notes || null };
+  } catch {
+    return { tasks: [], notes: String(raw) };
+  }
+}
+
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   pending: { bg: 'rgba(234,179,8,0.15)', color: '#eab308' },
   assigned: { bg: 'rgba(59,130,246,0.15)', color: '#3b82f6' },
@@ -144,6 +168,57 @@ export default function BookingDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Gardener Checklist — visible for completed bookings (blank for legacy completions) */}
+      {booking.status === 'completed' && (() => {
+        const { tasks, notes } = parseGardenerNotes(booking.gardener_notes);
+        const doneSet = new Set(tasks.map(t => t.toLowerCase().trim()));
+        const isDone = (item: string) => doneSet.has(item.toLowerCase().trim());
+        const completedCount = GARDENER_CHECKLIST_ITEMS.filter(isDone).length;
+        return (
+          <div style={{ background: 'var(--card-bg)', borderRadius: '0.75rem', border: '1px solid var(--border)', padding: '1.25rem', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)', margin: 0 }}>✅ Gardener Checklist</h3>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                {completedCount} / {GARDENER_CHECKLIST_ITEMS.length} done
+              </span>
+            </div>
+            {tasks.length === 0 && !notes && (
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+                No checklist was submitted for this booking (legacy completion). Showing blank checklist.
+              </p>
+            )}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.5rem' }}>
+              {GARDENER_CHECKLIST_ITEMS.map((item) => {
+                const done = isDone(item);
+                return (
+                  <div key={item} style={{
+                    display: 'flex', alignItems: 'center', gap: '0.6rem',
+                    padding: '0.6rem 0.75rem', borderRadius: '0.5rem',
+                    background: done ? 'rgba(34,197,94,0.08)' : 'var(--bg)',
+                    border: `1px solid ${done ? 'rgba(34,197,94,0.35)' : 'var(--border)'}`,
+                  }}>
+                    <span style={{ fontSize: '1rem', color: done ? '#16a34a' : 'var(--text-faint, #9ca3af)' }}>
+                      {done ? '☑' : '☐'}
+                    </span>
+                    <span style={{
+                      fontSize: '0.85rem',
+                      fontWeight: done ? 600 : 400,
+                      color: done ? '#16a34a' : 'var(--text-secondary)',
+                    }}>{item}</span>
+                  </div>
+                );
+              })}
+            </div>
+            {notes && (
+              <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'var(--bg)', borderRadius: '0.5rem', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.35rem' }}>📝 Gardener Notes</div>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text)', margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{notes}</p>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Booking Logs Timeline */}
       <div style={{ background: 'var(--card-bg)', borderRadius: '0.75rem', border: '1px solid var(--border)', padding: '1.25rem' }}>

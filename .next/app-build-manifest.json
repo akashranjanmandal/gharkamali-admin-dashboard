@@ -11,85 +11,35 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
-    "/login/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/login/page.js"
-    ],
     "/dashboard/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/dashboard/page.js"
     ],
-    "/supervisors/page": [
+    "/shop-products/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/supervisors/page.js"
+      "static/chunks/app/shop-products/page.js"
     ],
-    "/supervisor/dashboard/page": [
+    "/subscriptions/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/supervisor/dashboard/page.js"
-    ],
-    "/supervisor/gardeners/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/supervisor/gardeners/page.js"
-    ],
-    "/supervisor/add-gardener/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/supervisor/add-gardener/page.js"
-    ],
-    "/supervisor/bookings/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/supervisor/bookings/page.js"
-    ],
-    "/supervisor/complaints/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/supervisor/complaints/page.js"
-    ],
-    "/supervisor/rewards/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/supervisor/rewards/page.js"
+      "static/chunks/app/subscriptions/page.js"
     ],
     "/bookings/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/bookings/page.js"
     ],
-    "/customers/page": [
+    "/geofencing/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/customers/page.js"
+      "static/chunks/app/geofencing/page.js"
     ],
-    "/gardeners/page": [
+    "/plans/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/gardeners/page.js"
-    ],
-    "/payments/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/payments/page.js"
-    ],
-    "/reviews/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/reviews/page.js"
-    ],
-    "/complaints/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/complaints/page.js"
-    ],
-    "/subscriptions/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/subscriptions/page.js"
+      "static/chunks/app/plans/page.js"
     ]
   }
 }
