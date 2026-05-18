@@ -10,13 +10,57 @@ import * as XLSX from 'xlsx';
 
 const PRODUCT_ICONS = ['soil', 'pest', 'pot', 'fert', 'plant', 'tool'];
 
-const TEMPLATE_COLS = ['name','category_name','price','mrp','stock_quantity','description','badge','icon_key','tags','is_active'];
+// All product fields supported by bulk import. Keep in sync with backend
+// /admin/shop/products/bulk-import handler in GharKaMali_Backend/src/routes/index.js
+const TEMPLATE_COLS = [
+  'name',
+  'category_name',
+  'category_id',
+  'slug',
+  'price',
+  'mrp',
+  'stock_quantity',
+  'gst_rate',
+  'badge',
+  'icon_key',
+  'description',
+  'long_description',
+  'features',
+  'faqs',
+  'tags',
+  'images',
+  'available_geofence_ids',
+  'is_active',
+];
 
 function downloadTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
     TEMPLATE_COLS,
-    ['Premium Potting Mix', 'Soil & Substrate', '299', '399', '100', 'Rich potting mix for indoor plants', 'Bestseller', 'soil', 'indoor,potting', 'true'],
-    ['Neem Oil Spray', 'Pest Control', '199', '249', '50', 'Organic neem oil for pest control', '', 'pest', 'organic,pest', 'true'],
+    [
+      'Premium Potting Mix',           // name
+      'Soil & Substrate',              // category_name (or set category_id)
+      '',                              // category_id
+      '',                              // slug (auto-generated if empty)
+      '299',                           // price
+      '399',                           // mrp
+      '100',                           // stock_quantity
+      '5',                             // gst_rate (0|5|12|18|28)
+      'Bestseller',                    // badge
+      'soil',                          // icon_key (soil|pest|pot|fert|plant|tool)
+      'Rich potting mix for indoor plants',  // description
+      'Detailed long description shown in the description tab...', // long_description
+      '100% organic & safe|Improves drainage|Boosts plant growth', // features (pipe-separated)
+      'Is it safe for indoor use?::Yes, completely safe.||How much per pot?::Approx 200g per medium pot.', // faqs (Q::A pairs, pairs split by ||)
+      'indoor,potting,organic',        // tags (comma-separated)
+      'https://cdn.example.com/p1.jpg,https://cdn.example.com/p2.jpg', // images (comma-separated URLs)
+      '',                              // available_geofence_ids (comma-separated ids, blank = everywhere)
+      'true',                          // is_active
+    ],
+    [
+      'Neem Oil Spray', 'Pest Control', '', '', '199', '249', '50', '12', '', 'pest',
+      'Organic neem oil for pest control', '', 'Cold-pressed neem|Safe for pets',
+      '', 'organic,pest', '', '', 'true',
+    ],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Products');
