@@ -304,7 +304,7 @@ function TagsInput({ tags, onChange }: { tags: string[]; onChange: (t: string[])
 
 // ── Collapsible section ─────────────────────────────────────────────────────
 function Collapsible({ title, children, defaultOpen = false }: any) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpen] = useState<boolean>(defaultOpen);
   return (
     <div style={{ border: '1px solid var(--border)', borderRadius: 10, marginBottom: 16, overflow: 'hidden' }}>
       <button type="button" onClick={() => setOpen(o => !o)}
