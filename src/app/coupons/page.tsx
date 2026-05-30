@@ -118,7 +118,7 @@ export default function AdminCouponsPage() {
 
       {modal && (
         <div className="modal-overlay" onClick={() => setModal(null)}>
-          <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
+          <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto', padding: '24px 24px 28px' }}>
             <h2 style={{ fontWeight: 800, fontSize: '1.2rem', marginBottom: 20 }}>{modal.new ? 'New Coupon' : 'Edit Coupon'}</h2>
 
             <div className="form-group">
