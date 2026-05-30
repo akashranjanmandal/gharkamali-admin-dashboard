@@ -60,6 +60,7 @@ export default function AdminPlansPage() {
             </div>
             <div className="modal-body">
               <div className="form-group"><label>Name *</label><input className="input" value={form.name||''} onChange={e=>f('name',e.target.value)} /></div>
+              <div className="form-group"><label>URL Slug</label><input className="input" value={form.slug||''} onChange={e=>f('slug',e.target.value)} placeholder="auto-generated from name (e.g. premium-monthly)" /><p style={{fontSize:'0.68rem',color:'var(--text-faint)',marginTop:4}}>Booking link: /book/&lt;slug&gt;. Leave blank to auto-generate. Stays fixed when you rename the plan.</p></div>
               <div className="form-group"><label>Tagline (Shown on home page)</label><input className="input" value={form.tagline||''} onChange={e=>f('tagline',e.target.value)} /></div>
               <div className="form-row">
                 <div className="form-group"><label>Price Subtitle (e.g. Every month)</label><input className="input" value={form.price_subtitle||''} onChange={e=>f('price_subtitle',e.target.value)} /></div>

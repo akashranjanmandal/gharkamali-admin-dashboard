@@ -89,12 +89,22 @@ export default function AdminShopProductsPage() {
         const data = new Uint8Array(ev.target!.result as ArrayBuffer);
         const wb = XLSX.read(data, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: '' });
-        if (rows.length === 0) { toast.error('No data rows found in file'); return; }
+        if (!ws) { toast.error('The file has no readable sheet. Please use the provided template.'); return; }
+        const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: '', blankrows: false });
+        // Legacy .xls files often carry a bloated "used range" → drop any row
+        // where every cell is blank, and normalize header whitespace.
+        const cleaned = rows
+          .map(r => {
+            const out: any = {};
+            Object.keys(r).forEach(k => { out[String(k).trim()] = typeof r[k] === 'string' ? r[k].trim() : r[k]; });
+            return out;
+          })
+          .filter(r => Object.values(r).some(v => String(v ?? '').trim() !== ''));
+        if (cleaned.length === 0) { toast.error('No data rows found in file. Please use the provided template.'); return; }
         setCategoryMap({});
-        setImportRows(rows);
+        setImportRows(cleaned);
       } catch {
-        toast.error('Could not parse file. Please use the provided template.');
+        toast.error('Could not parse file. Please use the provided template (.xlsx, .xls or .csv).');
       }
     };
     reader.readAsArrayBuffer(file);
@@ -449,7 +459,7 @@ export default function AdminShopProductsPage() {
               <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 10, padding: '12px 16px', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1d4ed8' }}>Step 1 — Download the template</div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 3 }}>Fill in your products, then upload the file below. Supports <strong>.xlsx</strong> and <strong>.csv</strong>.</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 3 }}>Fill in your products, then upload the file below. Supports <strong>.xlsx</strong>, <strong>.xls</strong> and <strong>.csv</strong>.</div>
                 </div>
                 <button onClick={downloadTemplate} className="btn btn-outline btn-sm" style={{ whiteSpace: 'nowrap' }}>⬇ Download Template</button>
               </div>
