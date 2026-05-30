@@ -124,10 +124,10 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="form-group" style={{ marginBottom: 0 }}>
+                <div className="form-group">
                   <label>Visitor Activity Template</label>
                   <p style={{ fontSize: '0.7rem', color: 'var(--text-faint)', marginBottom: '8px' }}>
-                    Static message shown to simulate live visitor traffic.
+                    Live visitor message. Use the <strong>{'{count}'}</strong> tag to show the live count.
                   </p>
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <input
@@ -135,7 +135,7 @@ export default function SettingsPage() {
                       type="text"
                       value={editValues['social_proof_visitor_template'] || ''}
                       onChange={(e) => setEditValues({ ...editValues, social_proof_visitor_template: e.target.value })}
-                      placeholder="10+ people are viewing this page right now"
+                      placeholder="{count} people are viewing this page right now"
                     />
                     <button
                       className="btn btn-primary"
@@ -143,6 +143,29 @@ export default function SettingsPage() {
                       disabled={saving === 'social_proof_visitor_template'}
                     >
                       {saving === 'social_proof_visitor_template' ? '...' : 'Save'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Starting Visitor Count</label>
+                  <p style={{ fontSize: '0.7rem', color: 'var(--text-faint)', marginBottom: '8px' }}>
+                    Base number for the <strong>{'{count}'}</strong> tag. Every new visitor increases the live count from this number, so it grows on its own over time.
+                  </p>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <input
+                      className="input"
+                      type="number"
+                      value={editValues['social_proof_visitor_base'] || ''}
+                      onChange={(e) => setEditValues({ ...editValues, social_proof_visitor_base: e.target.value })}
+                      placeholder="1000"
+                    />
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => saveSetting('social_proof_visitor_base', editValues['social_proof_visitor_base'])}
+                      disabled={saving === 'social_proof_visitor_base'}
+                    >
+                      {saving === 'social_proof_visitor_base' ? '...' : 'Save'}
                     </button>
                   </div>
                 </div>

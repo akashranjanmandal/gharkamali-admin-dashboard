@@ -265,7 +265,7 @@ export default function GeofencingPage() {
                 </div>
               </div>
 
-              {/* Default visit duration — applies to ALL bookings in this zone (subscription + on-demand) */}
+              {/* Default visit duration — applies to ALL bookings in this zone */}
               <div className="form-row" style={{ gridTemplateColumns: '1fr' }}>
                 <div className="form-group">
                   <label>Default Visit Duration (mins)</label>
