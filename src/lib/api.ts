@@ -241,6 +241,11 @@ export const AdminAPI = {
   updateAddon: (id: number, b: any) => req(`/admin/addons/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
   deleteAddon: (id: number) => req(`/admin/addons/${id}`, { method: 'DELETE' }),
 
+  coupons: () => req('/admin/coupons'),
+  createCoupon: (b: any) => req('/admin/coupons', { method: 'POST', body: JSON.stringify(b) }),
+  updateCoupon: (id: number, b: any) => req(`/admin/coupons/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  deleteCoupon: (id: number) => req(`/admin/coupons/${id}`, { method: 'DELETE' }),
+
   supervisors: () => req('/admin/supervisors'),
   createSupervisor: (b: any) => req('/admin/supervisors', { method: 'POST', body: JSON.stringify(b) }),
   updateSupervisor: (id: number, b: any) => req(`/admin/supervisors/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
