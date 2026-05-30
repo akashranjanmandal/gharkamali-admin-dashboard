@@ -12,7 +12,7 @@ export default function AdminPlansPage() {
   const { data, isLoading } = useQuery({ queryKey: ['admin-plans'], queryFn: AdminAPI.plans });
   const items: any[] = Array.isArray(data as any) ? (data as any) : [];
   const saveMut = useMutation({ mutationFn: () => modal.id ? AdminAPI.updatePlan(modal.id, form) : AdminAPI.createPlan(form), onSuccess: () => { toast.success('Saved!'); setModal(null); qc.invalidateQueries({ queryKey: ['admin-plans'] }); }, onError: (e: any) => toast.error(e.message) });
-  const deleteMut = useMutation({ mutationFn: (id: number) => AdminAPI.deletePlan(id), onSuccess: () => { toast.success('Deleted'); qc.invalidateQueries({ queryKey: ['admin-plans'] }); }, onError: (e: any) => toast.error(e.message) });
+  const deleteMut = useMutation({ mutationFn: (id: number) => AdminAPI.deletePlan(id), onSuccess: (res: any) => { toast.success(res?.message || 'Deleted'); qc.invalidateQueries({ queryKey: ['admin-plans'] }); }, onError: (e: any) => toast.error(e.message) });
   const f = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }));
   const features = Array.isArray(form.features) ? form.features : [];
 
