@@ -184,6 +184,62 @@ export default function CustomersPage() {
                     </div>
                   )}
 
+                  {((customerDetail.subscriptions as any[]) || []).length > 0 && (
+                    <div style={{ marginBottom: 24 }}>
+                      <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12 }}>Subscriptions & Visits</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        {customerDetail.subscriptions.map((s: any) => {
+                          const subBookings: any[] = s.bookings || [];
+                          const done = subBookings.filter(b => b.status === 'completed').length;
+                          const totalVisits = s.visits_total ?? s.plan?.visits_per_month ?? null;
+                          const sc = s.status === 'active' ? 'green' : s.status === 'paused' ? 'yellow' : s.status === 'expired' ? 'red' : 'gray';
+                          return (
+                            <div key={s.id} style={{ border: '1.5px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
+                              <div style={{ padding: '14px 16px', background: 'var(--bg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                                <div>
+                                  <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--forest)' }}>{s.plan?.name || 'Subscription'}</div>
+                                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                                    {s.start_date ? new Date(s.start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'} → {s.end_date ? new Date(s.end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'} · {s.plant_count ?? 0} plants · ₹{Number(s.amount_paid ?? 0).toLocaleString('en-IN')}
+                                  </div>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                  <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--forest)', lineHeight: 1 }}>{done}{totalVisits != null && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}> / {totalVisits}</span>}</div>
+                                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, marginTop: 2 }}>Visits done</div>
+                                  </div>
+                                  <span className={`badge badge-sm badge-${sc}`}>{s.status}</span>
+                                </div>
+                              </div>
+                              {subBookings.length === 0 ? (
+                                <div style={{ padding: '12px 16px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>No visits booked yet under this subscription.</div>
+                              ) : (
+                                <div style={{ maxHeight: 230, overflowY: 'auto' }}>
+                                  {subBookings.map(b => (
+                                    <div key={b.id} onClick={() => setSelectedBookingId(b.id)}
+                                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderTop: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.15s' }}
+                                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--forest-light)'; }}
+                                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
+                                      <div>
+                                        <div style={{ fontSize: '0.8rem', fontWeight: 700 }}>#{b.booking_number}</div>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                          {b.scheduled_date ? new Date(b.scheduled_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}{b.scheduled_time ? ` · ${b.scheduled_time}` : ''}{b.gardener ? ` · ${b.gardener.name}` : ''}
+                                        </div>
+                                      </div>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        {b.rating ? <span style={{ fontSize: '0.72rem', color: 'var(--gold-deep)', fontWeight: 700 }}>★ {b.rating}</span> : null}
+                                        <span className={`badge badge-sm badge-${b.status === 'completed' ? 'green' : (b.status === 'cancelled' || b.status === 'failed') ? 'red' : 'blue'}`}>{b.status?.replace(/_/g, ' ')}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12 }}>Recent Activity</h4>
                     <div className="activity-list">
