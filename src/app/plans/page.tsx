@@ -13,6 +13,7 @@ export default function AdminPlansPage() {
   const items: any[] = Array.isArray(data as any) ? (data as any) : [];
   const saveMut = useMutation({ mutationFn: () => modal.id ? AdminAPI.updatePlan(modal.id, form) : AdminAPI.createPlan(form), onSuccess: () => { toast.success('Saved!'); setModal(null); qc.invalidateQueries({ queryKey: ['admin-plans'] }); }, onError: (e: any) => toast.error(e.message) });
   const deleteMut = useMutation({ mutationFn: (id: number) => AdminAPI.deletePlan(id), onSuccess: (res: any) => { toast.success(res?.message || 'Deleted'); qc.invalidateQueries({ queryKey: ['admin-plans'] }); }, onError: (e: any) => toast.error(e.message) });
+  const restoreMut = useMutation({ mutationFn: (id: number) => AdminAPI.setPlanActive(id, true), onSuccess: (res: any) => { toast.success(res?.message || 'Plan reactivated'); qc.invalidateQueries({ queryKey: ['admin-plans'] }); }, onError: (e: any) => toast.error(e.message) });
   const f = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }));
   const features = Array.isArray(form.features) ? form.features : [];
 
@@ -20,10 +21,13 @@ export default function AdminPlansPage() {
     <AdminLayout>
       <div style={{marginBottom:24,display:'flex',justifyContent:'space-between',alignItems:'center'}}><div><h1 className="page-title">Service Plans</h1></div><button onClick={() => { setForm({name:'',tagline:'',price_subtitle:'Every month',plan_summary:'',button_text:'Select',features:[],plan_type:'subscription',price:'',visits_per_month:'',max_plants:'',duration_days:'30',weekend_surge_price:0,is_best_value:0,is_featured:0}); setModal({new:true}); }} className="btn btn-primary">+ New Plan</button></div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:16}}>
-        {isLoading?Array(4).fill(null).map((_,i)=><div key={i} className="skeleton" style={{height:180,borderRadius:20}}/>):items.map((item:any)=>(
-          <div key={item.id} style={{background:'#fff',borderRadius:24,border:'1px solid var(--border)',overflow:'hidden',display:'flex',flexDirection:'column'}}>
+        {isLoading?Array(4).fill(null).map((_,i)=><div key={i} className="skeleton" style={{height:180,borderRadius:20}}/>):items.map((item:any)=>{
+          const inactive = !item.is_active;
+          return (
+          <div key={item.id} style={{background:'#fff',borderRadius:24,border:`1px solid ${inactive?'#e5b4b4':'var(--border)'}`,overflow:'hidden',display:'flex',flexDirection:'column',opacity:inactive?0.62:1}}>
             <div style={{background:item.is_best_value?'#88a43c':'#f9f3e5',padding:'24px 20px',textAlign:'center',position:'relative'}}>
-              {item.is_best_value === 1 && <div style={{position:'absolute',top:0,left:'50%',transform:'translateX(-50%)',background:'#4a5d23',color:'#fff',fontSize:'0.6rem',fontWeight:700,padding:'2px 8px',borderBottomLeftRadius:4,borderBottomRightRadius:4}}>Best Value</div>}
+              {!!item.is_best_value && <div style={{position:'absolute',top:0,left:'50%',transform:'translateX(-50%)',background:'#4a5d23',color:'#fff',fontSize:'0.6rem',fontWeight:700,padding:'2px 8px',borderBottomLeftRadius:4,borderBottomRightRadius:4}}>Best Value</div>}
+              {inactive && <div style={{position:'absolute',top:8,right:8,background:'#dc2626',color:'#fff',fontSize:'0.58rem',fontWeight:800,padding:'2px 8px',borderRadius:99,textTransform:'uppercase',letterSpacing:'0.05em'}}>Inactive</div>}
               <h3 style={{fontWeight:700,fontSize:'1.1rem',margin:'0 0 16px',color:item.is_best_value?'#fff':'var(--text)'}}>{item.name}</h3>
               <div style={{fontSize:'2.2rem',fontWeight:900,color:item.is_best_value?'#fff':'var(--text)',lineHeight:1}}>
                 {item.plan_type === 'ondemand' ? 'From ₹' : '₹'}{item.price?.toLocaleString('en-IN')}
@@ -45,11 +49,14 @@ export default function AdminPlansPage() {
               )}
               <div style={{marginTop:'auto',display:'flex',gap:8}}>
                 <button onClick={() => { setForm({...item}); setModal(item); }} className="btn btn-sm btn-outline" style={{flex:1}}>Edit</button>
-                <button onClick={()=>window.confirm('Delete?')&&deleteMut.mutate(item.id)} className="btn btn-sm btn-danger">Del</button>
+                {inactive
+                  ? <button onClick={()=>restoreMut.mutate(item.id)} disabled={restoreMut.isPending} className="btn btn-sm btn-primary">Restore</button>
+                  : <button onClick={()=>window.confirm('Delete this plan?')&&deleteMut.mutate(item.id)} className="btn btn-sm btn-danger">Del</button>}
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
       {modal&&(
         <div className="modal-overlay">
@@ -68,11 +75,11 @@ export default function AdminPlansPage() {
               </div>
               <div className="form-group" style={{display:'flex',alignItems:'center',gap:24,marginBottom:16}}>
                 <div style={{display:'flex',alignItems:'center',gap:8}}>
-                  <input type="checkbox" id="is_best_value" checked={form.is_best_value===1} onChange={e=>f('is_best_value',e.target.checked?1:0)} />
+                  <input type="checkbox" id="is_best_value" checked={!!form.is_best_value} onChange={e=>f('is_best_value',e.target.checked?1:0)} />
                   <label htmlFor="is_best_value" style={{marginBottom:0,cursor:'pointer'}}>Show "Best Value" tag</label>
                 </div>
                 <div style={{display:'flex',alignItems:'center',gap:8}}>
-                  <input type="checkbox" id="is_featured" checked={form.is_featured===1} onChange={e=>f('is_featured',e.target.checked?1:0)} />
+                  <input type="checkbox" id="is_featured" checked={!!form.is_featured} onChange={e=>f('is_featured',e.target.checked?1:0)} />
                   <label htmlFor="is_featured" style={{marginBottom:0,cursor:'pointer'}}>Feature on Home Page</label>
                 </div>
               </div>

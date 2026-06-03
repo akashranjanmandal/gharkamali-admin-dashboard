@@ -105,9 +105,9 @@ export default function CustomersPage() {
                   <tr key={c.id} onClick={() => setSelectedId(c.id)} style={{ cursor: 'pointer' }}>
                     <td><div style={{ fontWeight: 700, fontSize: '0.875rem' }}>{c.name}</div><div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{c.email || '—'}</div></td>
                     <td style={{ fontWeight: 500 }}>+91 {c.phone}</td>
-                    <td style={{ fontWeight: 600, color: 'var(--forest)' }}>{c.total_bookings ?? 0}</td>
-                    <td style={{ fontWeight: 700 }}>₹{(c.total_spent ?? 0).toLocaleString('en-IN')}</td>
-                    <td>₹{(c.wallet_balance ?? 0).toLocaleString('en-IN')}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--forest)' }}>{Number(c.total_bookings ?? 0)}</td>
+                    <td style={{ fontWeight: 700 }}>₹{Number(c.total_spent ?? 0).toLocaleString('en-IN')}</td>
+                    <td>₹{Number(c.wallet_balance ?? 0).toLocaleString('en-IN')}</td>
                     <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{c.created_at && new Date(c.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })}</td>
                     <td><button className="btn btn-sm btn-ghost" onClick={(e) => { e.stopPropagation(); setSelectedId(c.id); }}>Details</button></td>
                   </tr>

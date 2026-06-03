@@ -234,6 +234,7 @@ export const AdminAPI = {
   plans: () => req('/admin/plans'),
   createPlan: (b: any) => req('/admin/plans', { method: 'POST', body: JSON.stringify(b) }),
   updatePlan: (id: number, b: any) => req(`/admin/plans/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  setPlanActive: (id: number, active: boolean) => req(`/admin/plans/${id}/active`, { method: 'PATCH', body: JSON.stringify({ is_active: active }) }),
   deletePlan: (id: number) => req(`/admin/plans/${id}`, { method: 'DELETE' }),
 
   addons: () => req('/admin/addons'),
