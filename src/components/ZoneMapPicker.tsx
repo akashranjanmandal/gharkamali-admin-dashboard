@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { loadGoogleMaps } from '@/lib/googleMaps';
 
 interface Props {
   lat: number | string;
@@ -19,73 +20,44 @@ export default function ZoneMapPicker({ lat, lng, onChange }: Props) {
   const [coords, setCoords] = useState({ lat: Number(lat) || DEFAULT_LAT, lng: Number(lng) || DEFAULT_LNG });
 
   useEffect(() => {
-    // Leaflet must be loaded client-side only
-    let L: any;
-    let map: any;
+    let mounted = true;
+    loadGoogleMaps()
+      .then((maps) => {
+        if (!mounted || !containerRef.current || mapRef.current) return;
+        const initLat = Number(lat) || DEFAULT_LAT;
+        const initLng = Number(lng) || DEFAULT_LNG;
+        const map = new maps.Map(containerRef.current, {
+          center: { lat: initLat, lng: initLng }, zoom: 12,
+          streetViewControl: false, mapTypeControl: false, fullscreenControl: false, clickableIcons: false,
+        });
+        mapRef.current = map;
 
-    const init = async () => {
-      L = await import('leaflet');
+        const marker = new maps.Marker({ position: { lat: initLat, lng: initLng }, map, draggable: true });
+        markerRef.current = marker;
 
-      // Fix default marker icons (webpack breaks them)
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      });
+        const update = (latLng: any) => {
+          const newLat = parseFloat(latLng.lat().toFixed(6));
+          const newLng = parseFloat(latLng.lng().toFixed(6));
+          setCoords({ lat: newLat, lng: newLng });
+          onChange(newLat, newLng);
+        };
+        marker.addListener('dragend', (e: any) => update(e.latLng));
+        map.addListener('click', (e: any) => { marker.setPosition(e.latLng); update(e.latLng); });
 
-      if (!containerRef.current || mapRef.current) return;
-
-      const initLat = Number(lat) || DEFAULT_LAT;
-      const initLng = Number(lng) || DEFAULT_LNG;
-
-      map = L.map(containerRef.current, { zoomControl: true }).setView([initLat, initLng], 12);
-      mapRef.current = map;
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-        maxZoom: 19,
-      }).addTo(map);
-
-      // Place initial marker
-      const marker = L.marker([initLat, initLng], { draggable: true }).addTo(map);
-      markerRef.current = marker;
-
-      const updateCoords = (latLng: any) => {
-        const newLat = parseFloat(latLng.lat.toFixed(6));
-        const newLng = parseFloat(latLng.lng.toFixed(6));
-        setCoords({ lat: newLat, lng: newLng });
-        onChange(newLat, newLng);
-      };
-
-      marker.on('dragend', () => updateCoords(marker.getLatLng()));
-      map.on('click', (e: any) => {
-        marker.setLatLng(e.latlng);
-        updateCoords(e.latlng);
-      });
-
-      setReady(true);
-    };
-
-    init();
-
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-        markerRef.current = null;
-      }
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+        setReady(true);
+      })
+      .catch(err => console.error('Google Maps failed to load:', err));
+    return () => { mounted = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync external lat/lng changes (e.g. user types into input) back to map
+  // Sync external lat/lng changes (e.g. user types into input) back to the map
   useEffect(() => {
     const newLat = Number(lat);
     const newLng = Number(lng);
     if (!mapRef.current || !markerRef.current || !newLat || !newLng) return;
-    markerRef.current.setLatLng([newLat, newLng]);
-    mapRef.current.panTo([newLat, newLng]);
+    markerRef.current.setPosition({ lat: newLat, lng: newLng });
+    mapRef.current.panTo({ lat: newLat, lng: newLng });
   }, [lat, lng]);
 
   return (

@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { loadGoogleMaps } from '@/lib/googleMaps';
 
-export type LatLng = [number, number]; // [lat, lng]
+export type LatLng = [number, number]; // [lat, lng] — DB format, unchanged
 
 interface Props {
   points: LatLng[];
@@ -12,106 +13,63 @@ interface Props {
 const DEFAULT_LAT = 12.9716;
 const DEFAULT_LNG = 77.5946; // Bangalore
 
-let leafletCss = false;
-
 export default function GeofenceMapPicker({ points, onChange, readOnly = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
+  const mapsRef = useRef<any>(null);
   const polygonRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const [ready, setReady] = useState(false);
   const [localPoints, setLocalPoints] = useState<LatLng[]>(points);
 
   useEffect(() => {
-    let L: any;
-
-    const init = async () => {
-      L = await import('leaflet');
-      if (!leafletCss) {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-        document.head.appendChild(link);
-        leafletCss = true;
-      }
-
-      // Fix default icons
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      });
-
-      if (!containerRef.current || mapRef.current) return;
-
-      const center: LatLng = localPoints.length > 0 ? localPoints[0] : [DEFAULT_LAT, DEFAULT_LNG];
-      const map = L.map(containerRef.current).setView(center, 13);
-      mapRef.current = map;
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-        maxZoom: 19,
-      }).addTo(map);
-
-      // Render existing points
-      renderPolygon(L, map, localPoints);
-
-      if (!readOnly) {
-        map.on('click', (e: any) => {
-          const newPt: LatLng = [
-            parseFloat(e.latlng.lat.toFixed(6)),
-            parseFloat(e.latlng.lng.toFixed(6)),
-          ];
-          setLocalPoints(prev => {
-            const updated = [...prev, newPt];
-            renderPolygon(L, map, updated);
-            onChange(updated);
-            return updated;
-          });
+    let mounted = true;
+    loadGoogleMaps()
+      .then((maps) => {
+        if (!mounted || !containerRef.current || mapRef.current) return;
+        mapsRef.current = maps;
+        const center: LatLng = localPoints.length > 0 ? localPoints[0] : [DEFAULT_LAT, DEFAULT_LNG];
+        const map = new maps.Map(containerRef.current, {
+          center: { lat: center[0], lng: center[1] }, zoom: 13,
+          streetViewControl: false, mapTypeControl: false, fullscreenControl: false, clickableIcons: false,
         });
-      }
+        mapRef.current = map;
+        renderPolygon(maps, map, localPoints);
 
-      setReady(true);
-    };
-
-    init();
-
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-        polygonRef.current = null;
-        markersRef.current = [];
-      }
-    };
+        if (!readOnly) {
+          map.addListener('click', (e: any) => {
+            const newPt: LatLng = [parseFloat(e.latLng.lat().toFixed(6)), parseFloat(e.latLng.lng().toFixed(6))];
+            setLocalPoints(prev => {
+              const updated = [...prev, newPt];
+              renderPolygon(maps, map, updated);
+              onChange(updated);
+              return updated;
+            });
+          });
+        }
+        setReady(true);
+      })
+      .catch(err => console.error('Google Maps failed to load:', err));
+    return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const renderPolygon = (L: any, map: any, pts: LatLng[]) => {
-    // Remove existing polygon and markers
-    if (polygonRef.current) { polygonRef.current.remove(); polygonRef.current = null; }
-    markersRef.current.forEach(m => m.remove());
+  const renderPolygon = (maps: any, map: any, pts: LatLng[]) => {
+    if (polygonRef.current) { polygonRef.current.setMap(null); polygonRef.current = null; }
+    markersRef.current.forEach(m => m.setMap(null));
     markersRef.current = [];
-
     if (pts.length === 0) return;
 
-    const smallIcon = L.divIcon({
-      className: '',
-      html: `<div style="width:10px;height:10px;border-radius:50%;background:#03411a;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.4);cursor:pointer;"></div>`,
-      iconSize: [10, 10],
-      iconAnchor: [5, 5],
-    });
+    const icon = { path: maps.SymbolPath.CIRCLE, scale: 6, fillColor: '#03411a', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 };
 
     pts.forEach((pt, idx) => {
-      const marker = L.marker(pt, { icon: smallIcon, draggable: !readOnly }).addTo(map);
+      const marker = new maps.Marker({ position: { lat: pt[0], lng: pt[1] }, map, draggable: !readOnly, icon });
       if (!readOnly) {
-        marker.on('dragend', () => {
-          const ll = marker.getLatLng();
+        marker.addListener('dragend', (e: any) => {
           setLocalPoints(prev => {
             const updated = [...prev];
-            updated[idx] = [parseFloat(ll.lat.toFixed(6)), parseFloat(ll.lng.toFixed(6))];
-            renderPolygon(L, map, updated);
+            updated[idx] = [parseFloat(e.latLng.lat().toFixed(6)), parseFloat(e.latLng.lng().toFixed(6))];
+            renderPolygon(maps, map, updated);
             onChange(updated);
             return updated;
           });
@@ -121,24 +79,23 @@ export default function GeofenceMapPicker({ points, onChange, readOnly = false }
     });
 
     if (pts.length >= 2) {
-      const poly = L.polygon(pts, {
-        color: '#03411a',
-        fillColor: '#4ade80',
-        fillOpacity: 0.25,
-        weight: 2.5,
-        dashArray: pts.length < 3 ? '6 4' : undefined,
-      }).addTo(map);
+      const poly = new maps.Polygon({
+        paths: pts.map(([lat, lng]) => ({ lat, lng })),
+        strokeColor: '#03411a', strokeWeight: 2.5, fillColor: '#4ade80', fillOpacity: 0.25, map,
+      });
       polygonRef.current = poly;
-      if (pts.length >= 3) map.fitBounds(poly.getBounds(), { padding: [24, 24] });
+      if (pts.length >= 3) {
+        const b = new maps.LatLngBounds();
+        pts.forEach(([lat, lng]) => b.extend({ lat, lng }));
+        map.fitBounds(b, 24);
+      }
     }
   };
 
   const undoLast = () => {
     setLocalPoints(prev => {
       const updated = prev.slice(0, -1);
-      import('leaflet').then(L => {
-        if (mapRef.current) renderPolygon(L, mapRef.current, updated);
-      });
+      if (mapsRef.current && mapRef.current) renderPolygon(mapsRef.current, mapRef.current, updated);
       onChange(updated);
       return updated;
     });
@@ -146,11 +103,9 @@ export default function GeofenceMapPicker({ points, onChange, readOnly = false }
 
   const clearAll = () => {
     setLocalPoints([]);
-    if (mapRef.current) {
-      if (polygonRef.current) { polygonRef.current.remove(); polygonRef.current = null; }
-      markersRef.current.forEach(m => m.remove());
-      markersRef.current = [];
-    }
+    if (polygonRef.current) { polygonRef.current.setMap(null); polygonRef.current = null; }
+    markersRef.current.forEach(m => m.setMap(null));
+    markersRef.current = [];
     onChange([]);
   };
 
