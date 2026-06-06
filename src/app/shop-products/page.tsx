@@ -10,6 +10,18 @@ import * as XLSX from 'xlsx';
 
 const PRODUCT_ICONS = ['soil', 'pest', 'pot', 'fert', 'plant', 'tool'];
 
+// Coerce a value into an array so the edit form never crashes on bulk-imported
+// products whose features/faqs/tags came back as a JSON or pipe-separated string
+// instead of a real array.
+const toArr = (v: any): any[] => {
+  if (Array.isArray(v)) return v;
+  if (typeof v === 'string' && v.trim()) {
+    try { const p = JSON.parse(v); if (Array.isArray(p)) return p; } catch { /* not JSON */ }
+    return v.split('|').map((s) => s.trim()).filter(Boolean);
+  }
+  return [];
+};
+
 // All product fields supported by bulk import. Keep in sync with backend
 // /admin/shop/products/bulk-import handler in GharKaMali_Backend/src/routes/index.js
 const TEMPLATE_COLS = [
@@ -191,20 +203,20 @@ export default function AdminShopProductsPage() {
   const addFeature = () => {
     const val = featInput.trim();
     if (!val) return;
-    f('features', [...(form.features || []), val]);
+    f('features', [...toArr(form.features), val]);
     setFeatInput('');
   };
-  const removeFeature = (i: number) => f('features', (form.features || []).filter((_: any, idx: number) => idx !== i));
+  const removeFeature = (i: number) => f('features', toArr(form.features).filter((_: any, idx: number) => idx !== i));
 
   // FAQ helpers
   const [faqQ, setFaqQ] = useState('');
   const [faqA, setFaqA] = useState('');
   const addFaq = () => {
     if (!faqQ.trim() || !faqA.trim()) return;
-    f('faqs', [...(form.faqs || []), { q: faqQ.trim(), a: faqA.trim() }]);
+    f('faqs', [...toArr(form.faqs), { q: faqQ.trim(), a: faqA.trim() }]);
     setFaqQ(''); setFaqA('');
   };
-  const removeFaq = (i: number) => f('faqs', (form.faqs || []).filter((_: any, idx: number) => idx !== i));
+  const removeFaq = (i: number) => f('faqs', toArr(form.faqs).filter((_: any, idx: number) => idx !== i));
 
   const prodList = Array.isArray(products) ? products : [];
   const catList = Array.isArray(categories) ? categories : [];
@@ -295,7 +307,7 @@ export default function AdminShopProductsPage() {
                 <td><span className={`badge ${p.is_active ? 'badge-forest' : 'badge-gold'}`}>{p.is_active ? 'Active' : 'Inactive'}</span></td>
                 <td style={{ textAlign: 'right' }}>
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                    <button onClick={() => { setForm({ ...p, category_id: p.category_id, features: p.features || [], faqs: p.faqs || [], tags: p.tags || [] }); setFeatInput(''); setFaqQ(''); setFaqA(''); setModal(p); }} className="btn btn-sm btn-ghost" style={{ padding: '6px 12px' }}>Edit</button>
+                    <button onClick={() => { setForm({ ...p, category_id: p.category_id, features: toArr(p.features), faqs: toArr(p.faqs), tags: toArr(p.tags) }); setFeatInput(''); setFaqQ(''); setFaqA(''); setModal(p); }} className="btn btn-sm btn-ghost" style={{ padding: '6px 12px' }}>Edit</button>
                     <button onClick={() => window.confirm('Deactivate product?') && deleteMut.mutate(p.id)} className="btn btn-sm btn-danger-ghost" style={{ padding: '6px' }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                     </button>
@@ -367,9 +379,9 @@ export default function AdminShopProductsPage() {
                   <input className="input" style={{ flex: 1 }} value={featInput} onChange={e => setFeatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addFeature())} placeholder="e.g. 100% organic & safe" />
                   <button type="button" onClick={addFeature} className="btn btn-outline btn-sm" style={{ whiteSpace: 'nowrap' }}>+ Add</button>
                 </div>
-                {(form.features || []).length > 0 && (
+                {toArr(form.features).length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {(form.features || []).map((feat: string, i: number) => (
+                    {toArr(form.features).map((feat: string, i: number) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)' }}>
                         <span style={{ fontSize: '0.85rem', flex: 1, color: 'var(--text)' }}>✓ {feat}</span>
                         <button type="button" onClick={() => removeFeature(i)} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: '1rem', lineHeight: 1, padding: '0 2px' }}>×</button>
@@ -390,9 +402,9 @@ export default function AdminShopProductsPage() {
                     <button type="button" onClick={addFaq} className="btn btn-outline btn-sm" style={{ whiteSpace: 'nowrap', alignSelf: 'flex-end' }}>+ Add FAQ</button>
                   </div>
                 </div>
-                {(form.faqs || []).length > 0 && (
+                {toArr(form.faqs).length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {(form.faqs || []).map((faq: any, i: number) => (
+                    {toArr(form.faqs).map((faq: any, i: number) => (
                       <div key={i} style={{ padding: '10px 14px', background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)', position: 'relative' }}>
                         <div style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--forest)', marginBottom: 4 }}>Q. {faq.q}</div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>A. {faq.a}</div>
