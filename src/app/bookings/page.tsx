@@ -18,8 +18,19 @@ export default function AdminBookingsPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [gardenerId, setGardenerId] = useState('');
   const [reason, setReason] = useState('');
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
 
-  const { data, isLoading } = useQuery({ 
+  const handleDownloadInvoice = async (id: number) => {
+    setDownloadingInvoice(true);
+    try {
+      await AdminAPI.downloadBookingInvoice(id);
+    } catch {
+      toast.error('Failed to download invoice');
+    }
+    setDownloadingInvoice(false);
+  };
+
+  const { data, isLoading } = useQuery({
     queryKey: ['admin-bookings', status, page, search, dateFrom, dateTo], 
     queryFn: () => AdminAPI.bookings({ 
       status: status || undefined, 
@@ -327,6 +338,11 @@ export default function AdminBookingsPage() {
             </div>
             <div className="modal-footer">
               <button className="btn btn-ghost" onClick={() => setSelectedId(null)}>Close</button>
+              {bookingDetail && (
+                <button className="btn btn-outline" style={{ gap: 6 }} disabled={downloadingInvoice} onClick={() => handleDownloadInvoice(bookingDetail.id)}>
+                  <IconDownload size={16} /> {downloadingInvoice ? 'Generating…' : 'Download Invoice'}
+                </button>
+              )}
               {bookingDetail && !['completed', 'cancelled', 'failed'].includes(bookingDetail.status) && (
                 <button className="btn btn-primary" onClick={() => { setSelectedId(null); setReassignModal(bookingDetail); }}>Reassign Gardener</button>
               )}
