@@ -7,6 +7,17 @@ import { AdminAPI } from '@/lib/api';
 import { exportToCSV } from '@/lib/utils';
 import { IconSearch, IconDownload, IconX, IconCalendar, IconMapPin, IconUser, IconLeaf, IconStar, IconMessageCircle } from '@tabler/icons-react';
 
+// "09:00:00" / "09:00" -> "9:00 AM". Returns input unchanged if unparseable.
+const fmtTime = (t?: string | null) => {
+  if (!t) return 'Flexible';
+  const m = String(t).match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return String(t);
+  let h = parseInt(m[1], 10);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${h}:${m[2]} ${ampm}`;
+};
+
 export default function AdminBookingsPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
@@ -195,10 +206,15 @@ export default function AdminBookingsPage() {
                     <div className="card" style={{ padding: 12, background: 'var(--bg)', border: 'none' }}>
                       <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>SCHEDULED SLOT</div>
                       <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <IconCalendar size={14} /> 
+                        <IconCalendar size={14} />
                         {new Date(bookingDetail.scheduled_date).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
-                        {bookingDetail.scheduled_time && <span style={{ color: 'var(--gold-deep)' }}> at {bookingDetail.scheduled_time}</span>}
+                        <span style={{ color: 'var(--gold-deep)' }}> at {fmtTime(bookingDetail.scheduled_time)}</span>
                       </div>
+                      {(bookingDetail.created_at || bookingDetail.createdAt) && (
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 6 }}>
+                          Booked on {new Date(bookingDetail.created_at || bookingDetail.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                        </div>
+                      )}
                     </div>
                     <div className="card" style={{ padding: 12, background: 'var(--bg)', border: 'none' }}>
                       <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>TOTAL AMOUNT</div>
