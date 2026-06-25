@@ -23,6 +23,32 @@ async function req<T = any>(path: string, opts: RequestInit & { auth?: boolean }
   return (json?.data ?? json) as T;
 }
 
+// Download an authenticated binary file (e.g. a PDF invoice) and trigger a
+// browser "Save as" with the server-provided filename. Throws ApiError on failure.
+export async function downloadFile(path: string, fallbackName = 'download'): Promise<void> {
+  const headers: Record<string, string> = {};
+  const t = getToken();
+  if (t) headers['Authorization'] = `Bearer ${t}`;
+  const res = await fetch(`${API_BASE}${path}`, { headers });
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({}));
+    throw new ApiError(json?.message || `Error ${res.status}`, res.status, json);
+  }
+  // Prefer the filename from Content-Disposition; fall back to a sensible default.
+  const cd = res.headers.get('Content-Disposition') || '';
+  const m = cd.match(/filename="?([^"]+)"?/i);
+  const filename = m ? m[1] : fallbackName;
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export const qs = (p?: Record<string, any>) => {
   if (!p) return '';
   const s = Object.entries(p).filter(([, v]) => v != null && v !== '').map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
@@ -216,6 +242,10 @@ export const AdminAPI = {
 
   bookings: (p?: any) => req(`/admin/bookings${qs(p)}`),
   bookingDetail: (id: number) => req(`/admin/bookings/${id}`),
+  // Downloadable PDF tax invoices
+  downloadBookingInvoice: (id: number) => downloadFile(`/admin/bookings/${id}/invoice`, `invoice-booking-${id}.pdf`),
+  downloadSubscriptionInvoice: (id: number) => downloadFile(`/admin/subscriptions/${id}/invoice`, `invoice-sub-${id}.pdf`),
+  downloadOrderInvoice: (id: number) => downloadFile(`/admin/shop/orders/${id}/invoice`, `invoice-order-${id}.pdf`),
   checkGardenerAvailability: (date: string, gardener_id?: number, geofence_id?: number) =>
     req(`/bookings/check-availability${qs({ date, gardener_id, geofence_id })}`),
   reassignBooking: (id: number, gardener_id: number, reason?: string) =>

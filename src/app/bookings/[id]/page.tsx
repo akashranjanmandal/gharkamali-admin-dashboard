@@ -61,6 +61,17 @@ export default function BookingDetailPage() {
   const [booking, setBooking] = useState<any>(null);
   const [logs, setLogs] = useState<BookingLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadInvoice = async () => {
+    setDownloading(true);
+    try {
+      await AdminAPI.downloadBookingInvoice(bookingId);
+    } catch {
+      toast.error('Failed to download invoice');
+    }
+    setDownloading(false);
+  };
 
   useEffect(() => {
     if (!bookingId) return;
@@ -98,6 +109,19 @@ export default function BookingDetailPage() {
             {booking.status?.toUpperCase()}
           </span>
         </div>
+        <button
+          onClick={handleDownloadInvoice}
+          disabled={downloading}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+            padding: '0.55rem 1rem', borderRadius: '0.5rem',
+            background: '#03411a', color: '#fff', border: 'none',
+            fontSize: '0.85rem', fontWeight: 600,
+            cursor: downloading ? 'wait' : 'pointer', opacity: downloading ? 0.7 : 1,
+          }}
+        >
+          {downloading ? 'Generating…' : '⬇ Download Invoice'}
+        </button>
       </div>
 
       {/* Booking Info Grid */}

@@ -15,6 +15,17 @@ export default function AdminSubscriptionsPage() {
   const [selected, setSelected] = useState<any>(null);
   const [schedulingSub, setSchedulingSub] = useState<any>(null);
   const [selectedBookingId, setSelectedBookingId] = useState<number | null>(null);
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
+
+  const handleDownloadInvoice = async (id: number) => {
+    setDownloadingInvoice(true);
+    try {
+      await AdminAPI.downloadSubscriptionInvoice(id);
+    } catch {
+      alert('Failed to download invoice');
+    }
+    setDownloadingInvoice(false);
+  };
 
   const { data, isLoading } = useQuery({ 
     queryKey: ['admin-subscriptions', page, status, geofenceId, planId, search], 
@@ -263,6 +274,9 @@ export default function AdminSubscriptionsPage() {
             </div>
             <div className="modal-footer">
               <button className="btn btn-ghost" onClick={() => setSelected(null)}>Close</button>
+              <button className="btn btn-outline" style={{ gap: 6 }} disabled={downloadingInvoice} onClick={() => handleDownloadInvoice(selected.id)}>
+                <IconDownload size={16} /> {downloadingInvoice ? 'Generating…' : 'Download Invoice'}
+              </button>
               {selected.status === 'active' && <button className="btn btn-outline" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}>Pause Subscription</button>}
             </div>
           </div>

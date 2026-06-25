@@ -25,8 +25,19 @@ export default function AdminShopOrdersPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selected, setSelected] = useState<any>(null);
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
 
-  const { data, isLoading } = useQuery({ 
+  const handleDownloadInvoice = async (id: number) => {
+    setDownloadingInvoice(true);
+    try {
+      await AdminAPI.downloadOrderInvoice(id);
+    } catch {
+      toast.error('Failed to download invoice');
+    }
+    setDownloadingInvoice(false);
+  };
+
+  const { data, isLoading } = useQuery({
     queryKey: ['admin-shop-orders', filter, search, dateFrom, dateTo], 
     queryFn: () => AdminAPI.shopOrders({ 
       status: filter || undefined,
@@ -285,6 +296,9 @@ export default function AdminShopOrdersPage() {
             </div>
             <div className="modal-footer">
               <button className="btn btn-ghost" onClick={() => setSelected(null)}>Close</button>
+              <button className="btn btn-outline" style={{ gap: 6 }} disabled={downloadingInvoice} onClick={() => handleDownloadInvoice(selected.id)}>
+                <IconDownload size={16} /> {downloadingInvoice ? 'Generating…' : 'Download Invoice'}
+              </button>
             </div>
           </div>
         </div>
