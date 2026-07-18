@@ -314,11 +314,15 @@ function InvoiceBlock({ order }: { order: any }) {
   const items: any[] = order.items || [];
   const productSubtotal = items.reduce((acc, it) => acc + (Number(it.price) || 0) * (Number(it.quantity) || 0), 0);
   const serviceTotal = Math.max(0, total - productSubtotal - gstAmt);
-  const state = String(order.shipping_state || '').toLowerCase();
-  const isUP = state.includes('uttar') || state === 'up';
-  const effectiveRate = gstAmt > 0 && productSubtotal > 0
-    ? Math.round((gstAmt / productSubtotal) * 100)
-    : (items.find((it: any) => it.product?.gst_rate)?.product?.gst_rate || 0);
+  // UP-detection mirrors the customer website + backend PDF: check state OR city
+  // OR address for UP cities, so the on-screen split never contradicts the PDF.
+  const addr = [order.shipping_state, order.shipping_city, order.shipping_address]
+    .filter(Boolean).join(' ').toLowerCase();
+  const isUP = addr.includes('uttar pradesh') || addr === 'up' || addr.includes('noida') ||
+    addr.includes('greater noida') || addr.includes('ghaziabad');
+  // Prefer the product's declared gst_rate (same as website); fall back to derived.
+  const effectiveRate = (items.find((it: any) => it.product?.gst_rate)?.product?.gst_rate)
+    || (gstAmt > 0 && productSubtotal > 0 ? Math.round((gstAmt / productSubtotal) * 100) : 0);
 
   return (
     <div style={{ marginBottom: 24, padding: 16, border: '1px solid var(--border)', borderRadius: 12, background: '#fff' }}>

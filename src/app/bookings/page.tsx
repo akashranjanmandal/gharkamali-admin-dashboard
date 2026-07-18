@@ -5,6 +5,8 @@ import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import { exportToCSV } from '@/lib/utils';
+import InvoicePreview from '@/components/InvoicePreview';
+import { inclusiveGstSplit } from '@/lib/invoice';
 import { IconSearch, IconDownload, IconX, IconCalendar, IconMapPin, IconUser, IconLeaf, IconStar, IconMessageCircle } from '@tabler/icons-react';
 
 // "09:00:00" / "09:00" -> "9:00 AM". Returns input unchanged if unparseable.
@@ -348,6 +350,18 @@ export default function AdminBookingsPage() {
                         </div>
                       ))}
                     </div>
+                  </div>
+
+                  <div style={{ marginTop: 24 }}>
+                    <InvoicePreview
+                      address={bookingDetail.service_address}
+                      total={Number(bookingDetail.total_amount) || 0}
+                      statusLabel={(bookingDetail.payment_status || 'PAID').toUpperCase()}
+                      lines={[{
+                        name: `Gardener Visit${bookingDetail.subscription?.plan?.name ? ` — ${bookingDetail.subscription.plan.name}` : ''} (${bookingDetail.plant_count || 0} plants)`,
+                        amount: Number(bookingDetail.base_amount) || inclusiveGstSplit(Number(bookingDetail.total_amount) || 0).subtotal,
+                      }]}
+                    />
                   </div>
                 </div>
               ) : <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Booking data not found</div>}

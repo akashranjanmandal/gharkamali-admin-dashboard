@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import { exportToCSV } from '@/lib/utils';
+import InvoicePreview from '@/components/InvoicePreview';
+import { inclusiveGstSplit } from '@/lib/invoice';
 import { IconFilter, IconDownload, IconSearch, IconX, IconCalendar, IconUser, IconMapPin, IconLeaf, IconMessageCircle, IconStar, IconClock, IconChevronRight } from '@tabler/icons-react';
 
 export default function AdminSubscriptionsPage() {
@@ -270,6 +272,18 @@ export default function AdminSubscriptionsPage() {
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4 }}>{selected.service_address || 'Address information not linked to subscription'}</div>
                   </div>
                 </div>
+              </div>
+
+              <div style={{ marginTop: 24 }}>
+                <InvoicePreview
+                  address={selected.service_address}
+                  total={Number(selected.amount_paid) || 0}
+                  statusLabel={String(selected.status || '').toUpperCase()}
+                  lines={[{
+                    name: `${selected.plan?.name || 'Subscription'} Plan${selected.plan?.visits_per_month ? ` — ${selected.plan.visits_per_month} visits/month` : ''}`,
+                    amount: inclusiveGstSplit(Number(selected.amount_paid) || 0).subtotal,
+                  }]}
+                />
               </div>
             </div>
             <div className="modal-footer">
