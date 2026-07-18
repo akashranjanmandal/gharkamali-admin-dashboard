@@ -27,7 +27,7 @@ export default function InvoicePreview({
         {statusLabel && <span className="badge badge-forest">{statusLabel}</span>}
       </div>
       <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 12 }}>
-        <strong>{SELLER.brand}</strong> (a unit of {SELLER.legalName}) · GSTIN {SELLER.gstin} · {isUP ? 'SGST + CGST (intra-state)' : 'IGST (inter-state)'}
+        <strong>{SELLER.brand}</strong> ({SELLER.legalName}) · GSTIN {SELLER.gstin} · {isUP ? 'SGST + CGST (intra-state)' : 'IGST (inter-state)'}
       </div>
 
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
