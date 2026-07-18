@@ -29,6 +29,7 @@ export default function CreateInvoicePage() {
   const [assignMode, setAssignMode] = useState<'none' | 'pick' | 'auto'>('none');
   const [gardenerId, setGardenerId] = useState('');
   const [overrideTotal, setOverrideTotal] = useState('');
+  const [scheduleDates, setScheduleDates] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState<string | null>(null);
 
   // ── Data ──
@@ -84,6 +85,7 @@ export default function CreateInvoicePage() {
     override_total: overrideTotal ? Number(overrideTotal) : undefined,
     assign_mode: assignMode,
     gardener_id: assignMode === 'pick' && gardenerId ? Number(gardenerId) : undefined,
+    schedule_dates: outcome === 'subscription' ? scheduleDates.filter(Boolean) : undefined,
   });
 
   const submit = async (outcome: 'invoice_only' | 'booking' | 'subscription') => {
@@ -187,6 +189,30 @@ export default function CreateInvoicePage() {
                 <option value="">Select gardener…</option>
                 {gardeners.map((g) => <option key={g.id} value={g.id}>{g.name} ({g.phone})</option>)}
               </select>
+            </div>
+          )}
+
+          {/* Subscription visit scheduler — only for plans, capped at visits/month */}
+          {invoiceType === 'plan' && selectedPlan && (
+            <div style={{ marginTop: 20 }}>
+              <h4 style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', margin: '0 0 6px' }}>
+                Schedule Visits (optional)
+              </h4>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 10 }}>
+                Pick up to {selectedPlan.visits_per_month} visit date(s). Only used when you choose &ldquo;Create Subscription&rdquo;. Leave empty to schedule later.
+              </p>
+              {scheduleDates.map((d, i) => (
+                <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                  <input className="input" type="date" value={d}
+                    onChange={(e) => setScheduleDates((prev) => prev.map((x, xi) => xi === i ? e.target.value : x))} />
+                  <button className="btn btn-sm btn-outline" onClick={() => setScheduleDates((prev) => prev.filter((_, xi) => xi !== i))}>Remove</button>
+                </div>
+              ))}
+              {scheduleDates.length < (selectedPlan.visits_per_month || 1) && (
+                <button className="btn btn-sm btn-outline" onClick={() => setScheduleDates((prev) => [...prev, ''])}>
+                  + Add visit date
+                </button>
+              )}
             </div>
           )}
         </div>
