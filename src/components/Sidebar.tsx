@@ -39,6 +39,7 @@ const NAV = [
   ]},
   { section: 'Operations', items: [
     { href: '/bookings', icon: 'bookings', label: 'Bookings' },
+    { href: '/create-invoice', icon: 'payments', label: 'Create Invoice' },
     { href: '/subscriptions', icon: 'subscriptions', label: 'Subscriptions' },
     { href: '/reviews', icon: 'star', label: 'Reviews' },
     { href: '/blogs', icon: 'blogs', label: 'Blogs' },

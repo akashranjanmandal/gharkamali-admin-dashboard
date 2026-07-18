@@ -263,6 +263,11 @@ export const AdminAPI = {
 
   plans: () => req('/admin/plans'),
   createPlan: (b: any) => req('/admin/plans', { method: 'POST', body: JSON.stringify(b) }),
+
+  // Manual invoice / booking (admin-created, offline customers)
+  createManualInvoice: (b: any) => req('/admin/manual-invoice', { method: 'POST', body: JSON.stringify(b) }),
+  manualInvoices: (p?: any) => req(`/admin/manual-invoices${qs(p)}`),
+  downloadManualInvoice: (id: number) => downloadFile(`/admin/manual-invoices/${id}/invoice`, `invoice-${id}.pdf`),
   updatePlan: (id: number, b: any) => req(`/admin/plans/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
   setPlanActive: (id: number, active: boolean) => req(`/admin/plans/${id}/active`, { method: 'PATCH', body: JSON.stringify({ is_active: active }) }),
   deletePlan: (id: number) => req(`/admin/plans/${id}`, { method: 'DELETE' }),
