@@ -365,8 +365,9 @@ export default function AdminShopProductsPage() {
                   <option value={5}>5% GST</option>
                   <option value={12}>12% GST</option>
                   <option value={18}>18% GST</option>
+                  <option value={28}>28% GST</option>
                 </select>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>Applied only when customer opts to claim GST at checkout. Within UP: split as SGST + CGST. Other states: IGST.</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>Always added on top of the price at checkout and shown on the tax invoice. Within UP: split as SGST + CGST; other states: IGST. Orders remember the rate they were charged at — changing it here only affects future orders.</p>
               </div>
               <div className="form-group"><label>Short Description</label><textarea className="input" rows={3} value={form.description || ''} onChange={e => f('description', e.target.value)} placeholder="Brief description shown on the product card and top of detail page..." /></div>
               <div className="form-group"><label>Long Description</label><textarea className="input" rows={5} value={form.long_description || ''} onChange={e => f('long_description', e.target.value)} placeholder="Full detailed description shown in the Description tab..." /></div>
