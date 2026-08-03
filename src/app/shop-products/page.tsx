@@ -8,9 +8,19 @@ import { AdminAPI } from '@/lib/api';
 import { v, firstError } from '@/lib/validators';
 import ExportButton from '@/components/ExportButton';
 import PeriodFilter, { Period, inPeriod } from '@/components/PeriodFilter';
+import { Th, useTableControls, type Col } from '@/components/TableHeader';
 import * as XLSX from 'xlsx';
 
 const PRODUCT_ICONS = ['soil', 'pest', 'pot', 'fert', 'plant', 'tool'];
+
+// Column definitions for header sort/filter (accessors match the cell renders).
+const COLS: Col[] = [
+  { key: 'name', label: 'Product Name' },
+  { key: 'category', label: 'Category', get: (p) => p.category?.name || 'Uncategorized' },
+  { key: 'price', label: 'Price', type: 'number' },
+  { key: 'stock_quantity', label: 'Stock', type: 'number' },
+  { key: 'status', label: 'Status', get: (p) => (p.is_active ? 'Active' : 'Inactive') },
+];
 
 // Coerce a value into an array so the edit form never crashes on bulk-imported
 // products whose features/faqs/tags came back as a JSON or pipe-separated string
@@ -93,6 +103,7 @@ export default function AdminShopProductsPage() {
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [period, setPeriod] = useState<Period>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const ctl = useTableControls(COLS);
 
   const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -225,6 +236,8 @@ export default function AdminShopProductsPage() {
   const catList = Array.isArray(categories) ? categories : [];
   // Period filter only narrows the visible table; stats & import stay on the full list.
   const visibleProds = prodList.filter((p: any) => inPeriod(p, period));
+  // Column-header sort + per-column filter (client-side on loaded rows).
+  const rows = ctl.process(visibleProds);
 
   // Export fetches the full (non-paginated) product list.
   const fetchAllProducts = async () => {
@@ -282,11 +295,7 @@ export default function AdminShopProductsPage() {
             <tr>
               <th>ID</th>
               <th style={{ width: 60 }}>Icon</th>
-              <th>Product Name</th>
-              <th>Category</th>
-              <th>Price</th>
-              <th>Stock</th>
-              <th>Status</th>
+              {COLS.map(c => <Th key={c.key} col={c} ctl={ctl} />)}
               <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
@@ -299,9 +308,9 @@ export default function AdminShopProductsPage() {
                   ))}
                 </tr>
               ))
-            ) : visibleProds.length === 0 ? (
-              <tr><td colSpan={8} style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>{prodList.length === 0 ? 'No products found. Start by adding one!' : 'No products in the selected period.'}</td></tr>
-            ) : visibleProds.map((p: any) => (
+            ) : rows.length === 0 ? (
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>{prodList.length === 0 ? 'No products found. Start by adding one!' : 'No products match the current filters.'}</td></tr>
+            ) : rows.map((p: any) => (
               <tr key={p.id}>
                 <td style={{ color: 'var(--text-faint)', fontSize: '0.75rem' }}>#{p.id}</td>
                 <td>

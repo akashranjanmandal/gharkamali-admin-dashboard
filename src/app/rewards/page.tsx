@@ -7,14 +7,29 @@ import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 import PeriodFilter, { Period } from '@/components/PeriodFilter';
+import { Th, useTableControls, type Col } from '@/components/TableHeader';
+
+// Column definitions for header sort/filter (accessors match the cell renders).
+const COLS: Col[] = [
+  { key: 'gardener', label: 'Gardener', get: (r) => r.gardener?.name || `ID: ${r.gardener_id}` },
+  { key: 'type', label: 'Type' },
+  { key: 'amount', label: 'Amount', type: 'number' },
+  { key: 'reason', label: 'Reason' },
+  { key: 'booking', label: 'Booking', get: (r) => r.booking?.booking_number || '—' },
+  { key: 'created_at', label: 'Date', type: 'date' },
+];
 
 export default function RewardsPage() {
   const qc = useQueryClient();
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ gardener_id: '', type: 'reward', amount: '', reason: '', booking_id: '' });
   const [period, setPeriod] = useState<Period>(null);
+  const ctl = useTableControls(COLS);
   const { data } = useQuery({ queryKey: ['admin-rewards', period], queryFn: () => AdminAPI.rewards({ from_date: period?.from, to_date: period?.to }) });
   const rewards: any[] = (data as any)?.items ?? Array.isArray((data as any)?.items) ? (data as any).items : Array.isArray(data as any) ? (data as any) : [];
+
+  // Column-header sort + per-column filter (client-side on loaded rows).
+  const rows = ctl.process(rewards);
 
   const saveMut = useMutation({
     mutationFn: () => AdminAPI.createReward({ gardener_id: parseInt(form.gardener_id), type: form.type, amount: parseFloat(form.amount), reason: form.reason, ...(form.booking_id?{booking_id:parseInt(form.booking_id)}:{}) }),
@@ -44,10 +59,10 @@ export default function RewardsPage() {
       <div className="card">
         <div className="table-wrap">
           <table className="admin-table">
-            <thead><tr><th>Gardener</th><th>Type</th><th>Amount</th><th>Reason</th><th>Booking</th><th>Date</th></tr></thead>
+            <thead><tr>{COLS.map(c => <Th key={c.key} col={c} ctl={ctl} />)}</tr></thead>
             <tbody>
-              {rewards.length===0?<tr><td colSpan={6} style={{textAlign:'center',color:'var(--text-muted)',padding:'32px'}}>No rewards yet</td></tr>:
-                rewards.map((r:any)=>(
+              {rows.length===0?<tr><td colSpan={6} style={{textAlign:'center',color:'var(--text-muted)',padding:'32px'}}>No rewards yet</td></tr>:
+                rows.map((r:any)=>(
                   <tr key={r.id}>
                     <td style={{fontWeight:600,fontSize:'0.875rem'}}>{r.gardener?.name||`ID: ${r.gardener_id}`}</td>
                     <td><span className={`badge ${r.type==='reward'?'badge-green':'badge-red'}`}>{r.type}</span></td>

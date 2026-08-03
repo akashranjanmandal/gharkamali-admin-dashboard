@@ -6,6 +6,7 @@ import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 import PeriodFilter, { Period } from '@/components/PeriodFilter';
+import { Th, useTableControls, type Col } from '@/components/TableHeader';
 import toast from 'react-hot-toast';
 import { 
   IconStar, 
@@ -33,11 +34,21 @@ type Review = {
   booking?: { id: number; booking_number: string };
 };
 
+// Column definitions for header sort/filter (accessors match the cell renders).
+const COLS: Col[] = [
+  { key: 'customer', label: 'Customer / Date', get: (r) => `${r.customer?.name || 'Guest User'} ${new Date(r.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` },
+  { key: 'comment', label: 'Feedback', get: (r) => r.comment || 'No comment provided' },
+  { key: 'rating', label: 'Rating', type: 'number' },
+  { key: 'entity', label: 'Entity / Subject', get: (r) => `${r.booking ? `#${r.booking.booking_number}` : ''} ${r.gardener?.name || ''}`.trim() },
+  { key: 'status', label: 'Status' },
+];
+
 export default function ReviewsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [period, setPeriod] = useState<Period>(null);
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
+  const ctl = useTableControls(COLS);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-reviews', statusFilter, page, period],
@@ -65,6 +76,9 @@ export default function ReviewsPage() {
   const reviews: Review[] = data?.reviews || (Array.isArray(data) ? data : []);
   const total = data?.total || (Array.isArray(data) ? data.length : 0);
   const totalPages = Math.ceil(total / 20);
+
+  // Column-header sort + per-column filter (client-side on loaded rows).
+  const rows = ctl.process(reviews);
 
   // Export fetches EVERY review (all pages), not just the visible 20.
   const fetchAllReviews = () => fetchAllPages(
@@ -142,11 +156,7 @@ export default function ReviewsPage() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Customer / Date</th>
-                <th>Feedback</th>
-                <th>Rating</th>
-                <th>Entity / Subject</th>
-                <th>Status</th>
+                {COLS.map(c => <Th key={c.key} col={c} ctl={ctl} />)}
                 <th>Show on Site</th>
                 <th>Actions</th>
               </tr>
@@ -158,14 +168,14 @@ export default function ReviewsPage() {
                     <td colSpan={6}><div className="skeleton skel-text" style={{ width: '100%' }} /></td>
                   </tr>
                 ))
-              ) : reviews.length === 0 ? (
+              ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
                     No reviews found matching your criteria.
                   </td>
                 </tr>
               ) : (
-                reviews.map((r) => (
+                rows.map((r: Review) => (
                   <tr key={r.id}>
                     <td>
                       <div style={{ fontWeight: 700 }}>{r.customer?.name || 'Guest User'}</div>

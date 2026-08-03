@@ -6,6 +6,7 @@ import ExportButton from '@/components/ExportButton';
 import PeriodFilter, { Period } from '@/components/PeriodFilter';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
+import { Th, useTableControls, type Col } from '@/components/TableHeader';
 
 type WithdrawalRequest = {
   id: number;
@@ -28,6 +29,18 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   processed: { bg: 'rgba(34,197,94,0.1)', color: '#22c55e' },
 };
 
+// Column definitions for header sort/filter (accessors match the cell renders).
+const COLS: Col[] = [
+  { key: 'id', label: 'ID', type: 'number' },
+  { key: 'gardener', label: 'Gardener', get: (r) => r.gardener?.name || '—' },
+  { key: 'phone', label: 'Phone', get: (r) => r.gardener?.phone || '—' },
+  { key: 'amount', label: 'Amount', type: 'number' },
+  { key: 'bank', label: 'Bank', get: (r) => `${r.bank_name} ${r.bank_account}` },
+  { key: 'bank_ifsc', label: 'IFSC' },
+  { key: 'status', label: 'Status' },
+  { key: 'created_at', label: 'Date', type: 'date' },
+];
+
 export default function WithdrawalsPage() {
   const [requests, setRequests] = useState<WithdrawalRequest[]>([]);
   const [total, setTotal] = useState(0);
@@ -36,6 +49,7 @@ export default function WithdrawalsPage() {
   const [period, setPeriod] = useState<Period>(null);
   const [page, setPage] = useState(1);
   const [processingId, setProcessingId] = useState<number | null>(null);
+  const ctl = useTableControls(COLS);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -59,6 +73,9 @@ export default function WithdrawalsPage() {
     } catch { toast.error('Failed to update withdrawal'); }
     setProcessingId(null);
   };
+
+  // Column-header sort + per-column filter (client-side on loaded rows).
+  const rows = ctl.process(requests);
 
   // Export fetches EVERY withdrawal request (all pages), not just the visible 20.
   const fetchAllWithdrawals = () => fetchAllPages(
@@ -114,13 +131,14 @@ export default function WithdrawalsPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                {['ID', 'Gardener', 'Phone', 'Amount', 'Bank', 'IFSC', 'Status', 'Date', 'Actions'].map(h => (
-                  <th key={h} style={{ textAlign: 'left', padding: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase' }}>{h}</th>
-                ))}
+                {COLS.map(c => <Th key={c.key} col={c} ctl={ctl} />)}
+                <th style={{ textAlign: 'left', padding: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {requests.map((r) => {
+              {rows.length === 0 ? (
+                <tr><td colSpan={9} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>No matching requests</td></tr>
+              ) : rows.map((r: WithdrawalRequest) => {
                 const sc = STATUS_COLORS[r.status] || STATUS_COLORS.pending;
                 return (
                   <tr key={r.id} style={{ borderBottom: '1px solid var(--border)' }}>

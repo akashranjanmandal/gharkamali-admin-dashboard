@@ -6,7 +6,18 @@ import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 import PeriodFilter, { Period } from '@/components/PeriodFilter';
+import { Th, useTableControls, type Col } from '@/components/TableHeader';
 import { IconSearch, IconX, IconUser, IconMail, IconPhone, IconWallet, IconCalendar, IconMapPin, IconLeaf, IconStar, IconMessageCircle } from '@tabler/icons-react';
+
+// Column definitions for header sort/filter (accessors match the cell renders).
+const COLS: Col[] = [
+  { key: 'customer', label: 'Customer', get: (c) => `${c.name || ''} ${c.email || ''}` },
+  { key: 'phone', label: 'Phone' },
+  { key: 'total_bookings', label: 'Bookings', type: 'number', get: (c) => Number(c.total_bookings ?? 0) },
+  { key: 'total_spent', label: 'Total Spent', type: 'number', get: (c) => Number(c.total_spent ?? 0) },
+  { key: 'wallet_balance', label: 'Wallet', type: 'number', get: (c) => Number(c.wallet_balance ?? 0) },
+  { key: 'created_at', label: 'Joined', type: 'date' },
+];
 
 export default function CustomersPage() {
   const [search, setSearch] = useState('');
@@ -14,8 +25,9 @@ export default function CustomersPage() {
   const [period, setPeriod] = useState<Period>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedBookingId, setSelectedBookingId] = useState<number | null>(null);
+  const ctl = useTableControls(COLS);
 
-  const { data, isLoading } = useQuery({ 
+  const { data, isLoading } = useQuery({
     queryKey: ['admin-customers', search, page, period],
     queryFn: () => AdminAPI.customers({
       search: search || undefined,
@@ -55,6 +67,9 @@ export default function CustomersPage() {
   const total = (data as any)?.total ?? customers.length;
   const pages = (data as any)?.pages ?? Math.ceil(total / 20);
 
+  // Column-header sort + per-column filter (client-side on loaded rows).
+  const rows = ctl.process(customers);
+
   // Export fetches EVERY customer (all pages), not just the visible 20.
   const fetchAllCustomers = () => fetchAllPages(
     (page, limit) => AdminAPI.customers({ page, limit }),
@@ -93,11 +108,11 @@ export default function CustomersPage() {
       <div className="card">
         <div className="table-wrap">
           <table className="admin-table">
-            <thead><tr><th>Customer</th><th>Phone</th><th>Bookings</th><th>Total Spent</th><th>Wallet</th><th>Joined</th><th>Actions</th></tr></thead>
+            <thead><tr>{COLS.map(c => <Th key={c.key} col={c} ctl={ctl} />)}<th>Actions</th></tr></thead>
             <tbody>
               {isLoading ? Array(8).fill(null).map((_, i) => <tr key={i}><td colSpan={7}><div className="skeleton skel-text" style={{ width: '100%' }} /></td></tr>) :
-                customers.length === 0 ? <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '48px' }}>No customers found</td></tr> :
-                customers.map((c: any) => (
+                rows.length === 0 ? <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '48px' }}>No customers found</td></tr> :
+                rows.map((c: any) => (
                   <tr key={c.id} onClick={() => setSelectedId(c.id)} style={{ cursor: 'pointer' }}>
                     <td><div style={{ fontWeight: 700, fontSize: '0.875rem' }}>{c.name}</div><div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{c.email || '—'}</div></td>
                     <td style={{ fontWeight: 500 }}>+91 {c.phone}</td>

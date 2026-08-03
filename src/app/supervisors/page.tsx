@@ -6,6 +6,17 @@ import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import ExportButton from '@/components/ExportButton';
 import PeriodFilter, { Period, inPeriod } from '@/components/PeriodFilter';
+import { Th, useTableControls, type Col } from '@/components/TableHeader';
+
+// Column definitions for header sort/filter (accessors match the cell renders).
+// Team names resolve against gardeners loaded in-component, so that column stays plain.
+const COLS: Col[] = [
+  { key: 'supervisor', label: 'Supervisor', get: (s) => `${s.name || ''} ${s.email || ''}` },
+  { key: 'phone', label: 'Phone' },
+  { key: 'city', label: 'City', get: (s) => s.city || '—' },
+  { key: 'team', label: 'Team', sortable: false, filterable: false },
+  { key: 'status', label: 'Status', get: (s) => (s.is_active ? 'Active' : 'Inactive') },
+];
 
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Delhi',
@@ -38,10 +49,14 @@ export default function SupervisorsPage() {
   const [form, setForm] = useState<any>(blankForm());
   const [showPass, setShowPass] = useState(false);
   const [period, setPeriod] = useState<Period>(null);
+  const ctl = useTableControls(COLS);
 
   const { data: supervisorsData, isLoading } = useQuery({ queryKey: ['admin-supervisors'], queryFn: AdminAPI.supervisors });
   const supervisors: any[] = Array.isArray(supervisorsData as any) ? (supervisorsData as any) : [];
   const visibleSupervisors = supervisors.filter((s: any) => inPeriod(s, period));
+
+  // Column-header sort + per-column filter (client-side on loaded rows).
+  const rows = ctl.process(visibleSupervisors);
 
   const { data: gardenersData } = useQuery({ queryKey: ['admin-gardeners-all'], queryFn: () => AdminAPI.gardeners({ limit: 500, status: 'active' }) });
   const allGardeners = (gardenersData as any)?.gardeners || [];
@@ -131,11 +146,11 @@ export default function SupervisorsPage() {
       <div className="card">
         <div className="table-wrap">
           <table className="admin-table">
-            <thead><tr><th>Supervisor</th><th>Phone</th><th>City</th><th>Team</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr>{COLS.map(c => <Th key={c.key} col={c} ctl={ctl} />)}<th>Actions</th></tr></thead>
             <tbody>
               {isLoading ? Array(4).fill(null).map((_, i) => <tr key={i}><td colSpan={6}><div className="skeleton skel-text" style={{ width: '100%' }} /></td></tr>)
-                : visibleSupervisors.length === 0 ? <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '32px' }}>{supervisors.length === 0 ? 'No supervisors yet' : 'No supervisors in the selected period'}</td></tr>
-                : visibleSupervisors.map((s: any) => (
+                : rows.length === 0 ? <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '32px' }}>{supervisors.length === 0 ? 'No supervisors yet' : 'No supervisors match the current filters'}</td></tr>
+                : rows.map((s: any) => (
                   <tr key={s.id}>
                     <td><div style={{ fontWeight: 700, fontSize: '0.875rem' }}>{s.name}</div><div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{s.email || '—'}</div></td>
                     <td>+91 {s.phone}</td>

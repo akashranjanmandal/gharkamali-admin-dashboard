@@ -7,6 +7,7 @@ import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 import PeriodFilter, { Period } from '@/components/PeriodFilter';
+import { Th, useTableControls, type Col } from '@/components/TableHeader';
 import { IconSearch, IconDownload, IconX, IconCalendar, IconUser, IconPackage, IconCreditCard, IconTruck } from '@tabler/icons-react';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -20,6 +21,18 @@ const STATUS_COLORS: Record<string, string> = {
 
 const STATUS_OPTIONS = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned'];
 
+// Column definitions for header sort/filter (accessors match the cell renders).
+const COLS: Col[] = [
+  { key: 'order_number', label: 'Order #', get: (o) => o.order_number || `#${o.id}` },
+  { key: 'customer', label: 'Customer', get: (o) => `${o.customer?.name || 'Unknown'} ${o.customer?.phone || ''}` },
+  { key: 'geofence', label: 'Geofence', get: (o) => o.geofence?.name || '—' },
+  { key: 'items', label: 'Items', get: (o) => (o.items || []).map((item: any) => `${item.quantity}× ${item.product?.name || 'Product'}`).join(' ') },
+  { key: 'total_amount', label: 'Total', type: 'number' },
+  { key: 'payment_status', label: 'Payment' },
+  { key: 'status', label: 'Status' },
+  { key: 'created_at', label: 'Date', type: 'date', get: (o) => o.created_at || o.createdAt },
+];
+
 export default function AdminShopOrdersPage() {
   const qc = useQueryClient();
   const [filter, setFilter] = useState('');
@@ -27,6 +40,7 @@ export default function AdminShopOrdersPage() {
   const [period, setPeriod] = useState<Period>(null);
   const [selected, setSelected] = useState<any>(null);
   const [downloadingInvoice, setDownloadingInvoice] = useState(false);
+  const ctl = useTableControls(COLS);
 
   const handleDownloadInvoice = async (id: number) => {
     setDownloadingInvoice(true);
@@ -66,6 +80,9 @@ export default function AdminShopOrdersPage() {
       o.payment_status?.toLowerCase().includes(term)
     );
   });
+
+  // Column-header sort + per-column filter (client-side on loaded rows).
+  const rows = ctl.process(orders);
 
   // Export fetches EVERY order (all pages), not just the visible ones.
   const fetchAllOrders = () => fetchAllPages(
@@ -119,23 +136,16 @@ export default function AdminShopOrdersPage() {
         <table className="admin-table">
           <thead>
             <tr>
-              <th>Order #</th>
-              <th>Customer</th>
-              <th>Geofence</th>
-              <th>Items</th>
-              <th>Total</th>
-              <th>Payment</th>
-              <th>Status</th>
-              <th>Date</th>
+              {COLS.map(c => <Th key={c.key} col={c} ctl={ctl} />)}
               <th style={{ textAlign: 'right' }}>Action</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? Array(6).fill(0).map((_, i) => (
               <tr key={i}>{Array(8).fill(0).map((_, j) => <td key={j}><div className="skeleton" style={{ height: 18, width: '80%' }} /></td>)}</tr>
-            )) : orders.length === 0 ? (
+            )) : rows.length === 0 ? (
               <tr><td colSpan={8} style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--text-muted)' }}>No orders yet. Once customers start purchasing, orders will appear here.</td></tr>
-            ) : orders.map((o: any) => (
+            ) : rows.map((o: any) => (
               <tr key={o.id}>
                 <td style={{ fontWeight: 800, color: 'var(--forest)', fontFamily: 'monospace', fontSize: '0.8rem' }}>{o.order_number || `#${o.id}`}</td>
                 <td>

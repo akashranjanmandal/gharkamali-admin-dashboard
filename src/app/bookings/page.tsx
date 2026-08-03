@@ -7,6 +7,7 @@ import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 import PeriodFilter, { Period } from '@/components/PeriodFilter';
+import { Th, useTableControls, type Col } from '@/components/TableHeader';
 import InvoicePreview from '@/components/InvoicePreview';
 import { inclusiveGstSplit } from '@/lib/invoice';
 import { IconSearch, IconDownload, IconX, IconCalendar, IconMapPin, IconUser, IconLeaf, IconStar, IconMessageCircle } from '@tabler/icons-react';
@@ -22,6 +23,17 @@ const fmtTime = (t?: string | null) => {
   return `${h}:${m[2]} ${ampm}`;
 };
 
+// Column definitions for header sort/filter (accessors match the cell renders).
+const COLS: Col[] = [
+  { key: 'booking_number', label: 'Booking #' },
+  { key: 'customer', label: 'Customer', get: (b) => `${b.customer?.name || ''} ${b.customer?.phone || ''}` },
+  { key: 'gardener', label: 'Gardener', get: (b) => b.gardener?.name || 'Unassigned' },
+  { key: 'geofence', label: 'Geofence', get: (b) => b.geofence?.name || b.zone?.name || '—' },
+  { key: 'scheduled_date', label: 'Date', type: 'date', get: (b) => b.scheduled_date },
+  { key: 'status', label: 'Status' },
+  { key: 'total_amount', label: 'Amount', type: 'number' },
+];
+
 export default function AdminBookingsPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
@@ -33,6 +45,7 @@ export default function AdminBookingsPage() {
   const [gardenerId, setGardenerId] = useState('');
   const [reason, setReason] = useState('');
   const [downloadingInvoice, setDownloadingInvoice] = useState(false);
+  const ctl = useTableControls(COLS);
 
   const handleDownloadInvoice = async (id: number) => {
     setDownloadingInvoice(true);
@@ -83,6 +96,9 @@ export default function AdminBookingsPage() {
 
   const total = (data as any)?.total ?? bookings.length;
   const pages = (data as any)?.pages ?? Math.ceil(total / 20);
+
+  // Column-header sort + per-column filter (client-side on loaded rows).
+  const rows = ctl.process(bookings);
   const rawGard: any = gardenersRaw; 
   const gardeners: any[] = Array.isArray(rawGard?.gardeners) ? rawGard.gardeners : Array.isArray(rawGard) ? rawGard : (rawGard as any)?.data ?? [];
 
@@ -137,11 +153,11 @@ export default function AdminBookingsPage() {
       <div className="card">
         <div className="table-wrap">
           <table className="admin-table">
-            <thead><tr><th>Booking #</th><th>Customer</th><th>Gardener</th><th>Geofence</th><th>Date</th><th>Status</th><th>Amount</th><th>Actions</th></tr></thead>
+            <thead><tr>{COLS.map(c => <Th key={c.key} col={c} ctl={ctl} />)}<th>Actions</th></tr></thead>
             <tbody>
               {isLoading ? Array(8).fill(null).map((_, i) => <tr key={i}><td colSpan={8}><div className="skeleton skel-text" style={{ width: '100%' }} /></td></tr>) :
-                bookings.length === 0 ? <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '48px' }}>No bookings found</td></tr> :
-                bookings.map((b: any) => (
+                rows.length === 0 ? <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '48px' }}>No bookings found</td></tr> :
+                rows.map((b: any) => (
                   <tr key={b.id} onClick={() => setSelectedId(b.id)} style={{ cursor: 'pointer' }}>
                     <td><span style={{ fontWeight: 700, color: 'var(--forest)', fontFamily: 'monospace', fontSize: '0.82rem' }}>{b.booking_number}</span></td>
                     <td><div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{b.customer?.name}</div><div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>+91 {b.customer?.phone}</div></td>

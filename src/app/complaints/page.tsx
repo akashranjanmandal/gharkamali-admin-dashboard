@@ -8,6 +8,7 @@ import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 import PeriodFilter, { Period } from '@/components/PeriodFilter';
+import { Th, useTableControls, type Col } from '@/components/TableHeader';
 import { v, firstError } from '@/lib/validators';
 import {
   IconSearch, IconBuilding, IconPaperclip, IconSend, IconLock, IconHistory,
@@ -35,6 +36,18 @@ const TYPE_LABELS: Record<string, string> = {
 
 const fmt = (d?: string) => d ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
 
+// Column definitions for header sort/filter (accessors match the cell renders).
+const COLS: Col[] = [
+  { key: 'ticket_number', label: 'Ticket #', get: (c) => c.ticket_number || `#${c.id}` },
+  { key: 'subject', label: 'Subject / Type', get: (c) => `${c.subject || TYPE_LABELS[c.type] || c.type} ${TYPE_LABELS[c.type] || c.type}` },
+  { key: 'customer', label: 'Customer', get: (c) => `${c.customer?.name || ''} ${c.customer?.phone || ''}` },
+  { key: 'department', label: 'Department', get: (c) => c.department?.name || '—' },
+  { key: 'assigned', label: 'Assigned', get: (c) => c.assignedTo?.name || 'Unassigned' },
+  { key: 'priority', label: 'Priority' },
+  { key: 'status', label: 'Status' },
+  { key: 'created_at', label: 'Created', type: 'date' },
+];
+
 export default function AdminComplaintsPage() {
   const qc = useQueryClient();
   const [status, setStatus] = useState<'' | Status>('');
@@ -46,6 +59,7 @@ export default function AdminComplaintsPage() {
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [showDepts, setShowDepts] = useState(false);
+  const ctl = useTableControls(COLS);
 
   const { data: stats } = useQuery({ queryKey: ['complaint-stats'], queryFn: AdminAPI.complaintStats });
   const statsData: any = stats || {};
@@ -64,6 +78,9 @@ export default function AdminComplaintsPage() {
   });
   const complaints: any[] = (data as any)?.complaints || (Array.isArray(data) ? data : []);
   const total = (data as any)?.total ?? complaints.length;
+
+  // Column-header sort + per-column filter (client-side on loaded rows).
+  const rows = ctl.process(complaints);
 
   const { data: deptsData } = useQuery({ queryKey: ['complaint-depts'], queryFn: AdminAPI.complaintDepartments });
   const departments: any[] = Array.isArray(deptsData) ? deptsData : [];
@@ -159,23 +176,14 @@ export default function AdminComplaintsPage() {
         <div className="table-wrap">
           <table className="admin-table">
             <thead>
-              <tr>
-                <th>Ticket #</th>
-                <th>Subject / Type</th>
-                <th>Customer</th>
-                <th>Department</th>
-                <th>Assigned</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Created</th>
-              </tr>
+              <tr>{COLS.map(c => <Th key={c.key} col={c} ctl={ctl} />)}</tr>
             </thead>
             <tbody>
               {isLoading ? Array(5).fill(0).map((_, i) => (
                 <tr key={i}>{Array(8).fill(0).map((_, j) => <td key={j}><div className="skeleton" style={{ height: 20, width: '80%' }} /></td>)}</tr>
-              )) : complaints.length === 0 ? (
+              )) : rows.length === 0 ? (
                 <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px 20px' }}>No tickets found</td></tr>
-              ) : complaints.map((c: any) => (
+              ) : rows.map((c: any) => (
                 <tr key={c.id} onClick={() => setSelectedId(c.id)} style={{ cursor: 'pointer' }}>
                   <td style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: 'var(--forest)', fontWeight: 700 }}>{c.ticket_number || `#${c.id}`}</td>
                   <td>

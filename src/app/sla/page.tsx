@@ -7,18 +7,32 @@ import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 import PeriodFilter, { Period } from '@/components/PeriodFilter';
+import { Th, useTableControls, type Col } from '@/components/TableHeader';
 
 import { IconSearch, IconX, IconTrendingDown, IconClock, IconAlertTriangle } from '@tabler/icons-react';
+
+// Column definitions for header sort/filter (accessors match the cell renders).
+const COLS: Col[] = [
+  { key: 'booking', label: 'Booking #', get: (b) => b.booking?.booking_number || '—' },
+  { key: 'gardener', label: 'Gardener', get: (b) => b.gardener?.name || '—' },
+  { key: 'breach_type', label: 'Breach Type', get: (b) => b.breach_type?.replace(/_/g, ' ') },
+  { key: 'occurred_at', label: 'Occurred', type: 'date' },
+  { key: 'status', label: 'Status', get: (b) => (b.resolved ? 'Resolved' : 'Open') },
+];
 
 export default function SLAPage() {
   const qc = useQueryClient();
   const [config, setConfig] = useState<any>({});
   const [editConfig, setEditConfig] = useState(false);
   const [period, setPeriod] = useState<Period>(null);
+  const ctl = useTableControls(COLS);
 
   const { data: configRaw } = useQuery({ queryKey: ['sla-config'], queryFn: AdminAPI.slaConfig });
   const { data: breachesRaw } = useQuery({ queryKey: ['sla-breaches', period], queryFn: () => AdminAPI.slaBreaches({ from_date: period?.from, to_date: period?.to }) });
   const rawBr: any = breachesRaw; const breaches: any[] = Array.isArray(rawBr?.breaches) ? rawBr.breaches : Array.isArray(rawBr) ? rawBr : [];
+
+  // Column-header sort + per-column filter (client-side on loaded rows).
+  const rows = ctl.process(breaches);
 
   const saveMut = useMutation({ mutationFn: () => AdminAPI.updateSlaConfig(config), onSuccess: () => { toast.success('SLA config updated'); setEditConfig(false); qc.invalidateQueries({ queryKey: ['sla-config'] }); }, onError: (e: any) => toast.error(e.message) });
   const resolveMut = useMutation({ mutationFn: (id: number) => AdminAPI.resolveBreach(id), onSuccess: () => { toast.success('Breach resolved'); qc.invalidateQueries({ queryKey: ['sla-breaches'] }); }, onError: (e: any) => toast.error(e.message) });
@@ -73,10 +87,10 @@ export default function SLAPage() {
           <div className="card-header"><h2 style={{fontWeight:700,fontSize:'0.95rem'}}>SLA Breaches</h2><div style={{display:'flex',gap:12,alignItems:'center'}}><PeriodFilter onChange={p=>setPeriod(p)} /><span style={{fontSize:'0.78rem',color:'var(--error)',fontWeight:600}}>{breaches.filter((b:any)=>!b.resolved).length} unresolved</span></div></div>
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Booking #</th><th>Gardener</th><th>Breach Type</th><th>Occurred</th><th>Status</th><th>Action</th></tr></thead>
+              <thead><tr>{COLS.map(c => <Th key={c.key} col={c} ctl={ctl} />)}<th>Action</th></tr></thead>
               <tbody>
-                {breaches.length===0?<tr><td colSpan={6} style={{textAlign:'center',color:'var(--text-muted)',padding:'28px'}}>No SLA breaches 🎉</td></tr>:
-                  breaches.map((b:any)=>(
+                {rows.length===0?<tr><td colSpan={6} style={{textAlign:'center',color:'var(--text-muted)',padding:'28px'}}>No SLA breaches 🎉</td></tr>:
+                  rows.map((b:any)=>(
                     <tr key={b.id}>
                       <td style={{fontFamily:'monospace',fontSize:'0.82rem',fontWeight:700,color:'var(--forest)'}}>{b.booking?.booking_number||'—'}</td>
                       <td>{b.gardener?.name||'—'}</td>

@@ -8,7 +8,20 @@ import ExportButton from '@/components/ExportButton';
 import PeriodFilter, { Period } from '@/components/PeriodFilter';
 import InvoicePreview from '@/components/InvoicePreview';
 import { inclusiveGstSplit } from '@/lib/invoice';
+import { Th, useTableControls, type Col } from '@/components/TableHeader';
 import { IconFilter, IconDownload, IconSearch, IconX, IconCalendar, IconUser, IconMapPin, IconLeaf, IconMessageCircle, IconStar, IconClock, IconChevronRight } from '@tabler/icons-react';
+
+// Column definitions for header sort/filter (accessors match the cell renders).
+const COLS: Col[] = [
+  { key: 'customer', label: 'Customer', get: (s) => `${s.customer?.name || ''} ${s.customer?.phone || ''}` },
+  { key: 'plan', label: 'Plan', get: (s) => s.plan?.name || '' },
+  { key: 'geofence', label: 'Geofence', get: (s) => s.geofenceRef?.name || s.zone?.name || '—' },
+  { key: 'plant_count', label: 'Plants', type: 'number' },
+  { key: 'status', label: 'Status' },
+  { key: 'auto_renew', label: 'Auto Renew', get: (s) => s.auto_renew ? 'Yes' : 'No' },
+  { key: 'start_date', label: 'Start', type: 'date' },
+  { key: 'next_visit_date', label: 'Next Visit', type: 'date' },
+];
 
 export default function AdminSubscriptionsPage() {
   const [page, setPage] = useState(1);
@@ -21,6 +34,7 @@ export default function AdminSubscriptionsPage() {
   const [schedulingSub, setSchedulingSub] = useState<any>(null);
   const [selectedBookingId, setSelectedBookingId] = useState<number | null>(null);
   const [downloadingInvoice, setDownloadingInvoice] = useState(false);
+  const ctl = useTableControls(COLS);
 
   const handleDownloadInvoice = async (id: number) => {
     setDownloadingInvoice(true);
@@ -83,6 +97,9 @@ export default function AdminSubscriptionsPage() {
   const total = (data as any)?.total ?? subs.length;
   const pages = (data as any)?.pages ?? Math.ceil(total / 20);
 
+  // Column-header sort + per-column filter (client-side on loaded rows).
+  const rows = ctl.process(subs);
+
   const STATUS_COLOR: Record<string,string> = { active:'badge-green', paused:'badge-yellow', cancelled:'badge-gray', expired:'badge-red' };
 
   // Export fetches EVERY subscription (all pages), not just the visible 20.
@@ -137,11 +154,11 @@ export default function AdminSubscriptionsPage() {
       <div className="card">
         <div className="table-wrap">
           <table className="admin-table">
-            <thead><tr><th>Customer</th><th>Plan</th><th>Geofence</th><th>Plants</th><th>Status</th><th>Auto Renew</th><th>Start</th><th>Next Visit</th><th>Actions</th></tr></thead>
+            <thead><tr>{COLS.map(c => <Th key={c.key} col={c} ctl={ctl} />)}<th>Actions</th></tr></thead>
             <tbody>
               {isLoading ? Array(8).fill(null).map((_, i) => <tr key={i}><td colSpan={9}><div className="skeleton skel-text" /></td></tr>) :
-                subs.length === 0 ? <tr><td colSpan={9} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '48px' }}>No subscriptions found matching criteria</td></tr> :
-                subs.map((s: any) => (
+                rows.length === 0 ? <tr><td colSpan={9} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '48px' }}>No subscriptions found matching criteria</td></tr> :
+                rows.map((s: any) => (
                   <tr key={s.id} onClick={() => setSelected(s)} style={{ cursor: 'pointer' }}>
                     <td>
                       <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{s.customer?.name}</div>

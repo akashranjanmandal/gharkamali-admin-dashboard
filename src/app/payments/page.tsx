@@ -6,6 +6,7 @@ import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 import PeriodFilter, { Period } from '@/components/PeriodFilter';
+import { Th, useTableControls, type Col } from '@/components/TableHeader';
 import { IconSearch, IconX, IconCreditCard, IconUser, IconCalendar, IconCheck, IconAlertCircle } from '@tabler/icons-react';
 
 // Accepts ISO string, MySQL "YYYY-MM-DD HH:mm:ss", epoch ms/sec, or various API field names
@@ -27,12 +28,23 @@ function fmtDateSafe(row: any, fmt: 'short' | 'full' = 'short'): string {
     : d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
+// Column definitions for header sort/filter (accessors match the cell renders).
+const COLS: Col[] = [
+  { key: 'txn_id', label: 'Txn ID', get: (p) => p.txn_id || 'N/A' },
+  { key: 'customer', label: 'Customer', get: (p) => `${p.user?.name || 'Unknown User'} ${p.user?.phone || ''}` },
+  { key: 'amount', label: 'Amount', type: 'number' },
+  { key: 'payment_for', label: 'Purpose', get: (p) => p.payment_for?.replace(/_/g, ' ') || '' },
+  { key: 'status', label: 'Status' },
+  { key: 'created_at', label: 'Date', type: 'date', get: (p) => p.created_at ?? p.createdAt ?? p.created ?? p.paid_at ?? p.timestamp },
+];
+
 export default function PaymentsAdmin() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [period, setPeriod] = useState<Period>(null);
   const [selected, setSelected] = useState<any>(null);
+  const ctl = useTableControls(COLS);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-payments', page, search, status, period],
@@ -47,6 +59,9 @@ export default function PaymentsAdmin() {
   const payments: any[] = (data as any)?.items ?? [];
   const total = (data as any)?.total ?? 0;
   const pages = Math.ceil(total / 20);
+
+  // Column-header sort + per-column filter (client-side on loaded rows).
+  const rows = ctl.process(payments);
 
   // Export fetches EVERY payment (all pages), not just the visible 20.
   const fetchAllPayments = () => fetchAllPages(
@@ -101,22 +116,17 @@ export default function PaymentsAdmin() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Txn ID</th>
-                <th>Customer</th>
-                <th>Amount</th>
-                <th>Purpose</th>
-                <th>Status</th>
-                <th>Date</th>
+                {COLS.map(c => <Th key={c.key} col={c} ctl={ctl} />)}
                 <th style={{ textAlign: 'right' }}>Audit</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 Array(5).fill(null).map((_, i) => <tr key={i}>{Array(7).fill(0).map((_, j)=><td key={j}><div className="skeleton" style={{ height: 18, width: '80%' }} /></td>)}</tr>)
-              ) : payments.length === 0 ? (
+              ) : rows.length === 0 ? (
                 <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>No transactions found.</td></tr>
               ) : (
-                payments.map((p: any) => (
+                rows.map((p: any) => (
                   <tr key={p.id} onClick={() => setSelected(p)} style={{ cursor: 'pointer' }}>
                     <td style={{ fontSize: '0.78rem', fontFamily: 'monospace', fontWeight: 600, color: 'var(--forest)' }}>{p.txn_id || 'N/A'}</td>
                     <td>

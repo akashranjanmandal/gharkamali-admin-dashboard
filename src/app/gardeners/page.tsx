@@ -7,7 +7,18 @@ import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 import PeriodFilter, { Period } from '@/components/PeriodFilter';
+import { Th, useTableControls, type Col } from '@/components/TableHeader';
 import { IconSearch, IconX, IconUser, IconStar, IconMapPin, IconCalendar, IconBriefcase, IconCash, IconBuildingBank, IconPhone } from '@tabler/icons-react';
+
+// Column definitions for header sort/filter (accessors match the cell renders).
+const COLS: Col[] = [
+  { key: 'gardener', label: 'Gardener', get: (g) => g.name || '' },
+  { key: 'phone', label: 'Phone' },
+  { key: 'experience', label: 'Experience', type: 'number', get: (g) => Number(g.gardenerProfile?.experience_years ?? 0) },
+  { key: 'jobs', label: 'Jobs', type: 'number', get: (g) => Number(g.gardenerProfile?.completed_jobs ?? 0) },
+  { key: 'rating', label: 'Rating', type: 'number', get: (g) => g.gardenerProfile?.rating ? Number(g.gardenerProfile.rating) : null },
+  { key: 'status', label: 'Status', get: (g) => !g.is_approved ? 'Pending' : g.is_active ? 'Active' : 'Inactive' },
+];
 
 export default function AdminGardenersPage() {
   const qc = useQueryClient();
@@ -22,6 +33,7 @@ export default function AdminGardenersPage() {
   const [docsLoading, setDocsLoading] = useState(false);
   const [docNotes, setDocNotes] = useState<Record<number, string>>({});
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const ctl = useTableControls(COLS);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-gardeners', filter, page, search, period],
@@ -42,6 +54,9 @@ export default function AdminGardenersPage() {
   const gardenersRaw: any[] = (data as any)?.gardeners || (Array.isArray(data) ? data : []);
   const total = (data as any)?.total ?? gardenersRaw.length;
   const pages = (data as any)?.pages ?? Math.ceil(total / 20);
+
+  // Column-header sort + per-column filter (client-side on loaded rows).
+  const rows = ctl.process(gardenersRaw);
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => AdminAPI.updateGardener(id, data),
@@ -146,12 +161,12 @@ export default function AdminGardenersPage() {
         <div className="table-wrap">
           <table className="admin-table">
             <thead>
-              <tr><th>Gardener</th><th>Phone</th><th>Experience</th><th>Jobs</th><th>Rating</th><th>Status</th><th style={{ textAlign: 'right' }}>Action</th></tr>
+              <tr>{COLS.map(c => <Th key={c.key} col={c} ctl={ctl} />)}<th style={{ textAlign: 'right' }}>Action</th></tr>
             </thead>
             <tbody>
               {isLoading ? Array(6).fill(0).map((_, i) => <tr key={i}>{Array(7).fill(0).map((_, j) => <td key={j}><div className="skeleton" style={{ height: 18, width: '80%' }} /></td>)}</tr>) :
-                gardenersRaw.length === 0 ? <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No gardeners found</td></tr> :
-                gardenersRaw.map((g: any) => (
+                rows.length === 0 ? <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No gardeners found</td></tr> :
+                rows.map((g: any) => (
                   <tr key={g.id} onClick={() => setSelectedId(g.id)} style={{ cursor: 'pointer' }}>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

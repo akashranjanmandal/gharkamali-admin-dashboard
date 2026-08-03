@@ -6,16 +6,30 @@ import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 import PeriodFilter, { Period } from '@/components/PeriodFilter';
+import { Th, useTableControls, type Col } from '@/components/TableHeader';
+
+// Column definitions for header sort/filter (accessors match the cell renders).
+const COLS: Col[] = [
+  { key: 'name', label: 'Name' },
+  { key: 'phone', label: 'Phone' },
+  { key: 'email', label: 'Email', get: (c) => c.email || '—' },
+  { key: 'message', label: 'Message' },
+  { key: 'created_at', label: 'Date', type: 'date' },
+];
 
 export default function ContactsPage() {
   const [page, setPage] = useState(1);
   const [period, setPeriod] = useState<Period>(null);
+  const ctl = useTableControls(COLS);
   const { data: contactsData, isLoading } = useQuery({
     queryKey: ['admin-contacts', page, period],
     queryFn: () => AdminAPI.contacts({ page, limit: 20, from_date: period?.from, to_date: period?.to })
   });
   const contacts: any[] = contactsData?.data || [];
   const pagination = contactsData?.pagination || {};
+
+  // Column-header sort + per-column filter (client-side on loaded rows).
+  const rows = ctl.process(contacts);
 
   // Export fetches EVERY contact message (all pages), not just the visible 20.
   const fetchAllContacts = () => fetchAllPages(
@@ -47,11 +61,11 @@ export default function ContactsPage() {
       <div className="card">
         <div className="table-wrap">
           <table className="admin-table">
-            <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Message</th><th>Date</th></tr></thead>
+            <thead><tr>{COLS.map(c => <Th key={c.key} col={c} ctl={ctl} />)}</tr></thead>
             <tbody>
               {isLoading?Array(4).fill(null).map((_,i)=><tr key={i}><td colSpan={5}><div className="skeleton skel-text" style={{ width: '100%' }}/></td></tr>):
-                contacts.length===0?<tr><td colSpan={5} style={{textAlign:'center',color:'var(--text-muted)',padding:'32px'}}>No messages yet</td></tr>:
-                contacts.map((c:any)=>(
+                rows.length===0?<tr><td colSpan={5} style={{textAlign:'center',color:'var(--text-muted)',padding:'32px'}}>No messages yet</td></tr>:
+                rows.map((c:any)=>(
                   <tr key={c.id}>
                     <td><div style={{fontWeight:700,fontSize:'0.875rem'}}>{c.name}</div></td>
                     <td>{c.phone}</td>
