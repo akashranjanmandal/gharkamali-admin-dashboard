@@ -5,6 +5,7 @@ import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
+import PeriodFilter, { Period } from '@/components/PeriodFilter';
 import InvoicePreview from '@/components/InvoicePreview';
 import { inclusiveGstSplit } from '@/lib/invoice';
 import { IconFilter, IconDownload, IconSearch, IconX, IconCalendar, IconUser, IconMapPin, IconLeaf, IconMessageCircle, IconStar, IconClock, IconChevronRight } from '@tabler/icons-react';
@@ -15,6 +16,7 @@ export default function AdminSubscriptionsPage() {
   const [geofenceId, setGeofenceId] = useState('');
   const [planId, setPlanId] = useState('');
   const [search, setSearch] = useState('');
+  const [period, setPeriod] = useState<Period>(null);
   const [selected, setSelected] = useState<any>(null);
   const [schedulingSub, setSchedulingSub] = useState<any>(null);
   const [selectedBookingId, setSelectedBookingId] = useState<number | null>(null);
@@ -31,15 +33,17 @@ export default function AdminSubscriptionsPage() {
   };
 
   const { data, isLoading } = useQuery({ 
-    queryKey: ['admin-subscriptions', page, status, geofenceId, planId, search], 
-    queryFn: () => AdminAPI.subscriptions({ 
-      page, 
-      limit: 20, 
+    queryKey: ['admin-subscriptions', page, status, geofenceId, planId, search, period],
+    queryFn: () => AdminAPI.subscriptions({
+      page,
+      limit: 20,
       status: status || undefined,
       geofence_id: geofenceId || undefined,
       plan_id: planId || undefined,
-      search: search || undefined
-    }) 
+      search: search || undefined,
+      from_date: period?.from,
+      to_date: period?.to
+    })
   });
 
   const { data: geofencesRaw } = useQuery({ queryKey: ['admin-geofences'], queryFn: () => AdminAPI.geofences() });
@@ -127,6 +131,7 @@ export default function AdminSubscriptionsPage() {
           <option value="">All Plans</option>
           {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
+        <PeriodFilter onChange={p => { setPeriod(p); setPage(1); }} />
       </div>
 
       <div className="card">

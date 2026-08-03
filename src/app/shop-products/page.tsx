@@ -7,6 +7,7 @@ import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import { v, firstError } from '@/lib/validators';
 import ExportButton from '@/components/ExportButton';
+import PeriodFilter, { Period, inPeriod } from '@/components/PeriodFilter';
 import * as XLSX from 'xlsx';
 
 const PRODUCT_ICONS = ['soil', 'pest', 'pot', 'fert', 'plant', 'tool'];
@@ -90,6 +91,7 @@ export default function AdminShopProductsPage() {
   const [importResult, setImportResult] = useState<any>(null);
   // category_name (lowercased) → resolution: existing category name OR '__SKIP__' OR '' (unresolved)
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
+  const [period, setPeriod] = useState<Period>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -221,6 +223,8 @@ export default function AdminShopProductsPage() {
 
   const prodList = Array.isArray(products) ? products : [];
   const catList = Array.isArray(categories) ? categories : [];
+  // Period filter only narrows the visible table; stats & import stay on the full list.
+  const visibleProds = prodList.filter((p: any) => inPeriod(p, period));
 
   // Export fetches the full (non-paginated) product list.
   const fetchAllProducts = async () => {
@@ -246,7 +250,8 @@ export default function AdminShopProductsPage() {
           <h1 className="page-title" style={{ marginBottom: 4 }}>Shop Management</h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Manage your gardening product catalog and categories</p>
         </div>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <PeriodFilter onChange={p => setPeriod(p)} />
           <Link href="/shop-categories" className="btn btn-outline" style={{ height: 44, display: 'flex', alignItems: 'center' }}>Manage Categories</Link>
           <ExportButton filename="ShopProducts" fetchAll={fetchAllProducts} mapRow={mapExportRow} />
           <button onClick={() => { setImportRows([]); setImportResult(null); setImportModal(true); }} className="btn btn-outline" style={{ height: 44 }}>⬆ Import Excel / CSV</button>
@@ -294,9 +299,9 @@ export default function AdminShopProductsPage() {
                   ))}
                 </tr>
               ))
-            ) : prodList.length === 0 ? (
-              <tr><td colSpan={8} style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>No products found. Start by adding one!</td></tr>
-            ) : prodList.map((p: any) => (
+            ) : visibleProds.length === 0 ? (
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>{prodList.length === 0 ? 'No products found. Start by adding one!' : 'No products in the selected period.'}</td></tr>
+            ) : visibleProds.map((p: any) => (
               <tr key={p.id}>
                 <td style={{ color: 'var(--text-faint)', fontSize: '0.75rem' }}>#{p.id}</td>
                 <td>

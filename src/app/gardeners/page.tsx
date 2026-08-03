@@ -6,6 +6,7 @@ import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
+import PeriodFilter, { Period } from '@/components/PeriodFilter';
 import { IconSearch, IconX, IconUser, IconStar, IconMapPin, IconCalendar, IconBriefcase, IconCash, IconBuildingBank, IconPhone } from '@tabler/icons-react';
 
 export default function AdminGardenersPage() {
@@ -14,6 +15,7 @@ export default function AdminGardenersPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [period, setPeriod] = useState<Period>(null);
   const [confirmDelete, setConfirmDelete] = useState<any>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [docs, setDocs] = useState<any[]>([]);
@@ -22,8 +24,8 @@ export default function AdminGardenersPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin-gardeners', filter, page, search],
-    queryFn: () => AdminAPI.gardeners({ status: filter === 'all' ? undefined : filter, page, limit: 20, search: search || undefined }),
+    queryKey: ['admin-gardeners', filter, page, search, period],
+    queryFn: () => AdminAPI.gardeners({ status: filter === 'all' ? undefined : filter, page, limit: 20, search: search || undefined, from_date: period?.from, to_date: period?.to }),
   });
 
   const { data: gardenerDetail, isLoading: isDetailLoading } = useQuery({
@@ -132,6 +134,7 @@ export default function AdminGardenersPage() {
           </div>
           <button type="submit" className="btn btn-primary">Search</button>
         </form>
+        <PeriodFilter onChange={p => { setPeriod(p); setPage(1); }} />
         <div style={{ display: 'flex', gap: 4, background: '#fff', padding: 4, borderRadius: 12, border: '1px solid var(--border)' }}>
           {FILTERS.map(f => (
             <button key={f} onClick={() => { setFilter(f); setPage(1); }} className={`btn btn-sm ${filter === f ? 'btn-forest' : 'btn-ghost'}`} style={{ textTransform: 'capitalize' }}>{f}</button>

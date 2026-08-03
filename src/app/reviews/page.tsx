@@ -5,6 +5,7 @@ import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
+import PeriodFilter, { Period } from '@/components/PeriodFilter';
 import toast from 'react-hot-toast';
 import { 
   IconStar, 
@@ -34,15 +35,18 @@ type Review = {
 
 export default function ReviewsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [period, setPeriod] = useState<Period>(null);
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin-reviews', statusFilter, page],
-    queryFn: () => AdminAPI.reviews({ 
-      status: statusFilter || undefined, 
-      page, 
-      limit: 20 
+    queryKey: ['admin-reviews', statusFilter, page, period],
+    queryFn: () => AdminAPI.reviews({
+      status: statusFilter || undefined,
+      from_date: period?.from,
+      to_date: period?.to,
+      page,
+      limit: 20
     })
   });
 
@@ -114,6 +118,7 @@ export default function ReviewsPage() {
         </div>
         
         <div style={{ display: 'flex', gap: 12 }}>
+          <PeriodFilter onChange={p => { setPeriod(p); setPage(1); }} />
           <div style={{ position: 'relative' }}>
             <IconFilter size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
             <select

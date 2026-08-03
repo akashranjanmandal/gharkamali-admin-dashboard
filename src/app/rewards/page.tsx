@@ -6,12 +6,14 @@ import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
+import PeriodFilter, { Period } from '@/components/PeriodFilter';
 
 export default function RewardsPage() {
   const qc = useQueryClient();
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ gardener_id: '', type: 'reward', amount: '', reason: '', booking_id: '' });
-  const { data } = useQuery({ queryKey: ['admin-rewards'], queryFn: () => AdminAPI.rewards({}) });
+  const [period, setPeriod] = useState<Period>(null);
+  const { data } = useQuery({ queryKey: ['admin-rewards', period], queryFn: () => AdminAPI.rewards({ from_date: period?.from, to_date: period?.to }) });
   const rewards: any[] = (data as any)?.items ?? Array.isArray((data as any)?.items) ? (data as any).items : Array.isArray(data as any) ? (data as any) : [];
 
   const saveMut = useMutation({
@@ -38,7 +40,7 @@ export default function RewardsPage() {
 
   return (
     <AdminLayout>
-      <div style={{marginBottom:24,display:'flex',justifyContent:'space-between',alignItems:'center'}}><div><h1 className="page-title">Rewards & Penalties</h1></div><div style={{display:'flex',gap:12,alignItems:'center'}}><ExportButton filename="Rewards" fetchAll={fetchAllRewards} mapRow={mapExportRow} /><button onClick={()=>setModal(true)} className="btn btn-primary">+ Create Reward</button></div></div>
+      <div style={{marginBottom:24,display:'flex',justifyContent:'space-between',alignItems:'center'}}><div><h1 className="page-title">Rewards & Penalties</h1></div><div style={{display:'flex',gap:12,alignItems:'center'}}><PeriodFilter onChange={p=>setPeriod(p)} /><ExportButton filename="Rewards" fetchAll={fetchAllRewards} mapRow={mapExportRow} /><button onClick={()=>setModal(true)} className="btn btn-primary">+ Create Reward</button></div></div>
       <div className="card">
         <div className="table-wrap">
           <table className="admin-table">

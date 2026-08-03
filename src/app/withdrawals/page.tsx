@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
+import PeriodFilter, { Period } from '@/components/PeriodFilter';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
 
@@ -32,18 +33,19 @@ export default function WithdrawalsPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
+  const [period, setPeriod] = useState<Period>(null);
   const [page, setPage] = useState(1);
   const [processingId, setProcessingId] = useState<number | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await AdminAPI.withdrawals({ status: statusFilter || undefined, page, limit: 20 });
+      const data = await AdminAPI.withdrawals({ status: statusFilter || undefined, page, limit: 20, from_date: period?.from, to_date: period?.to });
       setRequests(data?.requests || (Array.isArray(data) ? data : []));
       setTotal(data?.total || (Array.isArray(data) ? data.length : 0));
     } catch { toast.error('Failed to load withdrawal requests'); }
     setLoading(false);
-  }, [statusFilter, page]);
+  }, [statusFilter, page, period]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -87,6 +89,7 @@ export default function WithdrawalsPage() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <PeriodFilter onChange={p => { setPeriod(p); setPage(1); }} />
           <select
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}

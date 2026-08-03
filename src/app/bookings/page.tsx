@@ -6,6 +6,7 @@ import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
+import PeriodFilter, { Period } from '@/components/PeriodFilter';
 import InvoicePreview from '@/components/InvoicePreview';
 import { inclusiveGstSplit } from '@/lib/invoice';
 import { IconSearch, IconDownload, IconX, IconCalendar, IconMapPin, IconUser, IconLeaf, IconStar, IconMessageCircle } from '@tabler/icons-react';
@@ -26,8 +27,7 @@ export default function AdminBookingsPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [period, setPeriod] = useState<Period>(null);
   const [reassignModal, setReassignModal] = useState<any>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [gardenerId, setGardenerId] = useState('');
@@ -45,15 +45,15 @@ export default function AdminBookingsPage() {
   };
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin-bookings', status, page, search, dateFrom, dateTo], 
-    queryFn: () => AdminAPI.bookings({ 
-      status: status || undefined, 
-      page, 
-      limit: 20, 
+    queryKey: ['admin-bookings', status, page, search, period],
+    queryFn: () => AdminAPI.bookings({
+      status: status || undefined,
+      page,
+      limit: 20,
       search: search || undefined,
-      from_date: dateFrom || undefined,
-      to_date: dateTo || undefined
-    }) 
+      from_date: period?.from,
+      to_date: period?.to
+    })
   });
 
   const { data: bookingDetail, isLoading: isDetailLoading } = useQuery({
@@ -128,12 +128,7 @@ export default function AdminBookingsPage() {
           <input type="text" placeholder="Search booking # or customer…" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
             style={{ width: '100%', padding: '10px 14px 10px 40px', background: '#fff', border: '1.5px solid var(--border)', borderRadius: 12, fontFamily: 'Poppins', fontSize: '0.875rem', outline: 'none' }} />
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Date:</span>
-          <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }} className="input" style={{ width: 'auto' }} />
-          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>-</span>
-          <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }} className="input" style={{ width: 'auto' }} />
-        </div>
+        <PeriodFilter onChange={p => { setPeriod(p); setPage(1); }} />
         <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }} className="input" style={{ width: 'auto', minWidth: 160 }}>
           {STATUS_OPTS.map(s => <option key={s} value={s}>{s ? s.replace(/_/g, ' ') : 'All Statuses'}</option>)}
         </select>

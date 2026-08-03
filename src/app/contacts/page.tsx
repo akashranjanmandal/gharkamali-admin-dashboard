@@ -5,12 +5,14 @@ import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
+import PeriodFilter, { Period } from '@/components/PeriodFilter';
 
 export default function ContactsPage() {
   const [page, setPage] = useState(1);
+  const [period, setPeriod] = useState<Period>(null);
   const { data: contactsData, isLoading } = useQuery({
-    queryKey: ['admin-contacts', page],
-    queryFn: () => AdminAPI.contacts({ page, limit: 20 })
+    queryKey: ['admin-contacts', page, period],
+    queryFn: () => AdminAPI.contacts({ page, limit: 20, from_date: period?.from, to_date: period?.to })
   });
   const contacts: any[] = contactsData?.data || [];
   const pagination = contactsData?.pagination || {};
@@ -37,7 +39,10 @@ export default function ContactsPage() {
           <h1 className="page-title">Contact Messages</h1>
           <p style={{color:'var(--text-muted)',fontSize:'0.875rem',marginTop:4}}>{pagination.total || 0} messages</p>
         </div>
-        <ExportButton filename="ContactMessages" fetchAll={fetchAllContacts} mapRow={mapExportRow} />
+        <div style={{display:'flex',gap:12,alignItems:'center'}}>
+          <PeriodFilter onChange={p => { setPeriod(p); setPage(1); }} />
+          <ExportButton filename="ContactMessages" fetchAll={fetchAllContacts} mapRow={mapExportRow} />
+        </div>
       </div>
       <div className="card">
         <div className="table-wrap">

@@ -5,23 +5,23 @@ import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
+import PeriodFilter, { Period } from '@/components/PeriodFilter';
 import { IconSearch, IconX, IconLeaf, IconUser, IconCalendar, IconChartBar, IconExternalLink } from '@tabler/icons-react';
 
 export default function PlantHistoryAdmin() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [period, setPeriod] = useState<Period>(null);
   const [selected, setSelected] = useState<any>(null);
 
-  const { data, isLoading } = useQuery({ 
-    queryKey: ['admin-plant-history', page, search, dateFrom, dateTo], 
-    queryFn: () => AdminAPI.plantIdentifications({ 
-      page, 
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-plant-history', page, search, period],
+    queryFn: () => AdminAPI.plantIdentifications({
+      page,
       search: search || undefined,
-      from_date: dateFrom || undefined,
-      to_date: dateTo || undefined
-    }) 
+      from_date: period?.from,
+      to_date: period?.to
+    })
   });
   const items: any[] = (data as any)?.items ?? [];
   const total = (data as any)?.total ?? 0;
@@ -59,12 +59,7 @@ export default function PlantHistoryAdmin() {
           <input type="text" placeholder="Search plant name or username…" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
             style={{ width: '100%', padding: '10px 14px 10px 40px', background: '#fff', border: '1.5px solid var(--border)', borderRadius: 12, fontFamily: 'Poppins', fontSize: '0.875rem', outline: 'none' }} />
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>From:</span>
-          <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }} className="input" style={{ width: 'auto' }} />
-          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>To:</span>
-          <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }} className="input" style={{ width: 'auto' }} />
-        </div>
+        <PeriodFilter onChange={p => { setPeriod(p); setPage(1); }} />
       </div>
 
       <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import ExportButton from '@/components/ExportButton';
+import PeriodFilter, { Period, inPeriod } from '@/components/PeriodFilter';
 
 const blankForm = () => ({
   code: '', description: '', discount_type: 'percentage', discount_value: '',
@@ -20,9 +21,11 @@ export default function AdminCouponsPage() {
   const qc = useQueryClient();
   const [modal, setModal] = useState<any>(null);
   const [form, setForm] = useState<any>(blankForm());
+  const [period, setPeriod] = useState<Period>(null);
 
   const { data, isLoading } = useQuery({ queryKey: ['admin-coupons'], queryFn: AdminAPI.coupons });
   const items: any[] = Array.isArray(data) ? data : Array.isArray((data as any)?.items) ? (data as any).items : [];
+  const visible = items.filter((c: any) => inPeriod(c, period));
 
   const buildPayload = () => {
     const num = (v: any) => (v === '' || v == null ? null : Number(v));
@@ -96,6 +99,7 @@ export default function AdminCouponsPage() {
           <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 4 }}>Discount codes customers can apply at shop checkout.</p>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <PeriodFilter onChange={p => setPeriod(p)} />
           <ExportButton filename="Coupons" fetchAll={fetchAllCoupons} mapRow={mapExportRow} />
           <button onClick={openNew} className="btn btn-primary">+ New Coupon</button>
         </div>
@@ -104,11 +108,11 @@ export default function AdminCouponsPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 16 }}>
         {isLoading ? (
           Array(4).fill(null).map((_, i) => <div key={i} className="skeleton" style={{ height: 190, borderRadius: 20 }} />)
-        ) : items.length === 0 ? (
+        ) : visible.length === 0 ? (
           <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)', background: '#fff', borderRadius: 20, border: '1px dashed var(--border)' }}>
-            No coupons yet. Create one to offer discounts at checkout.
+            {items.length === 0 ? 'No coupons yet. Create one to offer discounts at checkout.' : 'No coupons in the selected period.'}
           </div>
-        ) : items.map((c: any) => {
+        ) : visible.map((c: any) => {
           const limitReached = c.usage_limit != null && c.usage_count >= c.usage_limit;
           return (
             <div key={c.id} style={{ background: '#fff', borderRadius: 20, padding: 20, border: '1px solid var(--border)', opacity: c.is_active ? 1 : 0.6 }}>

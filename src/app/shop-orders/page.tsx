@@ -6,6 +6,7 @@ import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
+import PeriodFilter, { Period } from '@/components/PeriodFilter';
 import { IconSearch, IconDownload, IconX, IconCalendar, IconUser, IconPackage, IconCreditCard, IconTruck } from '@tabler/icons-react';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -23,8 +24,7 @@ export default function AdminShopOrdersPage() {
   const qc = useQueryClient();
   const [filter, setFilter] = useState('');
   const [search, setSearch] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [period, setPeriod] = useState<Period>(null);
   const [selected, setSelected] = useState<any>(null);
   const [downloadingInvoice, setDownloadingInvoice] = useState(false);
 
@@ -39,13 +39,13 @@ export default function AdminShopOrdersPage() {
   };
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin-shop-orders', filter, search, dateFrom, dateTo], 
-    queryFn: () => AdminAPI.shopOrders({ 
+    queryKey: ['admin-shop-orders', filter, search, period],
+    queryFn: () => AdminAPI.shopOrders({
       status: filter || undefined,
       search: search || undefined,
-      from_date: dateFrom || undefined,
-      to_date: dateTo || undefined
-    }) 
+      from_date: period?.from,
+      to_date: period?.to
+    })
   });
   const ordersRaw: any[] = (data as any)?.orders || (Array.isArray(data) ? data : []);
 
@@ -105,12 +105,7 @@ export default function AdminShopOrdersPage() {
           <input type="text" placeholder="Search order # or customer…" value={search} onChange={e => setSearch(e.target.value)}
             style={{ width: '100%', padding: '10px 14px 10px 40px', background: '#fff', border: '1.5px solid var(--border)', borderRadius: 12, fontFamily: 'Poppins', fontSize: '0.875rem', outline: 'none' }} />
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>From:</span>
-          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="input" style={{ width: 'auto' }} />
-          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>To:</span>
-          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="input" style={{ width: 'auto' }} />
-        </div>
+        <PeriodFilter onChange={p => setPeriod(p)} />
         <div style={{ display: 'flex', gap: 8 }}>
           {['', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'].map(s => (
             <button key={s} onClick={() => setFilter(s)} className={`btn btn-sm ${filter === s ? 'btn-forest' : 'btn-ghost'}`} style={{ textTransform: 'capitalize' }}>

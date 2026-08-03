@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import ExportButton from '@/components/ExportButton';
+import PeriodFilter, { Period, inPeriod } from '@/components/PeriodFilter';
 
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Delhi',
@@ -36,9 +37,11 @@ export default function SupervisorsPage() {
   const [modal, setModal] = useState<any>(null);
   const [form, setForm] = useState<any>(blankForm());
   const [showPass, setShowPass] = useState(false);
+  const [period, setPeriod] = useState<Period>(null);
 
   const { data: supervisorsData, isLoading } = useQuery({ queryKey: ['admin-supervisors'], queryFn: AdminAPI.supervisors });
   const supervisors: any[] = Array.isArray(supervisorsData as any) ? (supervisorsData as any) : [];
+  const visibleSupervisors = supervisors.filter((s: any) => inPeriod(s, period));
 
   const { data: gardenersData } = useQuery({ queryKey: ['admin-gardeners-all'], queryFn: () => AdminAPI.gardeners({ limit: 500, status: 'active' }) });
   const allGardeners = (gardenersData as any)?.gardeners || [];
@@ -116,9 +119,10 @@ export default function SupervisorsPage() {
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 className="page-title">Supervisors</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: 4 }}>{supervisors.length} supervisors · login uses mobile + password</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: 4 }}>{visibleSupervisors.length} supervisors · login uses mobile + password</p>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <PeriodFilter onChange={p => setPeriod(p)} />
           <ExportButton filename="Supervisors" fetchAll={fetchAllSupervisors} mapRow={mapExportRow} />
           <button onClick={openNew} className="btn btn-primary">+ New Supervisor</button>
         </div>
@@ -130,8 +134,8 @@ export default function SupervisorsPage() {
             <thead><tr><th>Supervisor</th><th>Phone</th><th>City</th><th>Team</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
               {isLoading ? Array(4).fill(null).map((_, i) => <tr key={i}><td colSpan={6}><div className="skeleton skel-text" style={{ width: '100%' }} /></td></tr>)
-                : supervisors.length === 0 ? <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '32px' }}>No supervisors yet</td></tr>
-                : supervisors.map((s: any) => (
+                : visibleSupervisors.length === 0 ? <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '32px' }}>{supervisors.length === 0 ? 'No supervisors yet' : 'No supervisors in the selected period'}</td></tr>
+                : visibleSupervisors.map((s: any) => (
                   <tr key={s.id}>
                     <td><div style={{ fontWeight: 700, fontSize: '0.875rem' }}>{s.name}</div><div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{s.email || '—'}</div></td>
                     <td>+91 {s.phone}</td>

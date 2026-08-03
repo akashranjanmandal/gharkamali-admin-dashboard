@@ -7,6 +7,7 @@ import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
+import PeriodFilter, { Period } from '@/components/PeriodFilter';
 import { v, firstError } from '@/lib/validators';
 import {
   IconSearch, IconBuilding, IconPaperclip, IconSend, IconLock, IconHistory,
@@ -41,6 +42,7 @@ export default function AdminComplaintsPage() {
   const [deptFilter, setDeptFilter] = useState('');
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [period, setPeriod] = useState<Period>(null);
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [showDepts, setShowDepts] = useState(false);
@@ -49,12 +51,14 @@ export default function AdminComplaintsPage() {
   const statsData: any = stats || {};
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin-complaints', status, priority, deptFilter, search, page],
+    queryKey: ['admin-complaints', status, priority, deptFilter, search, page, period],
     queryFn: () => AdminAPI.complaints({
       status: status || undefined,
       priority: priority || undefined,
       department_id: deptFilter || undefined,
       search: search || undefined,
+      from_date: period?.from,
+      to_date: period?.to,
       page, limit: 20,
     }),
   });
@@ -146,6 +150,7 @@ export default function AdminComplaintsPage() {
             <option value="">All Departments</option>
             {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
+          <PeriodFilter onChange={p => { setPeriod(p); setPage(1); }} />
         </div>
       </div>
 

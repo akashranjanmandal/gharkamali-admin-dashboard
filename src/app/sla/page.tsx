@@ -6,6 +6,7 @@ import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
+import PeriodFilter, { Period } from '@/components/PeriodFilter';
 
 import { IconSearch, IconX, IconTrendingDown, IconClock, IconAlertTriangle } from '@tabler/icons-react';
 
@@ -13,9 +14,10 @@ export default function SLAPage() {
   const qc = useQueryClient();
   const [config, setConfig] = useState<any>({});
   const [editConfig, setEditConfig] = useState(false);
+  const [period, setPeriod] = useState<Period>(null);
 
   const { data: configRaw } = useQuery({ queryKey: ['sla-config'], queryFn: AdminAPI.slaConfig });
-  const { data: breachesRaw } = useQuery({ queryKey: ['sla-breaches'], queryFn: () => AdminAPI.slaBreaches({}) });
+  const { data: breachesRaw } = useQuery({ queryKey: ['sla-breaches', period], queryFn: () => AdminAPI.slaBreaches({ from_date: period?.from, to_date: period?.to }) });
   const rawBr: any = breachesRaw; const breaches: any[] = Array.isArray(rawBr?.breaches) ? rawBr.breaches : Array.isArray(rawBr) ? rawBr : [];
 
   const saveMut = useMutation({ mutationFn: () => AdminAPI.updateSlaConfig(config), onSuccess: () => { toast.success('SLA config updated'); setEditConfig(false); qc.invalidateQueries({ queryKey: ['sla-config'] }); }, onError: (e: any) => toast.error(e.message) });
@@ -68,7 +70,7 @@ export default function SLAPage() {
           </div>
         </div>
         <div className="card">
-          <div className="card-header"><h2 style={{fontWeight:700,fontSize:'0.95rem'}}>SLA Breaches</h2><span style={{fontSize:'0.78rem',color:'var(--error)',fontWeight:600}}>{breaches.filter((b:any)=>!b.resolved).length} unresolved</span></div>
+          <div className="card-header"><h2 style={{fontWeight:700,fontSize:'0.95rem'}}>SLA Breaches</h2><div style={{display:'flex',gap:12,alignItems:'center'}}><PeriodFilter onChange={p=>setPeriod(p)} /><span style={{fontSize:'0.78rem',color:'var(--error)',fontWeight:600}}>{breaches.filter((b:any)=>!b.resolved).length} unresolved</span></div></div>
           <div className="table-wrap">
             <table>
               <thead><tr><th>Booking #</th><th>Gardener</th><th>Breach Type</th><th>Occurred</th><th>Status</th><th>Action</th></tr></thead>
