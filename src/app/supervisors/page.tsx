@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
+import ExportButton from '@/components/ExportButton';
 
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Delhi',
@@ -82,6 +83,21 @@ export default function SupervisorsPage() {
     setForm((p: any) => ({ ...p, gardener_ids: current.includes(id) ? current.filter((x: number) => x !== id) : [...current, id] }));
   };
 
+  // Export fetches the full (non-paginated) supervisor list.
+  const fetchAllSupervisors = async () => {
+    const res: any = await AdminAPI.supervisors();
+    return Array.isArray(res) ? res : [];
+  };
+  const mapExportRow = (s: any) => ({
+    ID: s.id,
+    Name: s.name,
+    Phone: s.phone,
+    Email: s.email,
+    City: s.city,
+    Active: s.is_active ? 'Yes' : 'No',
+    Created: s.created_at,
+  });
+
   const openNew = () => { setForm(blankForm()); setShowPass(false); setModal({ new: true }); };
   const openEdit = (s: any) => {
     setForm({
@@ -102,7 +118,10 @@ export default function SupervisorsPage() {
           <h1 className="page-title">Supervisors</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: 4 }}>{supervisors.length} supervisors · login uses mobile + password</p>
         </div>
-        <button onClick={openNew} className="btn btn-primary">+ New Supervisor</button>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <ExportButton filename="Supervisors" fetchAll={fetchAllSupervisors} mapRow={mapExportRow} />
+          <button onClick={openNew} className="btn btn-primary">+ New Supervisor</button>
+        </div>
       </div>
 
       <div className="card">

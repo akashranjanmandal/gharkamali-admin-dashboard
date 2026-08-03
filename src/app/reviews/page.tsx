@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
+import { fetchAllPages } from '@/lib/utils';
+import ExportButton from '@/components/ExportButton';
 import toast from 'react-hot-toast';
 import { 
   IconStar, 
@@ -60,6 +62,23 @@ export default function ReviewsPage() {
   const total = data?.total || (Array.isArray(data) ? data.length : 0);
   const totalPages = Math.ceil(total / 20);
 
+  // Export fetches EVERY review (all pages), not just the visible 20.
+  const fetchAllReviews = () => fetchAllPages(
+    (page, limit) => AdminAPI.reviews({ page, limit }),
+    (res: any) => res?.reviews || (Array.isArray(res) ? res : []),
+  );
+  const mapExportRow = (r: any) => ({
+    ID: r.id,
+    Customer: r.customer?.name,
+    CustomerPhone: r.customer?.phone,
+    Gardener: r.gardener?.name,
+    Booking: r.booking?.booking_number,
+    Rating: r.rating,
+    Comment: r.comment,
+    Status: r.status,
+    Date: r.created_at,
+  });
+
   const renderStars = (rating: number) => {
     return (
       <div style={{ display: 'flex', gap: 2 }}>
@@ -109,6 +128,7 @@ export default function ReviewsPage() {
               <option value="rejected">🔴 Rejected</option>
             </select>
           </div>
+          <ExportButton filename="Reviews" fetchAll={fetchAllReviews} mapRow={mapExportRow} />
         </div>
       </div>
 

@@ -4,7 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
-import { exportToCSV } from '@/lib/utils';
+import { fetchAllPages } from '@/lib/utils';
+import ExportButton from '@/components/ExportButton';
 import InvoicePreview from '@/components/InvoicePreview';
 import { inclusiveGstSplit } from '@/lib/invoice';
 import { IconSearch, IconDownload, IconX, IconCalendar, IconMapPin, IconUser, IconLeaf, IconStar, IconMessageCircle } from '@tabler/icons-react';
@@ -93,21 +94,23 @@ export default function AdminBookingsPage() {
 
   const STATUS_OPTS = ['', 'pending', 'assigned', 'en_route', 'arrived', 'in_progress', 'completed', 'cancelled', 'failed'];
 
-  const handleExport = () => {
-    const exportData = bookings.map(b => ({
-      ID: b.id,
-      BookingNumber: b.booking_number,
-      Customer: b.customer?.name,
-      Phone: b.customer?.phone,
-      Gardener: b.gardener?.name || 'Unassigned',
-      Geofence: b.geofence?.name || b.zone?.name || '—',
-      ScheduledDate: b.scheduled_date,
-      ScheduledTime: b.scheduled_time || 'Flexible',
-      Status: b.status,
-      Amount: b.total_amount,
-    }));
-    exportToCSV(exportData, `Bookings_${new Date().toISOString().split('T')[0]}`);
-  };
+  // Export fetches EVERY booking (all pages), not just the visible 20.
+  const fetchAllBookings = () => fetchAllPages(
+    (page, limit) => AdminAPI.bookings({ page, limit }),
+    (res: any) => res?.bookings || (Array.isArray(res) ? res : []),
+  );
+  const mapExportRow = (b: any) => ({
+    ID: b.id,
+    BookingNumber: b.booking_number,
+    Customer: b.customer?.name,
+    Phone: b.customer?.phone,
+    Gardener: b.gardener?.name || 'Unassigned',
+    Geofence: b.geofence?.name || b.zone?.name || '—',
+    ScheduledDate: b.scheduled_date,
+    ScheduledTime: b.scheduled_time || 'Flexible',
+    Status: b.status,
+    Amount: b.total_amount,
+  });
 
   return (
     <AdminLayout>
@@ -116,9 +119,7 @@ export default function AdminBookingsPage() {
           <h1 className="page-title">Bookings</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: 4 }}>{total} total service bookings</p>
         </div>
-        <button className="btn btn-outline btn-sm" style={{ gap: 6 }} onClick={handleExport}>
-          <IconDownload size={16} /> Export CSV
-        </button>
+        <ExportButton filename="Bookings" fetchAll={fetchAllBookings} mapRow={mapExportRow} />
       </div>
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' as any }}>

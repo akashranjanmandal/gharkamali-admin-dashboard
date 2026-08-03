@@ -3,8 +3,9 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
-import { exportToCSV } from '@/lib/utils';
-import { IconSearch, IconDownload, IconX, IconLeaf, IconUser, IconCalendar, IconChartBar, IconExternalLink } from '@tabler/icons-react';
+import { fetchAllPages } from '@/lib/utils';
+import ExportButton from '@/components/ExportButton';
+import { IconSearch, IconX, IconLeaf, IconUser, IconCalendar, IconChartBar, IconExternalLink } from '@tabler/icons-react';
 
 export default function PlantHistoryAdmin() {
   const [page, setPage] = useState(1);
@@ -26,19 +27,21 @@ export default function PlantHistoryAdmin() {
   const total = (data as any)?.total ?? 0;
   const pages = Math.ceil(total / 20);
 
-  const handleExport = () => {
-    const exportData = items.map(p => ({
-      ID: p.id,
-      PlantName: p.plant_name,
-      ScientificName: p.scientific_name,
-      Confidence: p.confidence_score,
-      User: p.user?.name,
-      Phone: p.user?.phone,
-      Date: p.created_at,
-      Description: p.description
-    }));
-    exportToCSV(exportData, `PlantHistory_${new Date().toISOString().split('T')[0]}`);
-  };
+  // Export fetches EVERY identification (all pages), not just the visible page.
+  const fetchAllIdentifications = () => fetchAllPages(
+    (page, limit) => AdminAPI.plantIdentifications({ page, limit }),
+    (res: any) => res?.items || (Array.isArray(res) ? res : []),
+  );
+  const mapExportRow = (p: any) => ({
+    ID: p.id,
+    PlantName: p.plant_name,
+    ScientificName: p.scientific_name,
+    Confidence: p.confidence_score,
+    User: p.user?.name,
+    Phone: p.user?.phone,
+    Date: p.created_at,
+    Description: p.description
+  });
 
   return (
     <AdminLayout>
@@ -47,9 +50,7 @@ export default function PlantHistoryAdmin() {
           <h1 className="page-title" style={{ marginBottom: 4 }}>Plant Identification Logs</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>History of all AI plant identifications made by users</p>
         </div>
-        <button className="btn btn-outline btn-sm" style={{ gap: 6 }} onClick={handleExport}>
-          <IconDownload size={16} /> Export CSV
-        </button>
+        <ExportButton filename="PlantHistory" fetchAll={fetchAllIdentifications} mapRow={mapExportRow} />
       </div>
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' as any }}>

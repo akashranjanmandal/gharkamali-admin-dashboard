@@ -4,9 +4,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
-import { exportToCSV } from '@/lib/utils';
+import { fetchAllPages } from '@/lib/utils';
+import ExportButton from '@/components/ExportButton';
 
-import { IconSearch, IconDownload, IconX, IconTrendingDown, IconClock, IconAlertTriangle } from '@tabler/icons-react';
+import { IconSearch, IconX, IconTrendingDown, IconClock, IconAlertTriangle } from '@tabler/icons-react';
 
 export default function SLAPage() {
   const qc = useQueryClient();
@@ -20,17 +21,19 @@ export default function SLAPage() {
   const saveMut = useMutation({ mutationFn: () => AdminAPI.updateSlaConfig(config), onSuccess: () => { toast.success('SLA config updated'); setEditConfig(false); qc.invalidateQueries({ queryKey: ['sla-config'] }); }, onError: (e: any) => toast.error(e.message) });
   const resolveMut = useMutation({ mutationFn: (id: number) => AdminAPI.resolveBreach(id), onSuccess: () => { toast.success('Breach resolved'); qc.invalidateQueries({ queryKey: ['sla-breaches'] }); }, onError: (e: any) => toast.error(e.message) });
 
-  const handleExport = () => {
-    const exportData = breaches.map(b => ({
-      ID: b.id,
-      Booking: b.booking?.booking_number,
-      Gardener: b.gardener?.name,
-      Type: b.breach_type,
-      Occurred: b.occurred_at,
-      Resolved: b.resolved ? 'Yes' : 'No'
-    }));
-    exportToCSV(exportData, `SLABreaches_${new Date().toISOString().split('T')[0]}`);
-  };
+  // Export fetches EVERY breach (all pages), not just the visible list.
+  const fetchAllBreaches = () => fetchAllPages(
+    (page, limit) => AdminAPI.slaBreaches({ page, limit }),
+    (res: any) => res?.breaches || (Array.isArray(res) ? res : []),
+  );
+  const mapExportRow = (b: any) => ({
+    ID: b.id,
+    Booking: b.booking?.booking_number,
+    Gardener: b.gardener?.name,
+    Type: b.breach_type,
+    Occurred: b.occurred_at,
+    Resolved: b.resolved ? 'Yes' : 'No',
+  });
 
   return (
     <AdminLayout>
@@ -39,9 +42,7 @@ export default function SLAPage() {
           <h1 className="page-title">SLA Monitor</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: 4 }}>Service Level Agreement configuration and breach tracking</p>
         </div>
-        <button className="btn btn-outline btn-sm" style={{ gap: 6 }} onClick={handleExport}>
-          <IconDownload size={16} /> Export Report
-        </button>
+        <ExportButton filename="SLABreaches" fetchAll={fetchAllBreaches} mapRow={mapExportRow} dateField="occurred_at" />
       </div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 2fr',gap:20}}>
         <div className="card">

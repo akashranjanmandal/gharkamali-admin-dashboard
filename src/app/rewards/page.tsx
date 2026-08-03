@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
+import { fetchAllPages } from '@/lib/utils';
+import ExportButton from '@/components/ExportButton';
 
 export default function RewardsPage() {
   const qc = useQueryClient();
@@ -18,9 +20,25 @@ export default function RewardsPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  // Export fetches EVERY reward (all pages), not just the visible list.
+  const fetchAllRewards = () => fetchAllPages(
+    (page, limit) => AdminAPI.rewards({ page, limit }),
+    (res: any) => res?.items || (Array.isArray(res) ? res : []),
+  );
+  const mapExportRow = (r: any) => ({
+    ID: r.id,
+    Gardener: r.gardener?.name || r.gardener_id,
+    Type: r.type,
+    Amount: r.amount,
+    Reason: r.reason,
+    Booking: r.booking?.booking_number,
+    Status: r.status,
+    Date: r.created_at,
+  });
+
   return (
     <AdminLayout>
-      <div style={{marginBottom:24,display:'flex',justifyContent:'space-between',alignItems:'center'}}><div><h1 className="page-title">Rewards & Penalties</h1></div><button onClick={()=>setModal(true)} className="btn btn-primary">+ Create Reward</button></div>
+      <div style={{marginBottom:24,display:'flex',justifyContent:'space-between',alignItems:'center'}}><div><h1 className="page-title">Rewards & Penalties</h1></div><div style={{display:'flex',gap:12,alignItems:'center'}}><ExportButton filename="Rewards" fetchAll={fetchAllRewards} mapRow={mapExportRow} /><button onClick={()=>setModal(true)} className="btn btn-primary">+ Create Reward</button></div></div>
       <div className="card">
         <div className="table-wrap">
           <table className="admin-table">

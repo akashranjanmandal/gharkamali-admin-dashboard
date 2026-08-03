@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
+import { fetchAllPages } from '@/lib/utils';
+import ExportButton from '@/components/ExportButton';
 
 export default function ContactsPage() {
   const [page, setPage] = useState(1);
@@ -13,11 +15,29 @@ export default function ContactsPage() {
   const contacts: any[] = contactsData?.data || [];
   const pagination = contactsData?.pagination || {};
 
+  // Export fetches EVERY contact message (all pages), not just the visible 20.
+  const fetchAllContacts = () => fetchAllPages(
+    (page, limit) => AdminAPI.contacts({ page, limit }),
+    (res: any) => res?.data || (Array.isArray(res) ? res : []),
+  );
+  const mapExportRow = (c: any) => ({
+    ID: c.id,
+    Name: c.name,
+    Phone: c.phone,
+    Email: c.email,
+    Message: c.message,
+    Read: c.is_read ? 'Yes' : 'No',
+    Date: c.created_at,
+  });
+
   return (
     <AdminLayout>
-      <div style={{marginBottom:24}}>
-        <h1 className="page-title">Contact Messages</h1>
-        <p style={{color:'var(--text-muted)',fontSize:'0.875rem',marginTop:4}}>{pagination.total || 0} messages</p>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:24}}>
+        <div>
+          <h1 className="page-title">Contact Messages</h1>
+          <p style={{color:'var(--text-muted)',fontSize:'0.875rem',marginTop:4}}>{pagination.total || 0} messages</p>
+        </div>
+        <ExportButton filename="ContactMessages" fetchAll={fetchAllContacts} mapRow={mapExportRow} />
       </div>
       <div className="card">
         <div className="table-wrap">

@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { AdminAPI } from '@/lib/api';
+import { fetchAllPages } from '@/lib/utils';
+import ExportButton from '@/components/ExportButton';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
 
@@ -56,6 +58,25 @@ export default function WithdrawalsPage() {
     setProcessingId(null);
   };
 
+  // Export fetches EVERY withdrawal request (all pages), not just the visible 20.
+  const fetchAllWithdrawals = () => fetchAllPages(
+    (page, limit) => AdminAPI.withdrawals({ page, limit }),
+    (res: any) => res?.requests || (Array.isArray(res) ? res : []),
+  );
+  const mapExportRow = (r: any) => ({
+    ID: r.id,
+    Gardener: r.gardener?.name,
+    Phone: r.gardener?.phone,
+    Amount: r.amount,
+    BankName: r.bank_name,
+    BankAccount: r.bank_account,
+    IFSC: r.bank_ifsc,
+    Status: r.status,
+    ProcessedBy: r.processor?.name,
+    ProcessedAt: r.processed_at,
+    Date: r.created_at,
+  });
+
   return (
     <AdminLayout>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -65,17 +86,20 @@ export default function WithdrawalsPage() {
             Manage gardener withdrawal requests — {total} total
           </p>
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-          style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--card-bg)', color: 'var(--text)', fontSize: '0.85rem' }}
-        >
-          <option value="">All Status</option>
-          <option value="pending">🟡 Pending</option>
-          <option value="approved">🔵 Approved</option>
-          <option value="processed">🟢 Processed</option>
-          <option value="rejected">🔴 Rejected</option>
-        </select>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <select
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+            style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--card-bg)', color: 'var(--text)', fontSize: '0.85rem' }}
+          >
+            <option value="">All Status</option>
+            <option value="pending">🟡 Pending</option>
+            <option value="approved">🔵 Approved</option>
+            <option value="processed">🟢 Processed</option>
+            <option value="rejected">🔴 Rejected</option>
+          </select>
+          <ExportButton filename="Withdrawals" fetchAll={fetchAllWithdrawals} mapRow={mapExportRow} />
+        </div>
       </div>
 
       {loading ? (

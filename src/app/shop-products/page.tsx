@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import { v, firstError } from '@/lib/validators';
+import ExportButton from '@/components/ExportButton';
 import * as XLSX from 'xlsx';
 
 const PRODUCT_ICONS = ['soil', 'pest', 'pot', 'fert', 'plant', 'tool'];
@@ -221,6 +222,23 @@ export default function AdminShopProductsPage() {
   const prodList = Array.isArray(products) ? products : [];
   const catList = Array.isArray(categories) ? categories : [];
 
+  // Export fetches the full (non-paginated) product list.
+  const fetchAllProducts = async () => {
+    const res: any = await AdminAPI.shopProducts();
+    return Array.isArray(res) ? res : [];
+  };
+  const mapExportRow = (p: any) => ({
+    ID: p.id,
+    Name: p.name,
+    Category: p.category?.name || 'Uncategorized',
+    Price: p.price,
+    MRP: p.mrp,
+    GSTRate: p.gst_rate,
+    Stock: p.stock_quantity,
+    Active: p.is_active ? 'Yes' : 'No',
+    Created: p.created_at,
+  });
+
   return (
     <AdminLayout>
       <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -230,6 +248,7 @@ export default function AdminShopProductsPage() {
         </div>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <Link href="/shop-categories" className="btn btn-outline" style={{ height: 44, display: 'flex', alignItems: 'center' }}>Manage Categories</Link>
+          <ExportButton filename="ShopProducts" fetchAll={fetchAllProducts} mapRow={mapExportRow} />
           <button onClick={() => { setImportRows([]); setImportResult(null); setImportModal(true); }} className="btn btn-outline" style={{ height: 44 }}>⬆ Import Excel / CSV</button>
           <button onClick={() => { setForm({ name: '', price: '', mrp: '', stock_quantity: 50, icon_key: 'plant', is_active: true, features: [], faqs: [], tags: [] }); setFeatInput(''); setFaqQ(''); setFaqA(''); setModal({ new: true }); }} className="btn btn-primary" style={{ height: 44 }}>+ Add Product</button>
         </div>

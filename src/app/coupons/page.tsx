@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
+import ExportButton from '@/components/ExportButton';
 
 const blankForm = () => ({
   code: '', description: '', discount_type: 'percentage', discount_value: '',
@@ -64,6 +65,24 @@ export default function AdminCouponsPage() {
     setModal(c);
   };
 
+  // Export fetches the full (non-paginated) coupon list.
+  const fetchAllCoupons = async () => {
+    const res: any = await AdminAPI.coupons();
+    return Array.isArray(res) ? res : Array.isArray(res?.items) ? res.items : [];
+  };
+  const mapExportRow = (c: any) => ({
+    ID: c.id,
+    Code: c.code,
+    Type: c.discount_type,
+    Value: c.discount_value,
+    MinOrder: c.min_order_amount,
+    UsageCount: c.usage_count ?? 0,
+    UsageLimit: c.usage_limit,
+    ValidFrom: c.valid_from,
+    ValidTo: c.valid_to,
+    Active: c.is_active ? 'Yes' : 'No',
+  });
+
   const discountLabel = (c: any) =>
     c.discount_type === 'percentage'
       ? `${Number(c.discount_value)}% off${c.max_discount ? ` (max ₹${Number(c.max_discount).toLocaleString('en-IN')})` : ''}`
@@ -76,7 +95,10 @@ export default function AdminCouponsPage() {
           <h1 className="page-title">Coupons</h1>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 4 }}>Discount codes customers can apply at shop checkout.</p>
         </div>
-        <button onClick={openNew} className="btn btn-primary">+ New Coupon</button>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <ExportButton filename="Coupons" fetchAll={fetchAllCoupons} mapRow={mapExportRow} />
+          <button onClick={openNew} className="btn btn-primary">+ New Coupon</button>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 16 }}>

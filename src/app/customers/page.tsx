@@ -3,8 +3,9 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
-import { exportToCSV } from '@/lib/utils';
-import { IconSearch, IconDownload, IconX, IconUser, IconMail, IconPhone, IconWallet, IconCalendar, IconMapPin, IconLeaf, IconStar, IconMessageCircle } from '@tabler/icons-react';
+import { fetchAllPages } from '@/lib/utils';
+import ExportButton from '@/components/ExportButton';
+import { IconSearch, IconX, IconUser, IconMail, IconPhone, IconWallet, IconCalendar, IconMapPin, IconLeaf, IconStar, IconMessageCircle } from '@tabler/icons-react';
 
 export default function CustomersPage() {
   const [search, setSearch] = useState('');
@@ -54,19 +55,21 @@ export default function CustomersPage() {
   const total = (data as any)?.total ?? customers.length;
   const pages = (data as any)?.pages ?? Math.ceil(total / 20);
 
-  const handleExport = () => {
-    const exportData = customers.map(c => ({
-      ID: c.id,
-      Name: c.name,
-      Phone: c.phone,
-      Email: c.email,
-      Bookings: c.total_bookings,
-      TotalSpent: c.total_spent,
-      Wallet: c.wallet_balance,
-      Joined: c.created_at
-    }));
-    exportToCSV(exportData, `Customers_${new Date().toISOString().split('T')[0]}`);
-  };
+  // Export fetches EVERY customer (all pages), not just the visible 20.
+  const fetchAllCustomers = () => fetchAllPages(
+    (page, limit) => AdminAPI.customers({ page, limit }),
+    (res: any) => res?.customers || (Array.isArray(res) ? res : []),
+  );
+  const mapExportRow = (c: any) => ({
+    ID: c.id,
+    Name: c.name,
+    Phone: c.phone,
+    Email: c.email,
+    Bookings: c.total_bookings,
+    TotalSpent: c.total_spent,
+    Wallet: c.wallet_balance,
+    Joined: c.created_at,
+  });
 
   return (
     <AdminLayout>
@@ -75,9 +78,7 @@ export default function CustomersPage() {
           <h1 className="page-title">Customers</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: 4 }}>{total} registered customers</p>
         </div>
-        <button className="btn btn-outline btn-sm" style={{ gap: 6 }} onClick={handleExport}>
-          <IconDownload size={16} /> Export CSV
-        </button>
+        <ExportButton filename="Customers" fetchAll={fetchAllCustomers} mapRow={mapExportRow} />
       </div>
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' as any }}>

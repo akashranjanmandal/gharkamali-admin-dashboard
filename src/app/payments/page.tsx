@@ -3,8 +3,9 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
-import { exportToCSV } from '@/lib/utils';
-import { IconSearch, IconDownload, IconX, IconCreditCard, IconUser, IconCalendar, IconCheck, IconAlertCircle } from '@tabler/icons-react';
+import { fetchAllPages } from '@/lib/utils';
+import ExportButton from '@/components/ExportButton';
+import { IconSearch, IconX, IconCreditCard, IconUser, IconCalendar, IconCheck, IconAlertCircle } from '@tabler/icons-react';
 
 // Accepts ISO string, MySQL "YYYY-MM-DD HH:mm:ss", epoch ms/sec, or various API field names
 function fmtDateSafe(row: any, fmt: 'short' | 'full' = 'short'): string {
@@ -47,19 +48,21 @@ export default function PaymentsAdmin() {
   const total = (data as any)?.total ?? 0;
   const pages = Math.ceil(total / 20);
 
-  const handleExport = () => {
-    const exportData = payments.map(p => ({
-      TxnID: p.txn_id || 'N/A',
-      Customer: p.user?.name,
-      Phone: p.user?.phone,
-      Amount: p.amount,
-      Purpose: p.payment_for?.replace(/_/g, ' '),
-      Status: p.status,
-      Type: p.payment_type,
-      Date: p.created_at
-    }));
-    exportToCSV(exportData, `Payments_${new Date().toISOString().split('T')[0]}`);
-  };
+  // Export fetches EVERY payment (all pages), not just the visible 20.
+  const fetchAllPayments = () => fetchAllPages(
+    (page, limit) => AdminAPI.allPayments({ page, limit }),
+    (res: any) => res?.items ?? [],
+  );
+  const mapExportRow = (p: any) => ({
+    TxnID: p.txn_id || 'N/A',
+    Customer: p.user?.name,
+    Phone: p.user?.phone,
+    Amount: p.amount,
+    Purpose: p.payment_for?.replace(/_/g, ' '),
+    Status: p.status,
+    Type: p.payment_type,
+    Date: p.created_at
+  });
 
   const STATUS_BADGE: Record<string, string> = {
     success: 'badge-forest', 
@@ -75,9 +78,7 @@ export default function PaymentsAdmin() {
           <h1 className="page-title" style={{ marginBottom: 4 }}>Transactions Audit</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Full history of payments, wallet top-ups, and marketplace charges</p>
         </div>
-        <button className="btn btn-outline btn-sm" style={{ gap: 6 }} onClick={handleExport}>
-          <IconDownload size={16} /> Export Report
-        </button>
+        <ExportButton filename="Payments" fetchAll={fetchAllPayments} mapRow={mapExportRow} />
       </div>
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' as any }}>

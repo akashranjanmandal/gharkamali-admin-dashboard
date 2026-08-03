@@ -4,7 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
-import { exportToCSV } from '@/lib/utils';
+import { fetchAllPages } from '@/lib/utils';
+import ExportButton from '@/components/ExportButton';
 import { IconSearch, IconDownload, IconX, IconCalendar, IconUser, IconPackage, IconCreditCard, IconTruck } from '@tabler/icons-react';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -66,19 +67,21 @@ export default function AdminShopOrdersPage() {
     );
   });
 
-  const handleExport = () => {
-    const exportData = orders.map(o => ({
-      OrderNumber: o.order_number || `#${o.id}`,
-      Customer: o.customer?.name,
-      Phone: o.customer?.phone,
-      Total: o.total_amount,
-      PaymentStatus: o.payment_status,
-      OrderStatus: o.status,
-      Date: o.created_at,
-      Address: o.shipping_address,
-    }));
-    exportToCSV(exportData, `ShopOrders_${new Date().toISOString().split('T')[0]}`);
-  };
+  // Export fetches EVERY order (all pages), not just the visible ones.
+  const fetchAllOrders = () => fetchAllPages(
+    (page, limit) => AdminAPI.shopOrders({ page, limit }),
+    (res: any) => res?.orders || (Array.isArray(res) ? res : []),
+  );
+  const mapExportRow = (o: any) => ({
+    OrderNumber: o.order_number || `#${o.id}`,
+    Customer: o.customer?.name,
+    Phone: o.customer?.phone,
+    Total: o.total_amount,
+    PaymentStatus: o.payment_status,
+    OrderStatus: o.status,
+    Date: o.created_at,
+    Address: o.shipping_address,
+  });
 
   const statusMut = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) => AdminAPI.updateOrderStatus(id, status),
@@ -93,9 +96,7 @@ export default function AdminShopOrdersPage() {
           <h1 className="page-title" style={{ marginBottom: 4 }}>Shop Orders</h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>View and manage all customer purchases from the marketplace</p>
         </div>
-        <button className="btn btn-outline btn-sm" style={{ gap: 6 }} onClick={handleExport}>
-          <IconDownload size={16} /> Export Report
-        </button>
+        <ExportButton filename="ShopOrders" fetchAll={fetchAllOrders} mapRow={mapExportRow} />
       </div>
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' as any }}>

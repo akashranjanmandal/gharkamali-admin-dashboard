@@ -4,8 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
-import { exportToCSV } from '@/lib/utils';
-import { IconSearch, IconDownload, IconX, IconUser, IconStar, IconMapPin, IconCalendar, IconBriefcase, IconCash, IconBuildingBank, IconPhone } from '@tabler/icons-react';
+import { fetchAllPages } from '@/lib/utils';
+import ExportButton from '@/components/ExportButton';
+import { IconSearch, IconX, IconUser, IconStar, IconMapPin, IconCalendar, IconBriefcase, IconCash, IconBuildingBank, IconPhone } from '@tabler/icons-react';
 
 export default function AdminGardenersPage() {
   const qc = useQueryClient();
@@ -88,19 +89,21 @@ export default function AdminGardenersPage() {
     setPage(1);
   };
 
-  const handleExport = () => {
-    const exportData = gardenersRaw.map(g => ({
-      ID: g.id,
-      Name: g.name,
-      Phone: g.phone,
-      Experience: g.gardenerProfile?.experience_years || 0,
-      Rating: g.gardenerProfile?.avg_rating || 5.0,
-      Jobs: g.gardenerProfile?.completed_jobs || 0,
-      Earnings: g.gardenerProfile?.total_earnings || 0,
-      Status: !g.is_approved ? 'Pending' : g.is_active ? 'Active' : 'Inactive'
-    }));
-    exportToCSV(exportData, `Gardeners_${new Date().toISOString().split('T')[0]}`);
-  };
+  // Export fetches EVERY gardener (all pages), not just the visible 20.
+  const fetchAllGardeners = () => fetchAllPages(
+    (page, limit) => AdminAPI.gardeners({ page, limit }),
+    (res: any) => res?.gardeners || (Array.isArray(res) ? res : []),
+  );
+  const mapExportRow = (g: any) => ({
+    ID: g.id,
+    Name: g.name,
+    Phone: g.phone,
+    Experience: g.gardenerProfile?.experience_years || 0,
+    Rating: g.gardenerProfile?.avg_rating || 5.0,
+    Jobs: g.gardenerProfile?.completed_jobs || 0,
+    Earnings: g.gardenerProfile?.total_earnings || 0,
+    Status: !g.is_approved ? 'Pending' : g.is_active ? 'Active' : 'Inactive'
+  });
 
   const FILTERS = ['all', 'active', 'pending', 'inactive'];
 
@@ -117,9 +120,7 @@ export default function AdminGardenersPage() {
           <h1 className="page-title">Gardeners</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: 4 }}>{total} total service partners</p>
         </div>
-        <button className="btn btn-outline btn-sm" style={{ gap: 6 }} onClick={handleExport}>
-          <IconDownload size={16} /> Export Report
-        </button>
+        <ExportButton filename="Gardeners" fetchAll={fetchAllGardeners} mapRow={mapExportRow} />
       </div>
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' as any }}>

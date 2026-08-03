@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
-import { exportToCSV } from '@/lib/utils';
+import { fetchAllPages } from '@/lib/utils';
+import ExportButton from '@/components/ExportButton';
 import InvoicePreview from '@/components/InvoicePreview';
 import { inclusiveGstSplit } from '@/lib/invoice';
 import { IconFilter, IconDownload, IconSearch, IconX, IconCalendar, IconUser, IconMapPin, IconLeaf, IconMessageCircle, IconStar, IconClock, IconChevronRight } from '@tabler/icons-react';
@@ -80,21 +81,23 @@ export default function AdminSubscriptionsPage() {
 
   const STATUS_COLOR: Record<string,string> = { active:'badge-green', paused:'badge-yellow', cancelled:'badge-gray', expired:'badge-red' };
 
-  const handleExport = () => {
-    const exportData = subs.map(s => ({
-      ID: s.id,
-      Customer: s.customer?.name,
-      Phone: s.customer?.phone,
-      Plan: s.plan?.name,
-      Geofence: s.geofenceRef?.name || s.zone?.name || '—',
-      Plants: s.plant_count,
-      Status: s.status,
-      AutoRenew: s.auto_renew ? 'Yes' : 'No',
-      StartDate: s.start_date,
-      NextVisit: s.next_visit_date,
-    }));
-    exportToCSV(exportData, `Subscriptions_${new Date().toISOString().split('T')[0]}`);
-  };
+  // Export fetches EVERY subscription (all pages), not just the visible 20.
+  const fetchAllSubscriptions = () => fetchAllPages(
+    (page, limit) => AdminAPI.subscriptions({ page, limit }),
+    (res: any) => res?.items || res?.subscriptions || (Array.isArray(res) ? res : []),
+  );
+  const mapExportRow = (s: any) => ({
+    ID: s.id,
+    Customer: s.customer?.name,
+    Phone: s.customer?.phone,
+    Plan: s.plan?.name,
+    Geofence: s.geofenceRef?.name || s.zone?.name || '—',
+    Plants: s.plant_count,
+    Status: s.status,
+    AutoRenew: s.auto_renew ? 'Yes' : 'No',
+    StartDate: s.start_date,
+    NextVisit: s.next_visit_date,
+  });
 
   return (
     <AdminLayout>
@@ -103,9 +106,7 @@ export default function AdminSubscriptionsPage() {
           <h1 className="page-title">Subscriptions</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: 4 }}>{total} total active subscriptions</p>
         </div>
-        <button className="btn btn-outline btn-sm" style={{ gap: 6 }} onClick={handleExport}>
-          <IconDownload size={16} /> Export Report
-        </button>
+        <ExportButton filename="Subscriptions" fetchAll={fetchAllSubscriptions} mapRow={mapExportRow} />
       </div>
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' as any }}>

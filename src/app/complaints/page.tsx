@@ -5,6 +5,8 @@ import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
+import { fetchAllPages } from '@/lib/utils';
+import ExportButton from '@/components/ExportButton';
 import { v, firstError } from '@/lib/validators';
 import {
   IconSearch, IconBuilding, IconPaperclip, IconSend, IconLock, IconHistory,
@@ -64,6 +66,26 @@ export default function AdminComplaintsPage() {
   const { data: assigneesData } = useQuery({ queryKey: ['complaint-assignees'], queryFn: AdminAPI.complaintAssignees });
   const assignees: any[] = Array.isArray(assigneesData) ? assigneesData : [];
 
+  // Export fetches EVERY ticket (all pages), not just the visible 20.
+  const fetchAllComplaints = () => fetchAllPages(
+    (page, limit) => AdminAPI.complaints({ page, limit }),
+    (res: any) => res?.complaints || (Array.isArray(res) ? res : []),
+  );
+  const mapExportRow = (c: any) => ({
+    ID: c.id,
+    Ticket: c.ticket_number,
+    Type: TYPE_LABELS[c.type] || c.type,
+    Subject: c.subject,
+    Customer: c.customer?.name,
+    CustomerPhone: c.customer?.phone,
+    Gardener: c.gardener?.name,
+    Department: c.department?.name,
+    AssignedTo: c.assignedTo?.name,
+    Priority: c.priority,
+    Status: c.status,
+    Created: c.created_at,
+  });
+
   return (
     <AdminLayout>
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
@@ -71,9 +93,12 @@ export default function AdminComplaintsPage() {
           <h1 className="page-title" style={{ marginBottom: 4 }}>Support Tickets</h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{total} total tickets</p>
         </div>
-        <button onClick={() => setShowDepts(true)} className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: 6, height: 40 }}>
-          <IconBuilding size={16} /> Manage Departments
-        </button>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <ExportButton filename="SupportTickets" fetchAll={fetchAllComplaints} mapRow={mapExportRow} />
+          <button onClick={() => setShowDepts(true)} className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: 6, height: 40 }}>
+            <IconBuilding size={16} /> Manage Departments
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
