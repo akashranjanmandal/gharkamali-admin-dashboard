@@ -143,7 +143,7 @@ export default function CustomersPage() {
             <div className="modal-body">
               {isDetailLoading ? <div className="skeleton" style={{ height: 300, width: '100%', borderRadius: 12 }} /> : customerDetail ? (
                 <div>
-                  <div style={{ display: 'flex', gap: 24, marginBottom: 24, alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: 24, marginBottom: 24, alignItems: 'center', flexWrap: 'wrap' }}>
                     <div style={{ width: 84, height: 84, borderRadius: 28, background: 'var(--forest-light)', color: 'var(--forest)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', fontWeight: 800 }}>
                       {customerDetail.customer?.name?.charAt(0)}
                     </div>
@@ -168,7 +168,7 @@ export default function CustomersPage() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 24 }}>
                     <div className="card" style={{ padding: 16, textAlign: 'center', background: 'var(--bg)', border: 'none' }}>
                       <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase' }}>Bookings</div>
                       <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--forest)' }}>{customerDetail.stats?.total_bookings ?? customerDetail.customer?.total_bookings ?? 0}</div>
@@ -181,19 +181,39 @@ export default function CustomersPage() {
                       <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase' }}>Wallet Balance</div>
                       <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--gold-dark)' }}>₹{Number(customerDetail.customer?.wallet_balance ?? 0).toLocaleString('en-IN')}</div>
                     </div>
+                    <div className="card" style={{ padding: 16, textAlign: 'center', background: 'var(--bg)', border: 'none' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase' }}>Avg Rating</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--gold-dark)' }}>{customerDetail.stats?.avg_rating ? `${Number(customerDetail.stats.avg_rating).toFixed(1)} ★` : '—'}</div>
+                    </div>
                   </div>
 
-                  {customerDetail.customer?.address && (
-                    <div style={{ marginBottom: 24 }}>
-                      <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12 }}>Primary Address</h4>
-                      <div style={{ display: 'flex', gap: 12, alignItems: 'start' }}>
-                        <IconMapPin size={20} style={{ color: 'var(--forest)', marginTop: 2 }} />
-                        <div style={{ fontSize: '0.95rem', color: 'var(--text)' }}>
-                          {customerDetail.customer.address}, {customerDetail.customer.city} {customerDetail.customer.pincode}
+                  {/* Full profile details — every field, '—' when empty */}
+                  <div style={{ marginBottom: 24 }}>
+                    <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12 }}>Profile Details</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
+                      {([
+                        ['Email', customerDetail.customer?.email],
+                        ['Account Status', customerDetail.customer?.is_active ? 'Active' : 'Inactive'],
+                        ['Last Login', customerDetail.customer?.last_login ? new Date(customerDetail.customer.last_login).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : null],
+                        ['Joined On', (customerDetail.customer?.created_at || customerDetail.customer?.createdAt) ? new Date(customerDetail.customer?.created_at || customerDetail.customer?.createdAt).toLocaleDateString('en-IN', { dateStyle: 'medium' }) : null],
+                        ['City', customerDetail.customer?.city],
+                        ['State', customerDetail.customer?.state],
+                        ['Pincode', customerDetail.customer?.pincode],
+                        ['Referral Code', customerDetail.customer?.referral_code],
+                      ] as [string, any][]).map(([k, v]) => (
+                        <div key={k} style={{ background: 'var(--bg)', borderRadius: 12, padding: '10px 12px' }}>
+                          <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 2 }}>{k}</div>
+                          <div style={{ fontSize: '0.85rem', fontWeight: 600, wordBreak: 'break-word' }}>{v || '—'}</div>
                         </div>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'start', marginTop: 12 }}>
+                      <IconMapPin size={20} style={{ color: 'var(--forest)', marginTop: 2, flexShrink: 0 }} />
+                      <div style={{ fontSize: '0.95rem', color: 'var(--text)' }}>
+                        {[customerDetail.customer?.address, customerDetail.customer?.city, customerDetail.customer?.state, customerDetail.customer?.pincode].filter(Boolean).join(', ') || 'No address saved yet'}
                       </div>
                     </div>
-                  )}
+                  </div>
 
                   {((customerDetail.subscriptions as any[]) || []).length > 0 && (
                     <div style={{ marginBottom: 24 }}>
@@ -219,6 +239,7 @@ export default function CustomersPage() {
                                     <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, marginTop: 2 }}>Visits done</div>
                                   </div>
                                   <span className={`badge badge-sm badge-${sc}`}>{s.status}</span>
+                                  <button className="btn btn-xs btn-outline" onClick={(e) => { e.stopPropagation(); AdminAPI.downloadSubscriptionInvoice(s.id); }}>Invoice</button>
                                 </div>
                               </div>
                               {subBookings.length === 0 ? (
@@ -251,6 +272,37 @@ export default function CustomersPage() {
                     </div>
                   )}
 
+                  {((customerDetail.orders as any[]) || []).length > 0 && (
+                    <div style={{ marginBottom: 24 }}>
+                      <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12 }}>Plant Store Orders</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {customerDetail.orders.map((o: any) => (
+                          <div key={o.id} style={{ border: '1.5px solid var(--border)', borderRadius: 14, padding: '12px 14px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--forest)', fontFamily: 'monospace' }}>{o.order_number || `ORD-${o.id}`}</div>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                  {o.created_at ? new Date(o.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}
+                                  {' · '}{(o.items || []).length} item{(o.items || []).length === 1 ? '' : 's'}
+                                  {o.coupon_code ? ` · 🎟️ ${o.coupon_code} (−₹${Number(o.discount_amount ?? 0).toLocaleString('en-IN')})` : ''}
+                                </div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 380 }}>
+                                  {(o.items || []).map((it: any) => `${it.quantity}× ${it.product?.name || 'Item'}`).join(', ')}
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                <span style={{ fontWeight: 800, fontSize: '0.9rem' }}>₹{Number(o.total_amount ?? 0).toLocaleString('en-IN')}</span>
+                                <span className={`badge badge-sm badge-${o.payment_status === 'paid' ? 'green' : o.payment_status === 'refunded' ? 'yellow' : 'red'}`}>{o.payment_status}</span>
+                                <span className={`badge badge-sm badge-${o.status === 'delivered' ? 'green' : o.status === 'cancelled' ? 'red' : 'blue'}`}>{o.status}</span>
+                                <button className="btn btn-xs btn-outline" onClick={() => AdminAPI.downloadOrderInvoice(o.id)}>Download Invoice</button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12 }}>Recent Activity</h4>
                     <div className="activity-list">
@@ -277,6 +329,28 @@ export default function CustomersPage() {
                       )}
                     </div>
                   </div>
+
+                  {((customerDetail.recentPayments as any[]) || []).length > 0 && (
+                    <div style={{ marginTop: 24 }}>
+                      <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12 }}>Recent Payments</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {customerDetail.recentPayments.map((p: any) => (
+                          <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--bg)', borderRadius: 12, gap: 10, flexWrap: 'wrap' }}>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: '0.8rem', fontWeight: 700 }}>{String(p.payment_for || 'Payment').replace(/_/g, ' ')}</div>
+                              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                                {p.txn_id || '—'} · {p.created_at ? new Date(p.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>₹{Number(p.amount ?? 0).toLocaleString('en-IN')}</span>
+                              <span className={`badge badge-sm badge-${p.status === 'success' ? 'green' : p.status === 'failed' ? 'red' : 'yellow'}`}>{p.status}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Customer details not found</div>}
             </div>
@@ -423,6 +497,7 @@ export default function CustomersPage() {
               ) : <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Booking data not found</div>}
             </div>
             <div className="modal-footer">
+              <button className="btn btn-outline" onClick={() => selectedBookingId && AdminAPI.downloadBookingInvoice(selectedBookingId)}>Download Invoice</button>
               <button className="btn btn-ghost" onClick={() => setSelectedBookingId(null)}>Close</button>
             </div>
           </div>
