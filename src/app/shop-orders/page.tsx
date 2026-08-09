@@ -183,14 +183,14 @@ export default function AdminShopOrdersPage() {
 
       {selected && (
         <div className="modal-overlay" onClick={() => setSelected(null)}>
-          <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 640 }}>
+          <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 860 }}>
             <div className="modal-header">
               <h3>Order {selected.order_number || `#${selected.id}`}</h3>
               <button className="modal-close" onClick={() => setSelected(null)}><IconX size={20} /></button>
             </div>
-            <div className="modal-body" style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 24 }}>
+            <div className="modal-body order-modal-grid">
               <div className="modal-scroll-area">
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 16, marginBottom: 24 }}>
                   <div className="card" style={{ padding: 12, background: 'var(--bg)', border: 'none' }}>
                     <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>STATUS</div>
                     <span className={`badge ${STATUS_COLORS[selected.status] || 'badge-outline'}`} style={{ textTransform: 'capitalize' }}>{selected.status}</span>
@@ -205,7 +205,7 @@ export default function AdminShopOrdersPage() {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24, marginBottom: 24 }}>
                   <div>
                     <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12 }}>Customer</h4>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>

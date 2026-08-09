@@ -174,6 +174,10 @@ export default function CustomersPage() {
                       <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--forest)' }}>{customerDetail.stats?.total_bookings ?? customerDetail.customer?.total_bookings ?? 0}</div>
                     </div>
                     <div className="card" style={{ padding: 16, textAlign: 'center', background: 'var(--bg)', border: 'none' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase' }}>Shop Orders</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--forest)' }}>{((customerDetail.orders as any[]) || []).length}</div>
+                    </div>
+                    <div className="card" style={{ padding: 16, textAlign: 'center', background: 'var(--bg)', border: 'none' }}>
                       <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase' }}>Total Spent</div>
                       <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>₹{Number(customerDetail.stats?.total_spent ?? customerDetail.customer?.total_spent ?? 0).toLocaleString('en-IN')}</div>
                     </div>

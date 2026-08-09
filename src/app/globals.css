@@ -153,6 +153,13 @@ select.input { cursor: pointer; }
   background: var(--bg-subtle);
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
 }
+/* Two-column order-detail modal: main content | side panel (timeline etc.).
+   minmax(0, …) lets columns shrink below their content's natural width so the
+   grid can never overflow the modal box; stacks to one column on phones. */
+.order-modal-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(200px, 240px); gap: 24px; }
+.order-modal-grid > * { min-width: 0; }
+@media (max-width: 720px) { .order-modal-grid { grid-template-columns: minmax(0, 1fr); } }
+
 .modal-close {
   width: 28px; height: 28px; border-radius: 8px; border: none;
   background: var(--bg); color: var(--text-muted); cursor: pointer;
