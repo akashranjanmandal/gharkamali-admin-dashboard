@@ -49,10 +49,12 @@ export default function AdminLoginPage() {
   const accent = isSup ? '#4c39ab' : 'var(--forest)';
 
   return (
-    <div style={{ minHeight: '100svh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px' }}>
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: '45vh', background: gradient, clipPath: 'ellipse(130% 100% at 50% 0%)', zIndex: 0, transition: 'background 0.4s' }} />
-      <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 420 }}>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+    <div style={{ minHeight: '100svh', background: 'var(--bg)', display: 'flex', justifyContent: 'center', padding: '24px 16px', position: 'relative', overflowY: 'auto' }}>
+      {/* absolute (not fixed) so the gradient scrolls with the header when the viewport is short (e.g. 150% zoom) */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 'max(45vh, 340px)', background: gradient, clipPath: 'ellipse(130% 100% at 50% 0%)', zIndex: 0, transition: 'background 0.4s' }} />
+      {/* margin:auto = safe centering — degrades to top-aligned (scrollable) instead of clipping when content is taller than the viewport */}
+      <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 420, margin: 'auto' }}>
+        <div className="login-hero" style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ width: 58, height: 58, borderRadius: 18, background: 'rgba(255,255,255,0.12)', border: '1.5px solid rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
             <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
               <path d="M12 2C8 2 4 5.5 4 9.5c0 5.5 8 12.5 8 12.5s8-7 8-12.5C20 5.5 16 2 12 2z" fill="white" opacity=".9"/>
@@ -63,7 +65,7 @@ export default function AdminLoginPage() {
           <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem', marginTop: 4 }}>{isSup ? 'Supervisor Portal' : 'Management Dashboard'}</div>
         </div>
 
-        <div style={{ background: '#fff', borderRadius: 24, padding: '28px 32px 36px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+        <div className="login-card" style={{ background: '#fff', borderRadius: 24, padding: '28px 32px 36px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
           {/* Slider tabs */}
           <div style={{ position: 'relative', background: 'var(--bg-subtle, #f5f5f5)', borderRadius: 14, padding: 4, display: 'flex', marginBottom: 22 }}>
             <div
@@ -137,7 +139,14 @@ export default function AdminLoginPage() {
           )}
         </div>
       </div>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`
+        @keyframes spin{to{transform:rotate(360deg)}}
+        /* Short viewports (browser zoom / small laptops): tighten spacing so the card fits without overlap */
+        @media (max-height: 600px) {
+          .login-hero { margin-bottom: 18px !important; }
+          .login-card { padding: 18px 20px 22px !important; }
+        }
+      `}</style>
     </div>
   );
 }

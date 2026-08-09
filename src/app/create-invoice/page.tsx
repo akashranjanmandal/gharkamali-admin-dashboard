@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
@@ -42,6 +42,32 @@ export default function CreateInvoicePage() {
 
   const selectedPlan = plans.find((p) => String(p.id) === planId);
   const selectedZone = zones.find((z) => String(z.id) === zoneId);
+
+  // ── Validation ──
+  const today = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, []);
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const phoneInvalid = customerPhone !== '' && customerPhone.length !== 10;
+  const emailInvalid = customerEmail !== '' && !EMAIL_RE.test(customerEmail);
+
+  // Pincode → auto-fill City & State via India Post API (only when both are empty; silent on failure).
+  useEffect(() => {
+    if (pincode.length !== 6) return;
+    const ctrl = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`, { signal: ctrl.signal });
+        const data = await res.json();
+        const po = Array.isArray(data) && data[0]?.Status === 'Success' ? data[0]?.PostOffice?.[0] : null;
+        if (!po) return;
+        if (po.District) setCity((prev) => prev || po.District);
+        if (po.State) setStateName((prev) => prev || po.State);
+      } catch { /* API down or aborted — never block manual entry */ }
+    }, 400);
+    return () => { clearTimeout(timer); ctrl.abort(); };
+  }, [pincode]);
 
   // ── Live pricing (mirrors backend priceInvoice) ──
   const computed = useMemo(() => {
@@ -93,6 +119,9 @@ export default function CreateInvoicePage() {
     if ((outcome === 'booking' || outcome === 'subscription') && !customerPhone.trim()) {
       toast.error('Customer phone is required to create a record'); return;
     }
+    if (phoneInvalid) { toast.error('Phone number must be exactly 10 digits'); return; }
+    if (emailInvalid) { toast.error('Enter a valid email address'); return; }
+    if (scheduledDate && scheduledDate > today) { toast.error('Service date cannot be in the future'); return; }
     if (outcome === 'subscription' && !planId) { toast.error('Select a plan for a subscription'); return; }
     setSubmitting(outcome);
     try {
@@ -148,8 +177,16 @@ export default function CreateInvoicePage() {
           <h4 style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', margin: '8px 0 12px' }}>Customer</h4>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
             <div><Label>Name *</Label><input className="input" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Customer name" /></div>
-            <div><Label>Phone {(assignMode !== 'none' || true) && ''}</Label><input className="input" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="10-digit phone" /></div>
-            <div style={{ gridColumn: '1 / -1' }}><Label>Email</Label><input className="input" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} placeholder="Optional" /></div>
+            <div>
+              <Label>Phone {(assignMode !== 'none' || true) && ''}</Label>
+              <input className={`input${phoneInvalid ? ' error' : ''}`} type="tel" inputMode="numeric" maxLength={10} value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit phone" />
+              {phoneInvalid && <div style={{ color: 'var(--error)', fontSize: '0.72rem', marginTop: 4 }}>Phone number must be exactly 10 digits</div>}
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <Label>Email</Label>
+              <input className={`input${emailInvalid ? ' error' : ''}`} type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} placeholder="Optional" />
+              {emailInvalid && <div style={{ color: 'var(--error)', fontSize: '0.72rem', marginTop: 4 }}>Enter a valid email address</div>}
+            </div>
           </div>
 
           <h4 style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', margin: '8px 0 12px' }}>Service Details</h4>
@@ -157,7 +194,7 @@ export default function CreateInvoicePage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
             <div><Label>City</Label><input className="input" value={city} onChange={(e) => setCity(e.target.value)} /></div>
             <div><Label>State</Label><input className="input" value={stateName} onChange={(e) => setStateName(e.target.value)} placeholder="e.g. Uttar Pradesh" /></div>
-            <div><Label>Pincode</Label><input className="input" value={pincode} onChange={(e) => setPincode(e.target.value)} /></div>
+            <div><Label>Pincode</Label><input className="input" inputMode="numeric" maxLength={6} value={pincode} onChange={(e) => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} /></div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
             <div><Label>Zone</Label>
@@ -167,7 +204,7 @@ export default function CreateInvoicePage() {
               </select>
             </div>
             <div><Label>Plants</Label><input className="input" type="number" value={plantCount} onChange={(e) => setPlantCount(e.target.value)} /></div>
-            <div><Label>Date</Label><input className="input" type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} /></div>
+            <div><Label>Date</Label><input className="input" type="date" max={today} value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} /></div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
             <div><Label>Time</Label><input className="input" type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} /></div>

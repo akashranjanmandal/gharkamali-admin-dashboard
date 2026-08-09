@@ -26,8 +26,11 @@ export default function ExportButton({ filename, fetchAll, mapRow, dateField = '
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const [month, setMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
   const [year, setYear] = useState(String(now.getFullYear()));
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
   const boxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -80,6 +83,17 @@ export default function ExportButton({ filename, fetchAll, mapRow, dateField = '
     if (!y || year.length !== 4) { toast.error('Enter a 4-digit year'); return; }
     run(inYear(y), year);
   };
+  // Exact from–to date range (BUG-05). Either side may be left open.
+  const exportCustomRange = () => {
+    if (!from && !to) { toast.error('Pick a from and/or to date'); return; }
+    const lo = from ? new Date(`${from}T00:00:00`) : null;
+    const hi = to ? new Date(`${to}T23:59:59.999`) : null;
+    if (lo && hi && lo > hi) { toast.error('"From" must be before "To"'); return; }
+    run(
+      (d) => !!d && (!lo || d >= lo) && (!hi || d <= hi),
+      `${from || 'start'}_to_${to || todayStr}`,
+    );
+  };
 
   const item: React.CSSProperties = {
     display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px', background: 'none',
@@ -108,9 +122,19 @@ export default function ExportButton({ filename, fetchAll, mapRow, dateField = '
             <button className="btn btn-sm btn-outline" onClick={exportCustomMonth}>Go</button>
           </div>
           <div style={{ padding: '0 14px 8px', display: 'flex', gap: 6, alignItems: 'center' }}>
-            <input type="number" value={year} min={2020} max={2100} onChange={e => setYear(e.target.value)} placeholder="Year"
+            <input type="number" value={year} min={2020} max={now.getFullYear()} onChange={e => setYear(e.target.value)} placeholder="Year"
               style={{ flex: 1, padding: '6px 8px', border: '1.5px solid var(--border)', borderRadius: 8, fontFamily: 'inherit', fontSize: '0.78rem' }} />
             <button className="btn btn-sm btn-outline" onClick={exportCustomYear}>Go</button>
+          </div>
+          <div style={{ padding: '0 14px 10px' }}>
+            <div style={{ fontSize: '0.62rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', margin: '2px 0 4px' }}>Custom range</div>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <input type="date" value={from} max={to || todayStr} onChange={e => setFrom(e.target.value)}
+                style={{ flex: 1, minWidth: 0, padding: '6px 8px', border: '1.5px solid var(--border)', borderRadius: 8, fontFamily: 'inherit', fontSize: '0.72rem' }} />
+              <input type="date" value={to} min={from || undefined} max={todayStr} onChange={e => setTo(e.target.value)}
+                style={{ flex: 1, minWidth: 0, padding: '6px 8px', border: '1.5px solid var(--border)', borderRadius: 8, fontFamily: 'inherit', fontSize: '0.72rem' }} />
+              <button className="btn btn-sm btn-outline" onClick={exportCustomRange}>Go</button>
+            </div>
           </div>
         </div>
       )}

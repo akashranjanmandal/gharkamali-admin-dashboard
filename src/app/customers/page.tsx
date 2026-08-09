@@ -16,7 +16,7 @@ const COLS: Col[] = [
   { key: 'total_bookings', label: 'Bookings', type: 'number', get: (c) => Number(c.total_bookings ?? 0) },
   { key: 'total_spent', label: 'Total Spent', type: 'number', get: (c) => Number(c.total_spent ?? 0) },
   { key: 'wallet_balance', label: 'Wallet', type: 'number', get: (c) => Number(c.wallet_balance ?? 0) },
-  { key: 'created_at', label: 'Joined', type: 'date' },
+  { key: 'created_at', label: 'Joined', type: 'date', get: (c) => c.created_at ?? c.createdAt },
 ];
 
 export default function CustomersPage() {
@@ -83,7 +83,7 @@ export default function CustomersPage() {
     Bookings: c.total_bookings,
     TotalSpent: c.total_spent,
     Wallet: c.wallet_balance,
-    Joined: c.created_at,
+    Joined: c.created_at ?? c.createdAt,
   });
 
   return (
@@ -119,7 +119,7 @@ export default function CustomersPage() {
                     <td style={{ fontWeight: 600, color: 'var(--forest)' }}>{Number(c.total_bookings ?? 0)}</td>
                     <td style={{ fontWeight: 700 }}>₹{Number(c.total_spent ?? 0).toLocaleString('en-IN')}</td>
                     <td>₹{Number(c.wallet_balance ?? 0).toLocaleString('en-IN')}</td>
-                    <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{c.created_at && new Date(c.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })}</td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{(c.created_at ?? c.createdAt) && new Date(c.created_at ?? c.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })}</td>
                     <td><button className="btn btn-sm btn-ghost" onClick={(e) => { e.stopPropagation(); setSelectedId(c.id); }}>Details</button></td>
                   </tr>
                 ))}
@@ -449,6 +449,15 @@ export default function CustomersPage() {
                           </div>
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {bookingDetail.status === 'cancelled' && (bookingDetail.cancellation_reason || bookingDetail.cancellationReason) && (
+                    <div style={{ marginTop: 24, padding: 16, background: 'var(--bg)', borderRadius: 16 }}>
+                      <h5 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--error)', textTransform: 'uppercase', marginBottom: 8 }}>Cancellation Reason</h5>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'start', color: 'var(--text)', fontSize: '0.85rem', fontStyle: 'italic' }}>
+                        <IconMessageCircle size={16} /> "{bookingDetail.cancellation_reason || bookingDetail.cancellationReason}"
+                      </div>
                     </div>
                   )}
 

@@ -100,7 +100,7 @@ export default function AdminSubscriptionsPage() {
   // Column-header sort + per-column filter (client-side on loaded rows).
   const rows = ctl.process(subs);
 
-  const STATUS_COLOR: Record<string,string> = { active:'badge-green', paused:'badge-yellow', cancelled:'badge-gray', expired:'badge-red' };
+  const STATUS_COLOR: Record<string,string> = { pending:'badge-blue', active:'badge-green', paused:'badge-yellow', cancelled:'badge-gray', expired:'badge-red' };
 
   // Export fetches EVERY subscription (all pages), not just the visible 20.
   const fetchAllSubscriptions = () => fetchAllPages(

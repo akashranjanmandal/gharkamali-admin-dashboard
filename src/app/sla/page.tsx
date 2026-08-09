@@ -66,14 +66,14 @@ export default function SLAPage() {
           <div className="card-body">
             {editConfig?(
               <>
-                {['max_response_minutes','max_completion_hours','penalty_amount','reward_on_time_amount','rating_threshold'].map(key=>(
+                {['max_arrival_delay_mins','max_service_duration_hrs','response_time_hrs'].map(key=>(
                   <div key={key} className="form-group"><label style={{display:"block",fontSize:"0.78rem",fontWeight:600,color:"var(--text-2)",marginBottom:5,textTransform:'capitalize'}}>{key.replace(/_/g,' ')}</label><input type="number" className="input" value={config[key]||''} onChange={e=>setConfig((p:any)=>({...p,[key]:e.target.value}))} /></div>
                 ))}
                 <button onClick={()=>saveMut.mutate()} disabled={saveMut.isPending} className="btn btn-primary" style={{width:'100%'}}>{saveMut.isPending?'Saving…':'Save Config'}</button>
               </>
             ):(
               <div>
-                {configRaw&&Object.entries(configRaw).map(([k,v]:any)=>(
+                {configRaw&&Object.entries(configRaw).filter(([k])=>!['id','is_active','updated_by','created_at','updated_at','createdAt','updatedAt'].includes(k)).map(([k,v]:any)=>(
                   <div key={k} style={{display:'flex',justifyContent:'space-between',padding:'10px 0',borderBottom:'1px solid var(--border-light)',fontSize:'0.875rem'}}>
                     <span style={{color:'var(--text-muted)',textTransform:'capitalize'}}>{k.replace(/_/g,' ')}</span>
                     <span style={{fontWeight:700}}>{String(v)}</span>

@@ -49,7 +49,10 @@ export default function AdminGardenersPage() {
   const { data: supervisorsRaw } = useQuery({ queryKey: ['admin-supervisors'], queryFn: () => AdminAPI.supervisors() });
   const supervisors: any[] = Array.isArray(supervisorsRaw) ? supervisorsRaw : (supervisorsRaw as any)?.data ?? [];
 
-  const [supervisorId, setSupervisorId] = useState<string>('');
+  // null = untouched (show persisted value); '' = admin explicitly chose "No Supervisor Assigned".
+  const [supervisorId, setSupervisorId] = useState<string | null>(null);
+  const persistedSupervisorId = gardenerDetail?.gardenerProfile?.supervisor_id?.toString() ?? '';
+  const selectedSupervisorId = supervisorId ?? persistedSupervisorId;
 
   const gardenersRaw: any[] = (data as any)?.gardeners || (Array.isArray(data) ? data : []);
   const total = (data as any)?.total ?? gardenersRaw.length;
@@ -82,6 +85,7 @@ export default function AdminGardenersPage() {
   });
 
   useEffect(() => {
+    setSupervisorId(null);
     if (!selectedId) { setDocs([]); setDocNotes({}); return; }
     setDocsLoading(true);
     AdminAPI.gardenerDocuments(selectedId)
@@ -216,7 +220,7 @@ export default function AdminGardenersPage() {
                       <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: '0.9rem' }}><IconPhone size={17} /> +91 {gardenerDetail.phone}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: '0.9rem' }}><IconBriefcase size={17} /> {gardenerDetail.gardenerProfile?.experience_years ?? 0} Years Experience</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: '0.9rem' }}><IconCalendar size={17} /> Joined {new Date(gardenerDetail.created_at).toLocaleDateString()}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: '0.9rem' }}><IconCalendar size={17} /> Joined {(gardenerDetail.created_at ?? gardenerDetail.createdAt) ? new Date(gardenerDetail.created_at ?? gardenerDetail.createdAt).toLocaleDateString() : '—'}</div>
                       </div>
                     </div>
                   </div>
@@ -255,11 +259,11 @@ export default function AdminGardenersPage() {
                         <div style={{ borderTop: '1px dashed var(--border)', marginTop: 10, paddingTop: 14 }}>
                            <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--forest)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Assign Supervisor</label>
                            <div style={{ display: 'flex', gap: 8 }}>
-                             <select className="input" style={{ flex: 1, height: 38, fontSize: '0.85rem' }} value={supervisorId || gardenerDetail.gardenerProfile?.supervisor_id || ''} onChange={e => setSupervisorId(e.target.value)}>
+                             <select className="input" style={{ flex: 1, height: 38, fontSize: '0.85rem' }} value={selectedSupervisorId} onChange={e => setSupervisorId(e.target.value)}>
                                <option value="">No Supervisor Assigned</option>
                                {supervisors.map((s: any) => <option key={s.id} value={s.id}>{s.name} ({s.phone})</option>)}
                              </select>
-                             <button className="btn btn-sm btn-forest" onClick={() => updateMut.mutate({ id: gardenerDetail.id, data: { supervisor_id: supervisorId } })} disabled={updateMut.isPending || (supervisorId === (gardenerDetail.gardenerProfile?.supervisor_id?.toString() || ''))}>Update</button>
+                             <button className="btn btn-sm btn-forest" onClick={() => updateMut.mutate({ id: gardenerDetail.id, data: { supervisor_id: selectedSupervisorId === '' ? null : selectedSupervisorId } })} disabled={updateMut.isPending || selectedSupervisorId === persistedSupervisorId}>Update</button>
                            </div>
                         </div>
                       </div>
@@ -309,7 +313,7 @@ export default function AdminGardenersPage() {
                                       {doc.status || 'pending'}
                                     </span>
                                     <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                                      {new Date(doc.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                      {(doc.created_at ?? doc.createdAt) ? new Date(doc.created_at ?? doc.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—'}
                                     </span>
                                   </div>
                                   <input

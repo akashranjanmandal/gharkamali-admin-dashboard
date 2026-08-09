@@ -292,6 +292,15 @@ export default function AdminBookingsPage() {
                     </div>
                   )}
 
+                  {bookingDetail.status === 'cancelled' && (bookingDetail.cancellation_reason || bookingDetail.cancellationReason) && (
+                    <div style={{ marginTop: 24, padding: 16, background: 'var(--bg)', borderRadius: 16 }}>
+                      <h5 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--error)', textTransform: 'uppercase', marginBottom: 8 }}>Cancellation Reason</h5>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'start', color: 'var(--text)', fontSize: '0.85rem', fontStyle: 'italic' }}>
+                        <IconMessageCircle size={16} /> "{bookingDetail.cancellation_reason || bookingDetail.cancellationReason}"
+                      </div>
+                    </div>
+                  )}
+
                   {bookingDetail.rating && (
                     <div style={{ marginTop: 24, padding: 16, border: '1px solid var(--border)', borderRadius: 16 }}>
                       <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12 }}>Customer Feedback</h4>

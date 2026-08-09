@@ -27,6 +27,9 @@ export function inPeriod(row: any, period: Period, dateField = 'created_at'): bo
 
 export default function PeriodFilter({ onChange }: { onChange: (p: Period) => void }) {
   const now = new Date();
+  // Records can't exist in the future — cap every picker at today (BUG-03).
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const thisMonthStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
   const [mode, setMode] = useState('all');
   const [month, setMonth] = useState(`${now.getFullYear()}-${pad(now.getMonth() + 1)}`);
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -74,18 +77,18 @@ export default function PeriodFilter({ onChange }: { onChange: (p: Period) => vo
         <option value="range">Custom range…</option>
       </select>
       {mode === 'month' && (
-        <input type="month" value={month} style={inputStyle}
+        <input type="month" value={month} max={thisMonthStr} style={inputStyle}
           onChange={e => { setMonth(e.target.value); apply('month', { month: e.target.value }); }} />
       )}
       {mode === 'year' && (
-        <input type="number" min={2020} max={2100} value={year} style={{ ...inputStyle, width: 90 }}
+        <input type="number" min={2020} max={now.getFullYear()} value={year} style={{ ...inputStyle, width: 90 }}
           onChange={e => { setYear(e.target.value); apply('year', { year: e.target.value }); }} />
       )}
       {mode === 'range' && (<>
-        <input type="date" value={from} style={inputStyle}
+        <input type="date" value={from} max={to || todayStr} style={inputStyle}
           onChange={e => { setFrom(e.target.value); apply('range', { from: e.target.value }); }} />
         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>to</span>
-        <input type="date" value={to} style={inputStyle}
+        <input type="date" value={to} min={from || undefined} max={todayStr} style={inputStyle}
           onChange={e => { setTo(e.target.value); apply('range', { to: e.target.value }); }} />
       </>)}
     </div>
