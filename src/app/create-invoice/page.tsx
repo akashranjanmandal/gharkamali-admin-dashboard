@@ -408,7 +408,10 @@ export default function CreateInvoicePage() {
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 12 }}>
                     <strong>{SELLER.brand}</strong> ({SELLER.legalName}) · GSTIN {SELLER.gstin} · {isUP ? 'SGST + CGST (intra-state)' : 'IGST (inter-state)'}
                   </div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                  {/* minWidth: 0 overrides the global `table { min-width: 600px }`
+                      (meant for data tables) which stretched this card's table
+                      past the card edge, pushing the amounts outside. */}
+                  <table style={{ width: '100%', minWidth: 0, borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                     <tbody>
                       {productLines.map((l, i) => (
                         <tr key={i}>

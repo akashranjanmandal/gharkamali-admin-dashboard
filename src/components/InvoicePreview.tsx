@@ -30,7 +30,9 @@ export default function InvoicePreview({
         <strong>{SELLER.brand}</strong> ({SELLER.legalName}) · GSTIN {SELLER.gstin} · {isUP ? 'SGST + CGST (intra-state)' : 'IGST (inter-state)'}
       </div>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+      {/* minWidth: 0 overrides the global `table { min-width: 600px }` so the
+          preview table can never stretch past its card (amounts stay inside). */}
+      <table style={{ width: '100%', minWidth: 0, borderCollapse: 'collapse', fontSize: '0.85rem' }}>
         <tbody>
           {lines.map((l, i) => (
             <tr key={i}>
