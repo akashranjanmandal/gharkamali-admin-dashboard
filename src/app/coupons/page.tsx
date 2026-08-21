@@ -10,11 +10,19 @@ import PeriodFilter, { Period, inPeriod } from '@/components/PeriodFilter';
 const blankForm = () => ({
   code: '', description: '', discount_type: 'percentage', discount_value: '',
   min_order_amount: '', max_discount: '', usage_limit: '',
-  valid_from: '', valid_to: '', is_active: true,
+  valid_from: '', valid_to: '', is_active: true, applies_to: 'all',
 });
 
 // ISO datetime → YYYY-MM-DD for <input type="date">
 const toDateInput = (v: any) => (v ? String(v).slice(0, 10) : '');
+// Coupon scope (applies_to) → badge / select labels
+const APPLIES_TO_OPTIONS = [
+  { value: 'all', label: 'All', formLabel: 'All (shop, plans & visits)' },
+  { value: 'products', label: 'Products', formLabel: 'Shop products' },
+  { value: 'subscription', label: 'Monthly plan', formLabel: 'Monthly plan (subscription)' },
+  { value: 'booking', label: 'One-time visit', formLabel: 'One-time visit (booking)' },
+];
+const appliesToLabel = (v: any) => APPLIES_TO_OPTIONS.find(o => o.value === (v || 'all'))?.label || 'All';
 const fmtDate = (v: any) => (v ? new Date(v).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : null);
 
 export default function AdminCouponsPage() {
@@ -40,6 +48,7 @@ export default function AdminCouponsPage() {
       valid_from: form.valid_from || null,
       valid_to: form.valid_to || null,
       is_active: !!form.is_active,
+      applies_to: form.applies_to || 'all',
     };
   };
 
@@ -64,6 +73,7 @@ export default function AdminCouponsPage() {
       min_order_amount: c.min_order_amount ?? '', max_discount: c.max_discount ?? '',
       usage_limit: c.usage_limit ?? '', valid_from: toDateInput(c.valid_from), valid_to: toDateInput(c.valid_to),
       is_active: c.is_active ?? true,
+      applies_to: c.applies_to || 'all',
     });
     setModal(c);
   };
@@ -79,6 +89,7 @@ export default function AdminCouponsPage() {
     Type: c.discount_type,
     Value: c.discount_value,
     MinOrder: c.min_order_amount,
+    'Applies To': appliesToLabel(c.applies_to),
     UsageCount: c.usage_count ?? 0,
     UsageLimit: c.usage_limit,
     ValidFrom: c.valid_from,
@@ -96,7 +107,7 @@ export default function AdminCouponsPage() {
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 className="page-title">Coupons</h1>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 4 }}>Discount codes customers can apply at shop checkout.</p>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 4 }}>Discount codes customers can apply at shop checkout, on monthly plans or one-time visits.</p>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <PeriodFilter onChange={p => setPeriod(p)} />
@@ -118,9 +129,14 @@ export default function AdminCouponsPage() {
             <div key={c.id} style={{ background: '#fff', borderRadius: 20, padding: 20, border: '1px solid var(--border)', opacity: c.is_active ? 1 : 0.6 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                 <div style={{ fontWeight: 900, fontSize: '1.05rem', letterSpacing: '0.05em', color: 'var(--forest)', fontFamily: 'monospace' }}>{c.code}</div>
-                <span style={{ fontSize: '0.65rem', fontWeight: 800, padding: '3px 9px', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.05em', background: c.is_active ? 'rgba(22,163,74,0.1)' : 'rgba(0,0,0,0.06)', color: c.is_active ? '#16a34a' : 'var(--text-muted)' }}>
-                  {c.is_active ? 'Active' : 'Inactive'}
-                </span>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  <span style={{ fontSize: '0.65rem', fontWeight: 800, padding: '3px 9px', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.05em', background: 'rgba(37,99,235,0.1)', color: '#2563eb' }}>
+                    {appliesToLabel(c.applies_to)}
+                  </span>
+                  <span style={{ fontSize: '0.65rem', fontWeight: 800, padding: '3px 9px', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.05em', background: c.is_active ? 'rgba(22,163,74,0.1)' : 'rgba(0,0,0,0.06)', color: c.is_active ? '#16a34a' : 'var(--text-muted)' }}>
+                    {c.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
               </div>
               {c.description && <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 10 }}>{c.description}</p>}
               <div style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--forest)', marginBottom: 12 }}>{discountLabel(c)}</div>
@@ -155,6 +171,13 @@ export default function AdminCouponsPage() {
             <div className="form-group">
               <label style={lbl}>Description</label>
               <input className="input" value={form.description} onChange={e => f('description', e.target.value)} placeholder="Shown to admins only" />
+            </div>
+
+            <div className="form-group">
+              <label style={lbl}>Applies to *</label>
+              <select className="input" value={form.applies_to || 'all'} onChange={e => f('applies_to', e.target.value)}>
+                {APPLIES_TO_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.formLabel}</option>)}
+              </select>
             </div>
 
             <div className="form-row">
