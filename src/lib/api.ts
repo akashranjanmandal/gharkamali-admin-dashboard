@@ -412,6 +412,12 @@ export const AdminAPI = {
 
   // Toggle gardener active status
   toggleGardener: (id: number) => req(`/admin/gardeners/${id}/toggle`, { method: 'PATCH' }),
+
+  // Operations kill-switch — pause/resume all customer bookings & orders.
+  // GET is public; PUT is admin-only (supervisors get a 403).
+  getOperationsStatus: () => req('/operations-status'),
+  setOperationsStatus: (b: { paused: boolean; message?: string }) =>
+    req('/admin/operations-status', { method: 'PUT', body: JSON.stringify(b) }),
 };
 
 // ─── SUPERVISOR PORTAL ────────────────────────────────────────────────────────

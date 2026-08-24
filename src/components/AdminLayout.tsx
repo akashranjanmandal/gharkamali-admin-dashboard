@@ -6,6 +6,10 @@ import { useAdmin } from '@/store/admin';
 import { AdminAPI } from '@/lib/api';
 import AdminNotificationListener from './AdminNotificationListener';
 import NotificationBell from './NotificationBell';
+import toast from 'react-hot-toast';
+
+// Matches the server default shown to customers when no custom message is set.
+const DEFAULT_PAUSE_MESSAGE = "We're not serviceable right now — we'll be back very soon!";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -17,6 +21,46 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const searchTimeout = useRef<any>(null);
+
+  // ── Operations kill-switch ──────────────────────────────────────────────────
+  const [opsStatus, setOpsStatus] = useState<{ paused: boolean; message: string } | null>(null);
+  const [opsModalOpen, setOpsModalOpen] = useState(false);
+  const [opsMessage, setOpsMessage] = useState(DEFAULT_PAUSE_MESSAGE);
+  const [opsSaving, setOpsSaving] = useState(false);
+
+  // Poll operations status on mount + every 60s
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+    const load = () =>
+      AdminAPI.getOperationsStatus()
+        .then((s: any) => { if (!cancelled && s && typeof s.paused === 'boolean') setOpsStatus(s); })
+        .catch(() => { /* keep last known state */ });
+    load();
+    const t = setInterval(load, 60_000);
+    return () => { cancelled = true; clearInterval(t); };
+  }, [isAuthenticated]);
+
+  const openOpsModal = () => {
+    if (!opsStatus) return;
+    setOpsMessage(opsStatus.message || DEFAULT_PAUSE_MESSAGE);
+    setOpsModalOpen(true);
+  };
+
+  const applyOpsStatus = async (paused: boolean, message?: string) => {
+    setOpsSaving(true);
+    try {
+      const s: any = await AdminAPI.setOperationsStatus(paused ? { paused, message } : { paused });
+      if (s && typeof s.paused === 'boolean') setOpsStatus(s);
+      else setOpsStatus({ paused, message: message || DEFAULT_PAUSE_MESSAGE });
+      setOpsModalOpen(false);
+      toast.success(paused ? 'Operations paused — customers can no longer book or order.' : 'Operations resumed — you are live!');
+    } catch (e: any) {
+      toast.error(e?.message || 'Could not update operations status');
+    } finally {
+      setOpsSaving(false);
+    }
+  };
 
   useEffect(() => {
     if (isLoading || pathname === '/login') return;
@@ -152,6 +196,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <NotificationBell />
+            {/* Operations status pill — click to pause/resume */}
+            {opsStatus && (
+              <button
+                onClick={openOpsModal}
+                title={opsStatus.paused ? 'Operations are paused — click to resume' : 'Operations are live — click to pause'}
+                style={{
+                  padding: '6px 14px', borderRadius: 99, cursor: 'pointer',
+                  border: `1.5px solid ${opsStatus.paused ? 'rgba(220,38,38,0.35)' : 'var(--border)'}`,
+                  background: opsStatus.paused ? 'rgba(220,38,38,0.08)' : 'transparent',
+                  fontSize: '0.78rem', fontWeight: 600, fontFamily: 'inherit',
+                  color: opsStatus.paused ? 'var(--error)' : 'var(--text-muted)',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                }}
+              >
+                <span style={{
+                  width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                  background: opsStatus.paused ? 'var(--error)' : 'var(--success)',
+                  boxShadow: opsStatus.paused ? '0 0 0 3px rgba(220,38,38,0.15)' : '0 0 0 3px rgba(22,163,74,0.15)',
+                }} />
+                {opsStatus.paused ? 'Paused' : 'Live'}
+              </button>
+            )}
             <a href="https://gharkamali.com/" target="_blank" rel="noopener noreferrer"
               style={{ padding: '6px 14px', borderRadius: 99, border: '1.5px solid var(--border)', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
@@ -159,8 +225,82 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </a>
           </div>
         </header>
+
+        {/* Full-width paused banner — visible on every admin page while paused */}
+        {opsStatus?.paused && (
+          <div style={{
+            background: 'var(--error)', color: '#fff', padding: '8px 28px',
+            display: 'flex', alignItems: 'center', gap: 12,
+            fontSize: '0.82rem', fontWeight: 600, lineHeight: 1.4,
+          }}>
+            <span style={{ flex: 1 }}>
+              ⏸ Operations are PAUSED — customers currently see: "{opsStatus.message || DEFAULT_PAUSE_MESSAGE}"
+            </span>
+            <button
+              onClick={() => applyOpsStatus(false)}
+              disabled={opsSaving}
+              style={{
+                padding: '4px 16px', borderRadius: 99, border: 'none', flexShrink: 0,
+                background: '#fff', color: 'var(--error)', fontWeight: 700, fontSize: '0.78rem',
+                fontFamily: 'inherit', cursor: opsSaving ? 'default' : 'pointer', opacity: opsSaving ? 0.7 : 1,
+              }}
+            >
+              {opsSaving ? 'Resuming…' : 'Resume'}
+            </button>
+          </div>
+        )}
+
         <div className="admin-content">{children}</div>
       </main>
+
+      {/* Pause / Resume confirm modal */}
+      {opsModalOpen && opsStatus && (
+        <div className="modal-overlay" onClick={() => !opsSaving && setOpsModalOpen(false)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 440 }}>
+            <div className="modal-header">
+              <h3>{opsStatus.paused ? 'Resume operations?' : 'Pause operations?'}</h3>
+              <button className="modal-close" onClick={() => setOpsModalOpen(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              {opsStatus.paused ? (
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.5 }}>
+                  Customers will immediately be able to book services and place orders again.
+                </p>
+              ) : (
+                <>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--error)', fontWeight: 600, marginBottom: 14 }}>
+                    Customers won't be able to book or order while paused.
+                  </p>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>Customer-facing message</label>
+                    <textarea
+                      className="input"
+                      rows={3}
+                      value={opsMessage}
+                      onChange={e => setOpsMessage(e.target.value)}
+                      placeholder={DEFAULT_PAUSE_MESSAGE}
+                      style={{ resize: 'vertical', minHeight: 70 }}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={() => setOpsModalOpen(false)} disabled={opsSaving}>Cancel</button>
+              {opsStatus.paused ? (
+                <button className="btn btn-primary" onClick={() => applyOpsStatus(false)} disabled={opsSaving}>
+                  {opsSaving ? 'Resuming…' : 'Resume operations'}
+                </button>
+              ) : (
+                <button className="btn btn-danger" onClick={() => applyOpsStatus(true, opsMessage.trim() || undefined)} disabled={opsSaving}>
+                  {opsSaving ? 'Pausing…' : 'Pause operations'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
