@@ -25,6 +25,7 @@ type ProductLine = {
 export default function CreateInvoicePage() {
   // ── Form state ──
   const [invoiceType, setInvoiceType] = useState<'ondemand' | 'plan' | 'products'>('ondemand');
+  const [paymentStatus, setPaymentStatus] = useState<'paid' | 'pending'>('paid');
   const [planId, setPlanId] = useState<string>('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -138,6 +139,7 @@ export default function CreateInvoicePage() {
   const buildProductPayload = (outcome: string) => ({
     outcome,
     invoice_type: 'products',
+    payment_status: paymentStatus,
     customer_name: customerName,
     customer_phone: customerPhone || undefined,
     customer_email: customerEmail || undefined,
@@ -162,6 +164,7 @@ export default function CreateInvoicePage() {
   const buildPayload = (outcome: string) => ({
     outcome,
     invoice_type: invoiceType,
+    payment_status: paymentStatus,
     plan_id: invoiceType === 'plan' ? Number(planId) || undefined : undefined,
     customer_name: customerName,
     customer_phone: customerPhone || undefined,
@@ -239,6 +242,23 @@ export default function CreateInvoicePage() {
                 {t === 'ondemand' ? 'On-Demand Visit' : t === 'plan' ? 'Subscription Plan' : 'Shop Products'}
               </button>
             ))}
+          </div>
+
+          {/* Payment status — what prints on the invoice (PAID / PENDING) */}
+          <div className="form-group" style={{ marginBottom: 16 }}>
+            <label>Payment Status</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {([['paid', '✅ Paid'], ['pending', '🕗 Unpaid / Pending']] as const).map(([v, label]) => (
+                <button key={v} type="button" onClick={() => setPaymentStatus(v)}
+                  className={`btn btn-sm ${paymentStatus === v ? (v === 'paid' ? 'btn-primary' : 'btn-danger') : 'btn-outline'}`}
+                  style={{ flex: 1 }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
+              Prints on the invoice PDF. "Unpaid / Pending" also leaves the created booking unpaid.
+            </p>
           </div>
 
           {invoiceType === 'plan' && (
