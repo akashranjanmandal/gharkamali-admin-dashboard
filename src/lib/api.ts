@@ -418,6 +418,35 @@ export const AdminAPI = {
   getOperationsStatus: () => req('/operations-status'),
   setOperationsStatus: (b: { paused: boolean; message?: string }) =>
     req('/admin/operations-status', { method: 'PUT', body: JSON.stringify(b) }),
+
+  // ─── Field Ops (gardener field-service) ─────────────────────────────────────
+  // Sales leads captured by gardeners on-site
+  fieldLeads: (p?: { status?: 'pending' | 'approved' | 'rejected' }) =>
+    req(`/admin/leads${qs(p)}`),
+  updateFieldLead: (id: number, status: 'approved' | 'rejected') =>
+    req(`/admin/leads/${id}`, { method: 'PUT', body: JSON.stringify({ status }) }),
+
+  // On-site escalations raised by gardeners
+  escalations: (p?: { status?: 'open' | 'resolved' }) =>
+    req(`/admin/escalations${qs(p)}`),
+  resolveEscalation: (id: number) =>
+    req(`/admin/escalations/${id}/resolve`, { method: 'PUT' }),
+
+  // Daily attendance (supervisors are auto-scoped to their team server-side)
+  attendance: (date: string) => req(`/admin/attendance${qs({ date })}`),
+
+  // Gardener leave requests
+  leaves: (p?: { status?: string }) => req(`/admin/leaves${qs(p)}`),
+  updateLeave: (id: number, status: 'approved' | 'rejected') =>
+    req(`/admin/leaves/${id}`, { method: 'PUT', body: JSON.stringify({ status }) }),
+
+  // Visit checklist templates per service type
+  checklistTemplates: () => req('/admin/checklist-templates'),
+  updateChecklistTemplate: (service_type: 'ondemand' | 'subscription', items: { key: string; label: string; required: boolean }[]) =>
+    req(`/admin/checklist-templates/${service_type}`, { method: 'PUT', body: JSON.stringify({ items }) }),
+
+  // Full visit report for a booking (photos, health reports, materials, lead)
+  visitReport: (bookingId: number) => req(`/admin/visits/${bookingId}/report`),
 };
 
 // ─── SUPERVISOR PORTAL ────────────────────────────────────────────────────────

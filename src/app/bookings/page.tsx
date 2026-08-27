@@ -339,6 +339,9 @@ export default function AdminBookingsPage() {
                     </div>
                   )}
 
+                  {/* Field visit report (photos / plant health / materials / lead) */}
+                  <VisitReportSection bookingId={bookingDetail.id} />
+
                   <div style={{ marginTop: 24, padding: '20px 0', borderTop: '1.5px solid var(--border)' }}>
                     <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 20, letterSpacing: 1 }}>Service Activity Logs</h4>
                     <div style={{ position: 'relative', paddingLeft: 28 }}>
@@ -402,6 +405,103 @@ export default function AdminBookingsPage() {
         </div>
       )}
     </AdminLayout>
+  );
+}
+
+// snake_case slug → "Title Case" for display (photo types, health conditions, lead types)
+const humanize = (s?: string | null) =>
+  s ? s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '—';
+
+// Field visit report inside the booking-detail modal. Fetches
+// /admin/visits/:bookingId/report and silently renders nothing when the
+// endpoint 404s, errors or has no content (older bookings without field data).
+function VisitReportSection({ bookingId }: { bookingId: number }) {
+  const { data: report } = useQuery({
+    queryKey: ['admin-visit-report', bookingId],
+    queryFn: () => AdminAPI.visitReport(bookingId).catch(() => null),
+    retry: false,
+  });
+
+  const photos: any[] = report?.photos || [];
+  const healthReports: any[] = report?.health_reports || [];
+  const materials: any[] = report?.materials || [];
+  const lead = report?.lead || null;
+  if (!photos.length && !healthReports.length && !materials.length && !lead) return null;
+
+  // Group photos by type ("before", "after", "issue", …)
+  const photoGroups = photos.reduce<Record<string, any[]>>((acc, p) => {
+    const t = p.type || 'other';
+    (acc[t] = acc[t] || []).push(p);
+    return acc;
+  }, {});
+
+  return (
+    <div style={{ marginTop: 24, padding: 16, background: 'var(--bg)', borderRadius: 16 }}>
+      <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 16, letterSpacing: 1 }}>Visit Report</h4>
+
+      {Object.entries(photoGroups).map(([type, group]) => (
+        <div key={type} style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase' }}>{humanize(type)} Photos</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 10 }}>
+            {group.map((p: any, i: number) => (
+              <a key={i} href={p.url} target="_blank" rel="noopener noreferrer" title={p.taken_at ? new Date(p.taken_at).toLocaleString('en-IN') : 'Open photo'}
+                style={{ display: 'block', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)', aspectRatio: '1/1' }}>
+                <img src={p.url} alt={`${type} photo`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </a>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {healthReports.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase' }}>Plant Health</div>
+          {healthReports.map((h: any, i: number) => (
+            <div key={i} style={{ padding: '10px 0', borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+                {(h.conditions || []).map((c: string, j: number) => (
+                  <span key={j} className="badge badge-orange">{humanize(c)}</span>
+                ))}
+                {h.photo_url && (
+                  <a href={h.photo_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--forest)' }}>View photo</a>
+                )}
+                {h.created_at && (
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                    {new Date(h.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                  </span>
+                )}
+              </div>
+              {h.remarks && <p style={{ marginTop: 6, fontSize: '0.82rem', color: 'var(--text)', fontStyle: 'italic' }}>"{h.remarks}"</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {materials.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase' }}>Materials Used</div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+            <tbody>
+              {materials.map((m: any, i: number) => (
+                <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '6px 0', fontWeight: 600 }}>{m.item}</td>
+                  <td style={{ padding: '6px 0', textAlign: 'right', color: 'var(--text-muted)' }}>{m.quantity} {m.unit}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {lead && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Lead Captured</div>
+          <span className="badge badge-forest">{humanize(lead.type)}</span>
+          {lead.status && <span className={`badge badge-${lead.status === 'approved' ? 'green' : lead.status === 'rejected' ? 'red' : 'yellow'}`}>{lead.status}</span>}
+          {lead.note && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>"{lead.note}"</span>}
+        </div>
+      )}
+    </div>
   );
 }
 
