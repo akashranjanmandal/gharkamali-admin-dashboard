@@ -42,6 +42,7 @@ const NAV = [
     { href: '/bookings', icon: 'bookings', label: 'Bookings' },
     { href: '/field-ops', icon: 'fieldops', label: 'Field Ops' },
     { href: '/create-invoice', icon: 'payments', label: 'Create Invoice' },
+    { href: '/manual-invoices', icon: 'payments', label: 'Invoice History' },
     { href: '/subscriptions', icon: 'subscriptions', label: 'Subscriptions' },
     { href: '/reviews', icon: 'star', label: 'Reviews' },
     { href: '/blogs', icon: 'blogs', label: 'Blogs' },
