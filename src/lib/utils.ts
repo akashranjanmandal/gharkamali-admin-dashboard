@@ -26,6 +26,35 @@ export async function fetchAllPages(
   return all;
 }
 
+/**
+ * Export data to an Excel (.xlsx) file. Same row shape as exportToCSV.
+ * Column widths are auto-sized to the longest value so the sheet opens readable.
+ */
+export function exportToXLSX(data: any[], filename: string, columns?: string[]) {
+  if (!data || data.length === 0) return;
+  // Lazy require keeps xlsx out of pages that never export.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const XLSX = require('xlsx');
+  const keys = columns || Object.keys(data[0]);
+  const rows = data.map((row) => {
+    const out: Record<string, any> = {};
+    for (const k of keys) {
+      let v = row[k];
+      if (v === null || v === undefined) v = '';
+      if (typeof v === 'object') v = JSON.stringify(v);
+      out[k] = v;
+    }
+    return out;
+  });
+  const ws = XLSX.utils.json_to_sheet(rows, { header: keys });
+  ws['!cols'] = keys.map((k) => ({
+    wch: Math.min(40, Math.max(k.length, ...rows.map((r) => String(r[k] ?? '').length)) + 2),
+  }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Data');
+  XLSX.writeFile(wb, `${filename}.xlsx`);
+}
+
 export function exportToCSV(data: any[], filename: string, columns?: string[]) {
   if (!data || data.length === 0) return;
 

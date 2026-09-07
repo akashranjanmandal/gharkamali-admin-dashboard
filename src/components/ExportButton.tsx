@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { IconDownload, IconChevronDown } from '@tabler/icons-react';
-import { exportToCSV } from '@/lib/utils';
+import { exportToCSV, exportToXLSX } from '@/lib/utils';
 
 interface Props {
   /** Base file name, e.g. "Customers" → Customers_2026-07_2026-08-03.csv */
@@ -25,6 +25,8 @@ interface Props {
 export default function ExportButton({ filename, fetchAll, mapRow, dateField = 'created_at', label = 'Export CSV' }: Props) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Excel by default (what the team opens these in); CSV still available.
+  const [format, setFormat] = useState<'xlsx' | 'csv'>('xlsx');
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const [month, setMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
@@ -54,7 +56,7 @@ export default function ExportButton({ filename, fetchAll, mapRow, dateField = '
     try {
       const rows = (await fetchAll()).filter(r => filter(rowDate(r)));
       if (!rows.length) { toast.error('No records in the selected period', { id: t }); return; }
-      exportToCSV(rows.map(mapRow), `${filename}_${suffix}`);
+      (format === 'xlsx' ? exportToXLSX : exportToCSV)(rows.map(mapRow), `${filename}_${suffix}`);
       toast.success(`Exported ${rows.length} record${rows.length === 1 ? '' : 's'}`, { id: t });
     } catch (e: any) {
       toast.error(e?.message || 'Export failed', { id: t });
@@ -103,7 +105,7 @@ export default function ExportButton({ filename, fetchAll, mapRow, dateField = '
   return (
     <div ref={boxRef} style={{ position: 'relative', display: 'inline-block' }}>
       <button className="btn btn-outline btn-sm" style={{ gap: 6 }} disabled={busy} onClick={() => setOpen(o => !o)}>
-        <IconDownload size={16} /> {busy ? 'Exporting…' : label} <IconChevronDown size={14} />
+        <IconDownload size={16} /> {busy ? 'Exporting…' : (label === 'Export CSV' ? 'Export' : label)} <IconChevronDown size={14} />
       </button>
       {open && (
         <div style={{
@@ -111,6 +113,19 @@ export default function ExportButton({ filename, fetchAll, mapRow, dateField = '
           background: '#fff', border: '1.5px solid var(--border)', borderRadius: 14,
           boxShadow: '0 12px 32px rgba(0,0,0,0.12)', overflow: 'hidden', padding: '6px 0',
         }}>
+          <div style={{ display: 'flex', gap: 6, padding: '4px 14px 8px', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Format</span>
+            {(['xlsx', 'csv'] as const).map(f => (
+              <button key={f} onClick={() => setFormat(f)}
+                style={{
+                  padding: '3px 10px', borderRadius: 99, fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer',
+                  border: '1.5px solid ' + (format === f ? 'var(--forest)' : 'var(--border)'),
+                  background: format === f ? 'var(--forest)' : '#fff', color: format === f ? '#fff' : 'var(--text-muted)',
+                }}>
+                {f === 'xlsx' ? 'Excel' : 'CSV'}
+              </button>
+            ))}
+          </div>
           <button style={item} onClick={exportAll} onMouseEnter={e => (e.currentTarget.style.background = 'var(--forest-light)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>📄 All entries</button>
           <button style={item} onClick={exportThisMonth} onMouseEnter={e => (e.currentTarget.style.background = 'var(--forest-light)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>🗓 This month</button>
           <button style={item} onClick={exportLastMonth} onMouseEnter={e => (e.currentTarget.style.background = 'var(--forest-light)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>🗓 Last month</button>
