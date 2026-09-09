@@ -54,7 +54,8 @@ export default function ManualInvoicesPage() {
     Date: m.created_at ?? m.createdAt,
   });
 
-  const typeBadge: Record<string, string> = { ondemand: 'badge-blue', plan: 'badge-green', products: 'badge-gold' };
+  const typeBadge: Record<string, string> = { ondemand: 'badge-blue', plan: 'badge-green', products: 'badge-gold', makeover: 'badge-forest' };
+  const typeLabel: Record<string, string> = { ondemand: 'On-Demand', plan: 'Plan', products: 'Products', makeover: 'Green Makeover' };
 
   return (
     <AdminLayout>
@@ -95,7 +96,7 @@ export default function ManualInvoicesPage() {
                       <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{m.customer_name}</div>
                       <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{m.customer_phone || '—'}</div>
                     </td>
-                    <td><span className={`badge badge-sm ${typeBadge[m.invoice_type] || 'badge-gray'}`}>{m.invoice_type === 'ondemand' ? 'On-Demand' : m.invoice_type === 'plan' ? 'Plan' : 'Products'}</span></td>
+                    <td><span className={`badge badge-sm ${typeBadge[m.invoice_type] || 'badge-gray'}`}>{typeLabel[m.invoice_type] || m.invoice_type}</span></td>
                     <td style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>{String(m.outcome || '').replace(/_/g, ' ')}</td>
                     <td><span className={`badge badge-sm ${(m.payment_status || 'paid') === 'paid' ? 'badge-green' : 'badge-yellow'}`}>{(m.payment_status || 'paid').toUpperCase()}</span></td>
                     <td style={{ fontWeight: 700 }}>₹{Number(m.total_amount ?? 0).toLocaleString('en-IN')}</td>

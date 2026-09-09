@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
-import { AdminAPI, downloadFile } from '@/lib/api';
+import { AdminAPI, downloadFile, getServiceDetails } from '@/lib/api';
 import InvoicePreview from '@/components/InvoicePreview';
 import { inclusiveGstSplit, isUPAddress, inr, SELLER } from '@/lib/invoice';
 
@@ -22,9 +22,21 @@ type ProductLine = {
   gst_rate: number; // 0 | 5 | 12 | 18 | 28
 };
 
+// One editable line of a Green Makeover invoice — quoted custom services.
+// Amounts are PRE-GST (service convention: total = subtotal × 1.18), with the
+// Override Total input as the "final quoted price incl. GST" mechanism.
+type MakeoverLine = {
+  name: string;
+  amount: string;   // PRE-GST line amount (₹)
+};
+
+// Slugs from GET /service-details that are NOT makeover-type services (they map
+// to the On-Demand Visit / Subscription Plan invoice types instead).
+const NON_MAKEOVER_SLUGS = ['one-time-plant-care', 'monthly-plant-care'];
+
 export default function CreateInvoicePage() {
   // ── Form state ──
-  const [invoiceType, setInvoiceType] = useState<'ondemand' | 'plan' | 'products'>('ondemand');
+  const [invoiceType, setInvoiceType] = useState<'ondemand' | 'plan' | 'products' | 'makeover'>('ondemand');
   const [paymentStatus, setPaymentStatus] = useState<'paid' | 'pending'>('paid');
   const [planId, setPlanId] = useState<string>('');
   const [customerName, setCustomerName] = useState('');
@@ -44,6 +56,7 @@ export default function CreateInvoicePage() {
   const [overrideTotal, setOverrideTotal] = useState('');
   const [scheduleDates, setScheduleDates] = useState<string[]>([]);
   const [productLines, setProductLines] = useState<ProductLine[]>([]);
+  const [makeoverLines, setMakeoverLines] = useState<MakeoverLine[]>([]);
   const [submitting, setSubmitting] = useState<string | null>(null);
 
   // ── Data ──
@@ -55,6 +68,14 @@ export default function CreateInvoicePage() {
   const gardeners: any[] = (gardenersData as any)?.items || (Array.isArray(gardenersData) ? gardenersData : []);
   const { data: productsData } = useQuery({ queryKey: ['admin-shop-products'], queryFn: AdminAPI.shopProducts, enabled: invoiceType === 'products' });
   const shopProducts: any[] = (Array.isArray(productsData) ? productsData : []).filter((p: any) => p.is_active);
+  // Green Makeover service picker — public content endpoint, fetched once and
+  // cached (staleTime: Infinity) since it's static config on the backend.
+  const { data: serviceDetailsData } = useQuery({
+    queryKey: ['service-details'], queryFn: getServiceDetails,
+    enabled: invoiceType === 'makeover', staleTime: Infinity,
+  });
+  const makeoverServices: any[] = (Array.isArray(serviceDetailsData) ? serviceDetailsData : [])
+    .filter((s: any) => !NON_MAKEOVER_SLUGS.includes(s.slug));
 
   const selectedPlan = plans.find((p) => String(p.id) === planId);
   const selectedZone = zones.find((z) => String(z.id) === zoneId);
@@ -89,7 +110,12 @@ export default function CreateInvoicePage() {
   const computed = useMemo(() => {
     let baseSum = 0;
     let lineName = '';
-    if (invoiceType === 'plan' && selectedPlan) {
+    if (invoiceType === 'makeover') {
+      // Green Makeover: subtotal = Σ pre-GST line amounts; override (if set)
+      // is the GST-INCLUSIVE quoted final price — same math as the backend.
+      baseSum = makeoverLines.reduce((s, l) => s + (Number(l.amount) || 0), 0);
+      lineName = 'Green Makeover Services';
+    } else if (invoiceType === 'plan' && selectedPlan) {
       baseSum = Number(selectedPlan.price) || 0;
       lineName = `${selectedPlan.name} Plan${selectedPlan.visits_per_month ? ` — ${selectedPlan.visits_per_month} visits/month` : ''}`;
     } else {
@@ -102,9 +128,15 @@ export default function CreateInvoicePage() {
       ? Math.round(Number(overrideTotal) * 100) / 100
       : Math.round(baseSum * GST * 100) / 100;
     return { lineName, baseSum, total };
-  }, [invoiceType, selectedPlan, selectedZone, plantCount, overrideTotal]);
+  }, [invoiceType, selectedPlan, selectedZone, plantCount, overrideTotal, makeoverLines]);
 
   const previewLine = { name: computed.lineName || 'Service', amount: inclusiveGstSplit(computed.total).subtotal };
+  // Makeover preview rows: the admin's pre-GST line amounts as entered. The
+  // preview card derives subtotal/GST from `total` (inclusiveGstSplit), so an
+  // override quote shows the back-computed split exactly like the PDF will.
+  const makeoverPreviewLines = makeoverLines.length
+    ? makeoverLines.map((l) => ({ name: l.name || 'Service', amount: Number(l.amount) || 0 }))
+    : [{ name: 'Add services to preview totals…', amount: 0 }];
 
   // ── Product invoice lines (GST-EXCLUSIVE unit prices, per-line rates) ──
   // Rounding mirrors the backend's priceProductInvoice: round each line to the
@@ -131,6 +163,17 @@ export default function CreateInvoicePage() {
   const updateLine = (i: number, patch: Partial<ProductLine>) =>
     setProductLines((prev) => prev.map((l, li) => (li === i ? { ...l, ...patch } : l)));
   const removeLine = (i: number) => setProductLines((prev) => prev.filter((_, li) => li !== i));
+
+  // ── Green Makeover lines (PRE-GST amounts, service convention) ──
+  const addMakeoverService = (slug: string) => {
+    const s = makeoverServices.find((x) => x.slug === slug);
+    if (!s) return;
+    setMakeoverLines((prev) => [...prev, { name: s.name, amount: '' }]);
+  };
+  const addCustomMakeoverLine = () => setMakeoverLines((prev) => [...prev, { name: '', amount: '' }]);
+  const updateMakeoverLine = (i: number, patch: Partial<MakeoverLine>) =>
+    setMakeoverLines((prev) => prev.map((l, li) => (li === i ? { ...l, ...patch } : l)));
+  const removeMakeoverLine = (i: number) => setMakeoverLines((prev) => prev.filter((_, li) => li !== i));
 
   // ── Submit ──
   // Product lines: the backend re-prices from the DB when product_id is sent,
@@ -179,6 +222,10 @@ export default function CreateInvoicePage() {
     notes: notes || undefined,
     zone_id: zoneId ? Number(zoneId) : undefined,
     geofence_id: zoneId ? Number(zoneId) : undefined,
+    // Green Makeover: explicit pre-GST service lines (required by the backend).
+    line_items: invoiceType === 'makeover'
+      ? makeoverLines.map((l) => ({ name: l.name.trim(), amount: Number(l.amount) || 0 }))
+      : undefined,
     override_total: overrideTotal ? Number(overrideTotal) : undefined,
     assign_mode: assignMode,
     gardener_id: assignMode === 'pick' && gardenerId ? Number(gardenerId) : undefined,
@@ -200,6 +247,14 @@ export default function CreateInvoicePage() {
         if (!l.name.trim()) { toast.error('Every line needs a product name'); return; }
         if (!((parseInt(l.qty) || 0) >= 1)) { toast.error(`"${l.name}": quantity must be at least 1`); return; }
         if (!(Number(l.price) >= 0)) { toast.error(`"${l.name}": enter a valid unit price`); return; }
+      }
+    }
+    if (invoiceType === 'makeover') {
+      if (outcome === 'subscription') { toast.error('Green Makeover invoices cannot create a subscription'); return; }
+      if (!makeoverLines.length) { toast.error('Add at least one service line'); return; }
+      for (const l of makeoverLines) {
+        if (!l.name.trim()) { toast.error('Every line needs a service name'); return; }
+        if (l.amount.trim() === '' || !(Number(l.amount) >= 0)) { toast.error(`"${l.name}": enter a valid pre-GST amount`); return; }
       }
     }
     setSubmitting(outcome);
@@ -226,7 +281,7 @@ export default function CreateInvoicePage() {
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text)' }}>Create Invoice</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: 4 }}>
-          Generate an invoice for an on-demand visit, a plan, or a shop-product sale. Save it as a booking, a subscription, or just a standalone invoice for offline customers.
+          Generate an invoice for an on-demand visit, a plan, a shop-product sale, or a Green Makeover (quoted landscaping/setup services). Save it as a booking, a subscription, or just a standalone invoice for offline customers.
         </p>
       </div>
 
@@ -234,12 +289,12 @@ export default function CreateInvoicePage() {
         {/* ── FORM ── */}
         <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: 20 }}>
           {/* Type toggle */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-            {(['ondemand', 'plan', 'products'] as const).map((t) => (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+            {(['ondemand', 'plan', 'products', 'makeover'] as const).map((t) => (
               <button key={t} onClick={() => setInvoiceType(t)}
                 className={`btn ${invoiceType === t ? 'btn-primary' : 'btn-outline'}`}
-                style={{ flex: 1 }}>
-                {t === 'ondemand' ? 'On-Demand Visit' : t === 'plan' ? 'Subscription Plan' : 'Shop Products'}
+                style={{ flex: 1, minWidth: 130 }}>
+                {t === 'ondemand' ? 'On-Demand Visit' : t === 'plan' ? 'Subscription Plan' : t === 'products' ? 'Shop Products' : 'Green Makeover'}
               </button>
             ))}
           </div>
@@ -321,6 +376,42 @@ export default function CreateInvoicePage() {
             </div>
           )}
 
+          {/* Green Makeover line editor — custom-priced services, PRE-GST amounts */}
+          {invoiceType === 'makeover' && (
+            <div style={{ marginBottom: 20 }}>
+              <h4 style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', margin: '8px 0 12px' }}>Makeover Services</h4>
+              <div style={{ marginBottom: 12 }}>
+                <Label>Add Service</Label>
+                <select className="input" value="" onChange={(e) => addMakeoverService(e.target.value)}>
+                  <option value="">Select a service to add…</option>
+                  {makeoverServices.map((s) => (
+                    <option key={s.slug} value={s.slug}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              {makeoverLines.map((l, i) => (
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) 120px auto', gap: 8, alignItems: 'end', marginBottom: 8 }}>
+                  <div>
+                    {i === 0 && <Label>Service</Label>}
+                    <input className="input" value={l.name}
+                      onChange={(e) => updateMakeoverLine(i, { name: e.target.value })} placeholder="Service name" />
+                  </div>
+                  <div>
+                    {i === 0 && <Label>Amount (₹, pre-GST)</Label>}
+                    <input className="input" type="number" min={0} value={l.amount}
+                      onChange={(e) => updateMakeoverLine(i, { amount: e.target.value })} placeholder="0.00" />
+                  </div>
+                  <button className="btn btn-sm btn-outline" onClick={() => removeMakeoverLine(i)}>✕</button>
+                </div>
+              ))}
+              <button className="btn btn-sm btn-outline" onClick={addCustomMakeoverLine}>+ Custom line</button>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 8, lineHeight: 1.5 }}>
+                Amounts are <strong>excluding GST</strong> — 18% is added on top (service convention).
+                To bill an agreed all-in quote, enter it as the <strong>final quoted price (incl. GST)</strong> below; the pre-GST base is back-computed.
+              </p>
+            </div>
+          )}
+
           <h4 style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', margin: '8px 0 12px' }}>Customer</h4>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
             <div><Label>Name *</Label><input className="input" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Customer name" /></div>
@@ -359,7 +450,7 @@ export default function CreateInvoicePage() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
                 <div><Label>Time</Label><input className="input" type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} /></div>
-                <div><Label>Override Total (₹, incl. GST)</Label><input className="input" type="number" value={overrideTotal} onChange={(e) => setOverrideTotal(e.target.value)} placeholder={`Auto: ₹${computed.total.toFixed(2)}`} /></div>
+                <div><Label>{invoiceType === 'makeover' ? 'Final quoted price (incl. GST)' : 'Override Total (₹, incl. GST)'}</Label><input className="input" type="number" value={overrideTotal} onChange={(e) => setOverrideTotal(e.target.value)} placeholder={`Auto: ₹${computed.total.toFixed(2)}`} /></div>
               </div>
             </>
           )}
@@ -468,7 +559,7 @@ export default function CreateInvoicePage() {
               address={[address, city, stateName].filter(Boolean).join(', ')}
               total={computed.total}
               statusLabel="PREVIEW"
-              lines={[previewLine]}
+              lines={invoiceType === 'makeover' ? makeoverPreviewLines : [previewLine]}
             />
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>

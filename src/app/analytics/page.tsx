@@ -1,10 +1,12 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Tooltip, Legend, Filler } from 'chart.js';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
+import { exportWorkbook } from '@/lib/utils';
+import toast from 'react-hot-toast';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Tooltip, Legend, Filler);
 
@@ -65,6 +67,34 @@ export default function AnalyticsPage() {
   });
   const a: any = an;
   const u: any = util;
+
+  // ── Zone/City drill-down (Shop Orders by Zone tables) ──────────────────────
+  // Stores the clicked aggregate row; its geofence_id / zone_id / city address
+  // exactly one group of the shopOrdersByZone aggregate on the backend.
+  const [drillRow, setDrillRow] = useState<any>(null);
+  const [invoiceId, setInvoiceId] = useState<number | null>(null);
+  const { data: drillData, isLoading: drillLoading, isError: drillIsError, error: drillError } = useQuery({
+    queryKey: ['admin-zone-orders', period, drillRow?.geofence_id ?? null, drillRow?.zone_id ?? null, drillRow?.city ?? null],
+    queryFn: () => AdminAPI.zoneOrders({
+      period,
+      geofence_id: drillRow?.geofence_id ?? undefined,
+      zone_id: drillRow?.zone_id ?? undefined,
+      city: drillRow?.city ?? undefined, // may be the literal 'Unknown' from the aggregate
+    }),
+    enabled: !!drillRow,
+  });
+  useEffect(() => {
+    if (drillIsError && drillRow) toast.error((drillError as any)?.message || 'Failed to load orders for this zone');
+  }, [drillIsError, drillError, drillRow]);
+  const drillOrders: any[] = (drillData as any)?.orders || [];
+  const drillTotal: number = Number((drillData as any)?.total || 0);
+  const closeDrill = () => { setDrillRow(null); setInvoiceId(null); };
+  const handleDrillInvoice = async (id: number) => {
+    setInvoiceId(id);
+    try { await AdminAPI.downloadOrderInvoice(id); }
+    catch { toast.error('Failed to download invoice'); }
+    setInvoiceId(null);
+  };
 
   // ── Existing data mappings ─────────────────────────────────────────────────
   const zonePerformance = (a?.bookingsByZone || []).map((z: any) => ({
@@ -137,15 +167,53 @@ export default function AnalyticsPage() {
 
   // ── KPI Cards ──────────────────────────────────────────────────────────────
   const KPIS = [
-    { label:'Total Revenue',        value: totalAnalyticsRevenue ? `₹${Number(totalAnalyticsRevenue).toLocaleString('en-IN')}` : '—', icon:<IcRevenue/>, color:'#03411a', sub:`${period}-day period`, trend:18 },
-    { label:'Booking Revenue',      value: bookingRevenue ? `₹${Number(bookingRevenue).toLocaleString('en-IN')}` : '—', icon:<IcBooking/>, color:'#2563eb', sub:'Service bookings' },
-    { label:'Shop Revenue',         value: shopRevenue ? `₹${Number(shopRevenue).toLocaleString('en-IN')}` : '—', icon:<IcShop/>, color:'#9333ea', sub:'Marketplace orders' },
+    { label:'Total Revenue',        value: `₹${Number(totalAnalyticsRevenue || 0).toLocaleString('en-IN')}`, icon:<IcRevenue/>, color:'#03411a', sub:`${period}-day period`, trend:18 },
+    { label:'Booking Revenue',      value: `₹${Number(bookingRevenue || 0).toLocaleString('en-IN')}`, icon:<IcBooking/>, color:'#2563eb', sub:'Service bookings' },
+    { label:'Shop Revenue',         value: `₹${Number(shopRevenue || 0).toLocaleString('en-IN')}`, icon:<IcShop/>, color:'#9333ea', sub:'Paid marketplace orders (period)' },
     { label:'Total Bookings',       value: totalBookings ? totalBookings.toLocaleString('en-IN') : '—', icon:<IcBooking/>, color:'#2563eb', sub:'Service requests', trend:12 },
     { label:'Shop Orders',          value: shopStats.total_orders ? Number(shopStats.total_orders).toLocaleString('en-IN') : '—', icon:<IcShop/>, color:'#9333ea', sub:'Marketplace' },
     { label:'Avg Rating',           value: a?.avgRating ? `${Number(a.avgRating).toFixed(1)} ★` : '—', icon:<IcStar/>, color:'#d97706', sub:'Out of 5.0' },
     { label:'Completion Rate',      value: a?.completionRate != null ? `${Number(a.completionRate).toFixed(0)}%` : '—', icon:<IcPercent/>, color:'#16a34a', sub:'Booking completion', trend:3 },
     { label:'Active Subscriptions', value: a?.activeSubscriptions != null ? Number(a.activeSubscriptions).toLocaleString('en-IN') : '—', icon:<IcSubs/>, color:'#0891b2', sub:'Active plans' },
   ];
+
+  // One .xlsx workbook: every dataset on this page, one sheet each, honoring
+  // the selected period + service-area filter (it exports what is loaded).
+  const handleExportExcel = () => {
+    const sheets = [
+      { name: 'Summary', rows: [
+        { Metric: 'Period (days)', Value: period },
+        { Metric: 'Service Area', Value: selectedZoneName || 'All' },
+        { Metric: 'Total Revenue', Value: totalAnalyticsRevenue },
+        { Metric: 'Booking Revenue', Value: bookingRevenue },
+        { Metric: 'Shop Revenue (paid)', Value: shopRevenue },
+        { Metric: 'Subscription Revenue', Value: subscriptionRevenue },
+        { Metric: 'Total Bookings', Value: totalBookings },
+        { Metric: 'Shop Orders', Value: Number(shopStats.total_orders || 0) },
+        { Metric: 'New Customers', Value: newCustomers },
+        { Metric: 'Avg Rating', Value: a?.avgRating ?? '' },
+        { Metric: 'Completion Rate (%)', Value: a?.completionRate ?? '' },
+      ]},
+      { name: 'Revenue by Day', rows: a?.revenueByDay || [] },
+      { name: 'Bookings by Day', rows: a?.bookingsByDay || [] },
+      { name: 'Zone Performance', rows: a?.bookingsByZone || [] },
+      { name: 'Bookings by City', rows: a?.bookingsByCity || [] },
+      { name: 'Booking Status', rows: bookingsByStatus },
+      { name: 'Plans', rows: a?.planDist || [] },
+      { name: 'Subscriptions by Plan', rows: subscriptionsByPlan },
+      { name: 'Top Gardeners', rows: a?.topGardeners || [] },
+      { name: 'Top Products', rows: topProducts },
+      { name: 'Shop Orders by Zone', rows: shopOrdersByZone },
+      { name: 'Shop Orders by City', rows: shopOrdersByCity },
+      { name: 'Customer Locations', rows: a?.customerLocations || [] },
+      { name: 'New Users Trend', rows: a?.newUsersTrend || [] },
+    ];
+    const today = new Date().toISOString().slice(0, 10);
+    const zoneTag = selectedZone ? `_${(selectedZoneName || 'zone').replace(/[^\w]+/g, '-')}` : '';
+    const ok = exportWorkbook(sheets, `Analytics_${period}d${zoneTag}_${today}`);
+    if (ok) toast.success('Analytics workbook downloaded');
+    else toast.error('Nothing to export yet — wait for the data to load');
+  };
 
   return (
     <AdminLayout>
@@ -157,6 +225,9 @@ export default function AnalyticsPage() {
           <p style={{ color:'var(--text-muted)', fontSize:'0.85rem', marginTop:4 }}>Showing analytics for <strong>{a?.selectedCity ? `${selectedZoneName} (${a.selectedCity})` : selectedZoneName}</strong></p>
         </div>
         <div style={{ display:'flex', gap:12, flexWrap:'wrap', alignItems:'center' }}>
+          <button className="btn btn-outline btn-sm" onClick={handleExportExcel} disabled={isLoading} style={{ gap: 6 }}>
+            ⬇ Export Excel
+          </button>
           <div style={{ display:'flex', alignItems:'center', gap:8, background:'#fff', padding:'8px 12px', borderRadius:12, border:'1px solid var(--border)' }}>
             <label htmlFor="zone-filter" style={{ fontSize:'0.82rem', fontWeight:700, color:'var(--text-muted)' }}>Service Area:</label>
             <select id="zone-filter" value={selectedZone} onChange={e => setSelectedZone(e.target.value)} className="input" style={{ minWidth:200, borderRadius:10, padding:'8px 12px', border:'1px solid var(--border)', background:'#f9fafb', color:'var(--text)', fontWeight:600, cursor:'pointer' }}>
@@ -389,7 +460,7 @@ export default function AnalyticsPage() {
                   const share = totalOrders > 0 ? ((Number(z.total||0) / totalOrders) * 100).toFixed(1) : 0;
                   const avgVal = Number(z.total||0) > 0 ? (Number(z.revenue||0) / Number(z.total||0)).toFixed(0) : 0;
                   return (
-                    <tr key={idx}>
+                    <tr key={idx} onClick={() => setDrillRow(z)} style={{ cursor:'pointer' }} title="Click to view the orders behind this row">
                       <td style={{ fontWeight:600 }}>{z.zone} {z.city && <span style={{ color:'var(--text-muted)', fontSize:'0.8rem', fontWeight:400 }}>({z.city})</span>}</td>
                       <td style={{ textAlign:'right', fontWeight:700 }}>{Number(z.total||0).toLocaleString('en-IN')}</td>
                       <td style={{ textAlign:'right', fontWeight:700, color:'var(--forest)' }}>₹{Number(z.revenue||0).toLocaleString('en-IN')}</td>
@@ -414,6 +485,70 @@ export default function AnalyticsPage() {
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Zone/City drill-down modal — actual orders behind an aggregate row */}
+      {drillRow && (
+        <div className="modal-overlay" onClick={closeDrill}>
+          <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth:720 }}>
+            <div className="modal-header">
+              <div>
+                <h3 style={{ margin:0 }}>Orders — {drillRow.zone}{drillRow.city ? ` (${drillRow.city})` : ''}</h3>
+                <div style={{ fontSize:'0.75rem', color:'var(--text-muted)', marginTop:2, fontWeight:500 }}>
+                  {drillLoading
+                    ? 'Loading…'
+                    : `${drillTotal.toLocaleString('en-IN')} orders · last ${period} days${drillTotal > drillOrders.length && drillOrders.length > 0 ? ` · showing latest ${drillOrders.length}` : ''}`}
+                </div>
+              </div>
+              <button className="modal-close" onClick={closeDrill} aria-label="Close">✕</button>
+            </div>
+            <div className="modal-body">
+              {drillLoading ? (
+                Array(4).fill(null).map((_, i) => <div key={i} className="skeleton" style={{ height:82, borderRadius:12, marginBottom:10 }} />)
+              ) : drillOrders.length === 0 ? (
+                <div style={{ padding:'32px 0', textAlign:'center', color:'var(--text-muted)', fontSize:'0.85rem' }}>
+                  No orders found for this zone in the selected period
+                </div>
+              ) : drillOrders.map((o: any) => {
+                const items = o.items || [];
+                const summary = items.map((it: any) => `${it.quantity}× ${it.product?.name || 'Item'}`).join(', ');
+                const discount = Number(o.discount_amount || 0);
+                return (
+                  <div key={o.id} style={{ border:'1px solid var(--border)', borderRadius:12, padding:'12px 14px', marginBottom:10, background:'#fff' }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12, flexWrap:'wrap' }}>
+                      <div style={{ minWidth:0, flex:1 }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                          <span style={{ fontFamily:'monospace', fontWeight:700, fontSize:'0.82rem' }}>{o.order_number || `#${o.id}`}</span>
+                          {o.coupon_code && <span className="badge badge-gold">{o.coupon_code}</span>}
+                        </div>
+                        <div style={{ fontSize:'0.82rem', fontWeight:600, marginTop:4 }}>
+                          {o.customer?.name || '—'} {o.customer?.phone && <span style={{ color:'var(--text-muted)', fontWeight:400 }}>· {o.customer.phone}</span>}
+                        </div>
+                        <div style={{ fontSize:'0.76rem', color:'var(--text-muted)', marginTop:3, maxWidth:380, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }} title={summary}>
+                          {summary || 'No items'}
+                        </div>
+                      </div>
+                      <div style={{ textAlign:'right', flexShrink:0 }}>
+                        <div style={{ fontWeight:800, color:'var(--forest)', fontSize:'0.95rem' }}>₹{Number(o.total_amount || 0).toLocaleString('en-IN')}</div>
+                        {discount > 0 && <div style={{ fontSize:'0.7rem', color:'var(--text-muted)' }}>−₹{discount.toLocaleString('en-IN')} coupon</div>}
+                        <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', marginTop:3 }}>
+                          {o.created_at ? new Date(o.created_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }) : '—'}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:10, flexWrap:'wrap' }}>
+                      <span className={`badge ${o.payment_status === 'paid' ? 'badge-forest' : o.payment_status === 'failed' ? 'badge-danger' : 'badge-gold'}`}>{o.payment_status || 'unknown'}</span>
+                      <span className={`badge ${o.status === 'delivered' ? 'badge-forest' : ['cancelled','returned'].includes(o.status) ? 'badge-danger' : 'badge-outline'}`} style={{ textTransform:'capitalize' }}>{o.status || '—'}</span>
+                      <button className="btn btn-outline btn-sm" style={{ marginLeft:'auto' }} disabled={invoiceId === o.id} onClick={() => handleDrillInvoice(o.id)}>
+                        {invoiceId === o.id ? 'Downloading…' : '⬇ Download Invoice'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

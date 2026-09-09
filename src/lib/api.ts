@@ -218,6 +218,8 @@ export const getGardenerRewards = (p?: any) =>
 export const AdminAPI = {
   dashboard: () => req('/admin/dashboard'),
   analytics: (p?: any) => req(`/admin/analytics${qs(p)}`),
+  // Drill-down: orders behind one "Shop Orders by Zone/City" aggregate row
+  zoneOrders: (p: any) => req(`/admin/analytics/zone-orders${qs(p)}`),
   utilization: (p?: any) => req(`/admin/utilization${qs(p)}`),
 
   gardeners: (p?: any) => req(`/admin/gardeners${qs(p)}`),
@@ -482,6 +484,9 @@ export const SupervisorAPI = {
 };
 
 // ─── PUBLIC APIs ──────────────────────────────────────────────────────────────
+// Standard service-detail content (single source shared with website + apps).
+// Used by Create Invoice to list Green Makeover services.
+export const getServiceDetails = () => req('/service-details', { auth: false });
 export const getPublicReviews = (p?: any) => req(`/reviews${qs(p)}`, { auth: false });
 export const getSocialProof = () => req('/social-proof', { auth: false });
 export const getPublicFaqs = () => req('/faqs', { auth: false });

@@ -1,8 +1,9 @@
 'use client';
+import toast from 'react-hot-toast';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import AdminLayout from '@/components/AdminLayout';
-import { AdminAPI } from '@/lib/api';
+import { AdminAPI, downloadFile } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 import PeriodFilter, { Period } from '@/components/PeriodFilter';
@@ -194,8 +195,16 @@ export default function PaymentsAdmin() {
                 )}
               </div>
             </div>
-            <div className="modal-footer">
+            <div className="modal-footer" style={{ flexWrap: 'wrap' }}>
               <button className="btn btn-ghost" onClick={() => setSelected(null)}>Close</button>
+              <button className="btn btn-outline" style={{ gap: 6 }}
+                onClick={() => downloadFile(`/admin/payments/${selected.id}/receipt`, `receipt-${selected.txn_id || selected.id}.pdf`).catch((e: any) => toast.error(e?.message || 'Could not download receipt'))}>
+                Download Receipt
+              </button>
+              <button className="btn btn-outline" style={{ gap: 6 }}
+                onClick={() => downloadFile(`/admin/payments/${selected.id}/invoice`, `invoice-${selected.txn_id || selected.id}.pdf`).catch((e: any) => toast.error(e?.message || 'No invoice is linked to this payment'))}>
+                Download Invoice
+              </button>
               {selected.status === 'success' ? (
                 <button className="btn btn-forest" style={{ gap: 6 }}><IconCheck size={16} /> Receipt View</button>
               ) : (

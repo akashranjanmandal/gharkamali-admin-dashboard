@@ -55,6 +55,38 @@ export function exportToXLSX(data: any[], filename: string, columns?: string[]) 
   XLSX.writeFile(wb, `${filename}.xlsx`);
 }
 
+/**
+ * Export several datasets as ONE Excel workbook, one sheet per dataset.
+ * Empty datasets are skipped; sheet names are truncated to Excel's 31-char cap.
+ */
+export function exportWorkbook(sheets: { name: string; rows: any[] }[], filename: string) {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const XLSX = require('xlsx');
+  const wb = XLSX.utils.book_new();
+  for (const sheet of sheets) {
+    const rows = (sheet.rows || []).map((row) => {
+      const out: Record<string, any> = {};
+      for (const k of Object.keys(row)) {
+        let v = (row as any)[k];
+        if (v === null || v === undefined) v = '';
+        if (typeof v === 'object') v = JSON.stringify(v);
+        out[k] = v;
+      }
+      return out;
+    });
+    if (!rows.length) continue;
+    const keys = Object.keys(rows[0]);
+    const ws = XLSX.utils.json_to_sheet(rows, { header: keys });
+    ws['!cols'] = keys.map((k) => ({
+      wch: Math.min(40, Math.max(k.length, ...rows.map((r) => String(r[k] ?? '').length)) + 2),
+    }));
+    XLSX.utils.book_append_sheet(wb, ws, sheet.name.slice(0, 31));
+  }
+  if (wb.SheetNames.length === 0) return false;
+  XLSX.writeFile(wb, `${filename}.xlsx`);
+  return true;
+}
+
 export function exportToCSV(data: any[], filename: string, columns?: string[]) {
   if (!data || data.length === 0) return;
 
