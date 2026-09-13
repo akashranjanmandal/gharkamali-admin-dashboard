@@ -225,7 +225,7 @@ export default function AdminGardenersPage() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 16, marginBottom: 28 }}>
                     <div className="card" style={{ padding: 16, textAlign: 'center', border: 'none', background: 'var(--bg)' }}>
                       <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Completed</div>
                       <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>{gardenerDetail.gardenerProfile?.completed_jobs ?? 0}</div>
@@ -244,7 +244,7 @@ export default function AdminGardenersPage() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 32 }}>
+                  <div className="stack-sm" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 32 }}>
                     <div>
                       <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 14 }}>Biometric & Details</h4>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

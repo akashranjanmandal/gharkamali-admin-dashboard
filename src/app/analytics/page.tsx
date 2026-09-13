@@ -250,7 +250,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Revenue + Bookings charts */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:20 }}>
+      <div className="stack-sm" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:20 }}>
         <div className="card">
           <div className="card-header"><h2>Revenue Trend</h2><span style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>Daily ₹</span></div>
           <div className="card-body" style={{ height:240 }}>
@@ -268,7 +268,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Revenue Breakdown + Shop Orders + Plan Distribution */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:20, marginBottom:20 }}>
+      <div className="stack-sm" style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:20, marginBottom:20 }}>
 
         {/* Revenue Source Donut */}
         <div className="card">
@@ -333,7 +333,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Zone + Status Donut */}
-      <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:20, marginBottom:20 }}>
+      <div className="stack-sm" style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:20, marginBottom:20 }}>
         <div className="card">
           <div className="card-header"><h2>Bookings by Zone</h2><IcPin /></div>
           <div className="card-body" style={{ height:260 }}>
@@ -351,7 +351,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* New customers + Top Gardeners */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:20 }}>
+      <div className="stack-sm" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:20 }}>
         <div className="card">
           <div className="card-header"><h2>New Customer Signups</h2></div>
           <div className="card-body" style={{ height:240 }}>
@@ -431,7 +431,7 @@ export default function AnalyticsPage() {
 
       {/* Shop Orders by Zone */}
       {shopOrdersByZone.length > 0 && (
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:20 }}>
+        <div className="stack-sm" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:20 }}>
           <div className="card">
             <div className="card-header"><h2>Shop Orders by Zone</h2><span style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>Order count</span></div>
             <div className="card-body" style={{ height:260 }}>

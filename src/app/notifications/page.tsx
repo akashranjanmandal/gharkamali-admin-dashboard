@@ -47,7 +47,7 @@ export default function NotificationsPage() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
+      <div className="stack-md" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
         <div className="card" style={{ padding: 24 }}>
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: 20 }}>

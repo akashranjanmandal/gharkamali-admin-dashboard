@@ -84,7 +84,7 @@ export default function CityPagesAdmin() {
           <h2>🌍 Global City SEO Template</h2>
           <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Used by every city page. Use <code>{'{city}'}</code> as a placeholder.</span>
         </div>
-        <div className="card-body" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 20 }}>
+        <div className="card-body stack-md" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 20 }}>
           <div>
             {TPL_FIELDS.map(({ k, label, rows }) => (
               <div className="form-group" key={k}>

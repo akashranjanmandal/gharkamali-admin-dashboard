@@ -188,7 +188,7 @@ export default function AdminSubscriptionsPage() {
               <button className="modal-close" onClick={() => setSelected(null)}><IconX size={20} /></button>
             </div>
             <div className="modal-body">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+              <div className="stack-sm" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                 <div>
                   <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12, letterSpacing: 1 }}>Customer Info</h4>
                   <div className="card" style={{ padding: 16, background: 'var(--bg)', border: 'none' }}>
@@ -212,7 +212,7 @@ export default function AdminSubscriptionsPage() {
                 </div>
               </div>
 
-              <div style={{ marginTop: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+              <div className="stack-sm" style={{ marginTop: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                 <div>
                   <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12, letterSpacing: 1 }}>Subscription Period</h4>
                   <div className="card" style={{ padding: 12, border: '1px solid var(--border)', background: 'var(--bg)' }}>
@@ -234,7 +234,7 @@ export default function AdminSubscriptionsPage() {
 
               <div style={{ marginTop: 24 }}>
                 <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12, letterSpacing: 1 }}>Subscription Metadata</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 16 }}>
                   <div className="card" style={{ padding: 12, border: '1px solid var(--border)' }}>
                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4 }}>PURCHASED ON</div>
                     <div style={{ fontWeight: 600 }}>{new Date(selected.created_at || selected.createdAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}</div>
@@ -330,7 +330,7 @@ export default function AdminSubscriptionsPage() {
             <div className="modal-body">
               {isBookingLoading ? <div className="skeleton" style={{ height: 400, width: '100%', borderRadius: 12 }} /> : bookingDetail ? (
                 <div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 16, marginBottom: 24 }}>
                     <div className="card" style={{ padding: 12, background: 'var(--bg)', border: 'none' }}>
                       <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>Status</div>
                       <span className={`badge badge-${bookingDetail.status === 'completed' ? 'green' : (bookingDetail.status === 'cancelled' || bookingDetail.status === 'failed') ? 'red' : 'blue'}`}>{bookingDetail.status?.replace(/_/g, ' ')}</span>
@@ -349,7 +349,7 @@ export default function AdminSubscriptionsPage() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                  <div className="stack-sm" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                     <div>
                       <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12, letterSpacing: 1 }}>Customer Info</h4>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>

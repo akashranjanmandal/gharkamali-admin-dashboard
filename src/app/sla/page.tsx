@@ -60,7 +60,7 @@ export default function SLAPage() {
         </div>
         <ExportButton filename="SLABreaches" fetchAll={fetchAllBreaches} mapRow={mapExportRow} dateField="occurred_at" />
       </div>
-      <div style={{display:'grid',gridTemplateColumns:'1fr 2fr',gap:20}}>
+      <div className="stack-md" style={{display:'grid',gridTemplateColumns:'1fr 2fr',gap:20}}>
         <div className="card">
           <div className="card-header"><h2 style={{fontWeight:700,fontSize:'0.95rem'}}>SLA Configuration</h2><button onClick={()=>{setConfig(configRaw||{});setEditConfig(e=>!e);}} className="btn btn-sm btn-outline">{editConfig?'Cancel':'Edit'}</button></div>
           <div className="card-body">

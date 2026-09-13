@@ -18,6 +18,11 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
 body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; }
+/* Never let the PAGE scroll sideways — wide tables scroll inside .table-wrap instead.
+   `clip` (modern browsers) is preferred: unlike `hidden` it does not create a scroll
+   container, so position: sticky (.admin-header, .modal-header) keeps working. */
+html { overflow-x: hidden; }
+@supports (overflow-x: clip) { html, body { overflow-x: clip; } }
 a { color: inherit; text-decoration: none; }
 button, input, textarea, select { font-family: var(--font); }
 
@@ -71,7 +76,7 @@ button, input, textarea, select { font-family: var(--font); }
 .stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
 
 /* Table */
-.table-wrap { overflow-x: auto; border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
 table { width: 100%; border-collapse: collapse; min-width: 600px; }
 th { padding: 11px 16px; background: var(--bg); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
 td { padding: 13px 16px; font-size: 0.855rem; border-bottom: 1px solid var(--border-light); color: var(--text-2); vertical-align: middle; }
@@ -180,6 +185,10 @@ select.input { cursor: pointer; }
 .page-btn.active { background: var(--forest); color: #fff; border-color: transparent; }
 .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* Header global-search wrapper (AdminLayout) — on phones it drops to its own
+   full-width row below the hamburger/actions (see mobile media block). */
+.header-search { position: relative; flex: 1; max-width: 400px; margin: 0 1rem; min-width: 0; }
+
 /* Search bar */
 .search-input { position: relative; }
 .search-input svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-faint); pointer-events: none; }
@@ -225,6 +234,8 @@ select.input { cursor: pointer; }
   .sidebar-hamburger { display: flex; }
   .sidebar-close-btn { display: flex; }
   .admin-content { padding: 16px; }
+  /* Comfortable ~44px tap targets in the drawer */
+  .sidebar-link { padding: 12px; font-size: 0.875rem; }
 }
 
 /* Additional fixes for modal and form classes used in admin pages */
@@ -335,3 +346,76 @@ select.input { cursor: pointer; }
 }
 
 .notif-close:hover { color: var(--forest); }
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE (~360–430px phones) — the admin team operates the
+   dashboard from mobile browsers, so everything below makes
+   the existing desktop layout usable at small widths.
+   ═══════════════════════════════════════════════════════ */
+
+/* Create Invoice: form + live preview. Two columns on desktop, one under 900px. */
+.create-invoice-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 900px) { .create-invoice-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Create Invoice: per-product line (name | price | qty | GST | remove).
+   On phones the name takes a full row and price/qty/GST share the next one. */
+.invoice-line-grid { display: grid; grid-template-columns: minmax(0, 2fr) 90px 70px 90px auto; gap: 8px; align-items: end; margin-bottom: 8px; }
+@media (max-width: 640px) {
+  .invoice-line-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .invoice-line-grid > div:first-child { grid-column: 1 / -1; }
+  .invoice-line-grid > button { grid-column: 1 / -1; justify-self: end; }
+}
+
+/* Utility for inline-styled grids that must collapse to one column on small
+   screens (!important intentionally beats the inline gridTemplateColumns). */
+@media (max-width: 640px) { .stack-sm { grid-template-columns: 1fr !important; } }
+@media (max-width: 900px) { .stack-md { grid-template-columns: 1fr !important; } }
+
+@media (max-width: 768px) {
+  /* Header wraps to two rows: [hamburger …… bell/ops] / [search full width] */
+  .admin-header { height: auto; min-height: var(--header-h); flex-wrap: wrap; padding: 8px 12px; row-gap: 8px; }
+  .header-search { order: 3; flex: 1 1 100%; max-width: 100%; margin: 0; }
+  .header-actions { margin-left: auto; }
+
+  .admin-content { padding: 14px 12px 28px; }
+  .card-header { padding: 14px 16px; }
+  .card-body { padding: 16px 14px; }
+
+  /* Minimum tap height for buttons */
+  .btn { min-height: 40px; }
+  .btn-xs { min-height: 32px; }
+  .page-btn { width: 36px; height: 36px; }
+
+  .modal-header { padding: 14px 16px 12px; }
+  .modal-body { padding: 16px; }
+  .modal-footer { padding: 12px 16px; flex-wrap: wrap; }
+  .modal-footer .btn { flex: 1 1 auto; }
+
+  .pagination { justify-content: center; flex-wrap: wrap; padding: 12px; }
+}
+
+@media (max-width: 640px) {
+  /* Header extras that don't earn their space on a phone */
+  .view-site-link { display: none !important; }
+  .ops-banner { padding: 8px 14px !important; flex-wrap: wrap; }
+
+  /* Modals become bottom sheets. Inline maxWidth (480–860px) on .modal-box is
+     inert here: width:100% of a ≤640px overlay is already below those caps. */
+  .modal-overlay { align-items: flex-end; padding: 0; }
+  /* width !important also beats the one inline width ('95vw' on the geofencing
+     modal); inline maxWidth values never bind because 100% of a phone viewport
+     is already narrower than any of them. */
+  .modal-box { width: 100% !important; margin: 0; border-radius: 20px 20px 0 0; max-height: 92vh; max-height: 92dvh; animation: slideUp 0.28s var(--ease); }
+  .modal-header { border-radius: 20px 20px 0 0; }
+  .modal-footer { border-radius: 0; }
+
+  /* Notification bell dropdown: pin to the viewport edges instead of hanging
+     340px off the bell (which would run off the left edge of a phone).
+     The header's backdrop-filter makes it the containing block for fixed
+     descendants, so these coordinates track the sticky header — fine. */
+  .notif-dropdown {
+    position: fixed !important;
+    top: 56px !important; left: 12px !important; right: 12px !important;
+    width: auto !important; max-height: 65vh !important;
+  }
+}

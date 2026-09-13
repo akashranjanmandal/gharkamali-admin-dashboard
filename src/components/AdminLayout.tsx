@@ -71,6 +71,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [isAuthenticated, isLoading, pathname, user]);
 
+  // Lock body scroll while the mobile sidebar drawer is open
+  useEffect(() => {
+    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
+
   // Close search on click outside
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -121,7 +127,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
 
           {/* Global Search */}
-          <div ref={searchRef} style={{ position: 'relative', flex: 1, maxWidth: 400, margin: '0 1rem' }}>
+          <div ref={searchRef} className="header-search">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '6px 12px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg)', fontSize: '0.82rem' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input
@@ -194,7 +200,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             )}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <NotificationBell />
             {/* Operations status pill — click to pause/resume */}
             {opsStatus && (
@@ -218,7 +224,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {opsStatus.paused ? 'Paused' : 'Live'}
               </button>
             )}
-            <a href="https://gharkamali.com/" target="_blank" rel="noopener noreferrer"
+            <a href="https://gharkamali.com/" target="_blank" rel="noopener noreferrer" className="view-site-link"
               style={{ padding: '6px 14px', borderRadius: 99, border: '1.5px solid var(--border)', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
               View Site
@@ -228,7 +234,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Full-width paused banner — visible on every admin page while paused */}
         {opsStatus?.paused && (
-          <div style={{
+          <div className="ops-banner" style={{
             background: 'var(--error)', color: '#fff', padding: '8px 28px',
             display: 'flex', alignItems: 'center', gap: 12,
             fontSize: '0.82rem', fontWeight: 600, lineHeight: 1.4,

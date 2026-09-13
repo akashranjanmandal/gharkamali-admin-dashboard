@@ -285,7 +285,7 @@ export default function CreateInvoicePage() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.3fr) minmax(0, 1fr)', gap: 24, alignItems: 'start' }}>
+      <div className="create-invoice-grid">
         {/* ── FORM ── */}
         <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: 20 }}>
           {/* Type toggle */}
@@ -342,7 +342,7 @@ export default function CreateInvoicePage() {
                 </select>
               </div>
               {productLines.map((l, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) 90px 70px 90px auto', gap: 8, alignItems: 'end', marginBottom: 8 }}>
+                <div key={i} className="invoice-line-grid">
                   <div>
                     {i === 0 && <Label>Item</Label>}
                     <input className="input" value={l.name} readOnly={!!l.product_id}

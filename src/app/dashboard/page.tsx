@@ -100,7 +100,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Charts row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20, marginBottom: 24 }}>
+      <div className="stack-sm" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20, marginBottom: 24 }}>
         {/* Revenue chart */}
         <div className="card">
           <div className="card-header">
@@ -125,7 +125,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Tables row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+      <div className="stack-sm" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
         {/* Recent Bookings */}
         <div className="card">
           <div className="card-header">
