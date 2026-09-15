@@ -8,8 +8,8 @@ import InvoicePreview from '@/components/InvoicePreview';
 import { inclusiveGstSplit, isUPAddress, inr, SELLER } from '@/lib/invoice';
 
 const ADDITIONAL_PLANT_RATE = 25;
-const GST = 1.18;
 const PRODUCT_GST_RATES = [0, 5, 12, 18, 28]; // valid shop GST slabs
+const SERVICE_GST_RATES = [0, 5, 12, 18, 28]; // admin-choosable service slabs (0 = No GST)
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 // One editable line of a product invoice. `product_id` links back to a real
@@ -38,6 +38,7 @@ export default function CreateInvoicePage() {
   // ── Form state ──
   const [invoiceType, setInvoiceType] = useState<'ondemand' | 'plan' | 'products' | 'makeover'>('ondemand');
   const [paymentStatus, setPaymentStatus] = useState<'paid' | 'pending'>('paid');
+  const [gstRate, setGstRate] = useState<number>(18); // service GST slab (0 = No GST)
   const [planId, setPlanId] = useState<string>('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -126,11 +127,11 @@ export default function CreateInvoicePage() {
     }
     const total = overrideTotal && Number(overrideTotal) > 0
       ? Math.round(Number(overrideTotal) * 100) / 100
-      : Math.round(baseSum * GST * 100) / 100;
+      : Math.round(baseSum * (1 + gstRate / 100) * 100) / 100;
     return { lineName, baseSum, total };
-  }, [invoiceType, selectedPlan, selectedZone, plantCount, overrideTotal, makeoverLines]);
+  }, [invoiceType, selectedPlan, selectedZone, plantCount, overrideTotal, makeoverLines, gstRate]);
 
-  const previewLine = { name: computed.lineName || 'Service', amount: inclusiveGstSplit(computed.total).subtotal };
+  const previewLine = { name: computed.lineName || 'Service', amount: inclusiveGstSplit(computed.total, gstRate).subtotal };
   // Makeover preview rows: the admin's pre-GST line amounts as entered. The
   // preview card derives subtotal/GST from `total` (inclusiveGstSplit), so an
   // override quote shows the back-computed split exactly like the PDF will.
@@ -227,6 +228,7 @@ export default function CreateInvoicePage() {
       ? makeoverLines.map((l) => ({ name: l.name.trim(), amount: Number(l.amount) || 0 }))
       : undefined,
     override_total: overrideTotal ? Number(overrideTotal) : undefined,
+    gst_rate: gstRate,
     assign_mode: assignMode,
     gardener_id: assignMode === 'pick' && gardenerId ? Number(gardenerId) : undefined,
     schedule_dates: outcome === 'subscription' ? scheduleDates.filter(Boolean) : undefined,
@@ -315,6 +317,27 @@ export default function CreateInvoicePage() {
               Prints on the invoice PDF. "Unpaid / Pending" also leaves the created booking unpaid.
             </p>
           </div>
+
+          {/* GST slab — admin's choice for service invoices (products set it per line) */}
+          {invoiceType !== 'products' && (
+            <div className="form-group" style={{ marginBottom: 16 }}>
+              <label>GST</label>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {SERVICE_GST_RATES.map((r) => (
+                  <button key={r} type="button" onClick={() => setGstRate(r)}
+                    className={`btn btn-sm ${gstRate === r ? 'btn-primary' : 'btn-outline'}`}
+                    style={{ flex: 1, minWidth: 70 }}>
+                    {r === 0 ? 'No GST' : `${r}%`}
+                  </button>
+                ))}
+              </div>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                {gstRate === 0
+                  ? 'No GST — the invoice prints with 0% tax; amounts are billed as entered.'
+                  : `Amounts are treated as pre-GST and ${gstRate}% is added on top (an override/quoted price is GST-inclusive). Services are normally 18%.`}
+              </p>
+            </div>
+          )}
 
           {invoiceType === 'plan' && (
             <div style={{ marginBottom: 16 }}>
@@ -406,8 +429,8 @@ export default function CreateInvoicePage() {
               ))}
               <button className="btn btn-sm btn-outline" onClick={addCustomMakeoverLine}>+ Custom line</button>
               <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 8, lineHeight: 1.5 }}>
-                Amounts are <strong>excluding GST</strong> — 18% is added on top (service convention).
-                To bill an agreed all-in quote, enter it as the <strong>final quoted price (incl. GST)</strong> below; the pre-GST base is back-computed.
+                Amounts are <strong>excluding GST</strong> — {gstRate === 0 ? 'No GST is added (0% selected above)' : `${gstRate}% is added on top (per the GST choice above)`}.
+                To bill an agreed all-in quote, enter it as the <strong>final quoted price{gstRate === 0 ? '' : ' (incl. GST)'}</strong> below; the pre-GST base is back-computed.
               </p>
             </div>
           )}
@@ -559,6 +582,7 @@ export default function CreateInvoicePage() {
               address={[address, city, stateName].filter(Boolean).join(', ')}
               total={computed.total}
               statusLabel="PREVIEW"
+              gstRate={gstRate}
               lines={invoiceType === 'makeover' ? makeoverPreviewLines : [previewLine]}
             />
           )}

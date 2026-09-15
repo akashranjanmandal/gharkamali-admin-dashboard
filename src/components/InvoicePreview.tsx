@@ -11,14 +11,16 @@ export default function InvoicePreview({
   total,
   lines,
   statusLabel,
+  gstRate = 18,
 }: {
   address?: string | null;
   total: number;
   lines: Line[];
   statusLabel?: string;
+  gstRate?: number; // admin-chosen slab on manual invoices (0 = No GST)
 }) {
   const isUP = isUPAddress(address);
-  const { subtotal, gst, half } = inclusiveGstSplit(total);
+  const { subtotal, gst, half } = inclusiveGstSplit(total, gstRate);
 
   return (
     <div style={{ marginBottom: 24, padding: 16, border: '1px solid var(--border)', borderRadius: 12, background: '#fff' }}>
@@ -44,13 +46,15 @@ export default function InvoicePreview({
             <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>Subtotal (excl. GST)</td>
             <td style={{ textAlign: 'right', fontWeight: 600 }}>{inr(subtotal)}</td>
           </tr>
-          {isUP ? (
+          {gstRate === 0 ? (
+            <tr><td style={{ padding: '4px 0', color: 'var(--forest)' }}>GST @ 0% (No GST)</td><td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--forest)' }}>{inr(0)}</td></tr>
+          ) : isUP ? (
             <>
-              <tr><td style={{ padding: '4px 0', color: 'var(--forest)' }}>SGST @ 9%</td><td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--forest)' }}>{inr(half)}</td></tr>
-              <tr><td style={{ padding: '4px 0', color: 'var(--forest)' }}>CGST @ 9%</td><td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--forest)' }}>{inr(half)}</td></tr>
+              <tr><td style={{ padding: '4px 0', color: 'var(--forest)' }}>SGST @ {gstRate / 2}%</td><td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--forest)' }}>{inr(half)}</td></tr>
+              <tr><td style={{ padding: '4px 0', color: 'var(--forest)' }}>CGST @ {gstRate / 2}%</td><td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--forest)' }}>{inr(half)}</td></tr>
             </>
           ) : (
-            <tr><td style={{ padding: '4px 0', color: 'var(--forest)' }}>IGST @ 18%</td><td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--forest)' }}>{inr(gst)}</td></tr>
+            <tr><td style={{ padding: '4px 0', color: 'var(--forest)' }}>IGST @ {gstRate}%</td><td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--forest)' }}>{inr(gst)}</td></tr>
           )}
           <tr style={{ borderTop: '1px solid var(--border)' }}>
             <td style={{ padding: '8px 0', fontWeight: 800 }}>Total Amount</td>

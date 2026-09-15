@@ -48,6 +48,7 @@ export default function ManualInvoicesPage() {
     Outcome: m.outcome,
     PaymentStatus: m.payment_status || 'paid',
     Subtotal: m.subtotal,
+    GSTRate: m.invoice_type === 'products' ? 'per-line' : `${m.gst_rate ?? 18}%`,
     GST: m.gst_amount,
     Total: m.total_amount,
     CreatedBy: m.creator?.name,

@@ -24,9 +24,10 @@ export function isUPAddress(...parts: (string | null | undefined)[]): boolean {
 export const inr = (n: number) =>
   `₹${Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-// Booking / subscription totals are GST-INCLUSIVE (× 1.18). Returns the split.
-export function inclusiveGstSplit(total: number) {
-  const subtotal = Math.round((total / 1.18) * 100) / 100;
+// Booking / subscription totals are GST-INCLUSIVE (× 1.18 by default). Returns
+// the split. Manual invoices may carry an admin-chosen slab (0 = No GST).
+export function inclusiveGstSplit(total: number, rate: number = 18) {
+  const subtotal = Math.round((total / (1 + rate / 100)) * 100) / 100;
   const gst = Math.round((total - subtotal) * 100) / 100;
   return { subtotal, gst, half: gst / 2 };
 }
