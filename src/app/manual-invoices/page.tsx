@@ -7,7 +7,7 @@ import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 import PeriodFilter, { Period, inPeriod } from '@/components/PeriodFilter';
-import { IconSearch, IconDownload } from '@tabler/icons-react';
+import { IconSearch, IconDownload, IconTrash } from '@tabler/icons-react';
 
 // Permanent register of every manually generated invoice — the record the
 // accounts/CA reconciliation works from. The OFFICIAL number is the GKM
@@ -17,8 +17,9 @@ export default function ManualInvoicesPage() {
   const [page, setPage] = useState(1);
   const [period, setPeriod] = useState<Period>(null);
   const [downloading, setDownloading] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState<number | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-manual-invoices', search, page],
     queryFn: () => AdminAPI.manualInvoices({ search: search || undefined, page, limit: 20 }),
   });
@@ -33,6 +34,26 @@ export default function ManualInvoicesPage() {
     try { await AdminAPI.downloadManualInvoice(m.id); }
     catch { toast.error('Failed to download invoice'); }
     setDownloading(null);
+  };
+
+  // Permanently removes the invoice AND its GKM number. Deleting the latest
+  // invoice frees its number for the next one; deleting an older one leaves a
+  // gap in the series. Any booking/subscription created with it is kept.
+  const remove = async (m: any) => {
+    const label = m.gkm_invoice_number || m.invoice_number;
+    if (!window.confirm(
+      `Delete invoice ${label} for ${m.customer_name} (₹${Number(m.total_amount ?? 0).toLocaleString('en-IN')})?\n\n` +
+      'This permanently removes the invoice and its GKM number. A booking or subscription created with it is NOT deleted.'
+    )) return;
+    setDeleting(m.id);
+    try {
+      const res: any = await AdminAPI.deleteManualInvoice(m.id);
+      toast.success(res?.message || 'Invoice deleted');
+      refetch();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to delete invoice');
+    }
+    setDeleting(null);
   };
 
   const fetchAll = () => fetchAllPages(
@@ -106,9 +127,14 @@ export default function ManualInvoicesPage() {
                       {(m.created_at ?? m.createdAt) ? new Date(m.created_at ?? m.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}
                     </td>
                     <td>
-                      <button className="btn btn-xs btn-outline" disabled={downloading === m.id} onClick={() => download(m)} style={{ gap: 4 }}>
-                        <IconDownload size={13} /> {downloading === m.id ? '…' : 'Invoice'}
-                      </button>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button className="btn btn-xs btn-outline" disabled={downloading === m.id} onClick={() => download(m)} style={{ gap: 4 }}>
+                          <IconDownload size={13} /> {downloading === m.id ? '…' : 'Invoice'}
+                        </button>
+                        <button className="btn btn-xs btn-danger" disabled={deleting === m.id} onClick={() => remove(m)} style={{ gap: 4 }} title="Delete invoice">
+                          <IconTrash size={13} /> {deleting === m.id ? '…' : 'Delete'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
