@@ -73,7 +73,7 @@ export default function ManualInvoicesPage() {
     GST: m.gst_amount,
     Total: m.total_amount,
     CreatedBy: m.creator?.name,
-    Date: m.created_at ?? m.createdAt,
+    Date: m.invoice_date ?? m.created_at ?? m.createdAt,
   });
 
   const typeBadge: Record<string, string> = { ondemand: 'badge-blue', plan: 'badge-green', products: 'badge-gold', makeover: 'badge-forest' };
@@ -124,7 +124,7 @@ export default function ManualInvoicesPage() {
                     <td style={{ fontWeight: 700 }}>₹{Number(m.total_amount ?? 0).toLocaleString('en-IN')}</td>
                     <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{m.creator?.name || '—'}</td>
                     <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                      {(m.created_at ?? m.createdAt) ? new Date(m.created_at ?? m.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}
+                      {(m.invoice_date ?? m.created_at ?? m.createdAt) ? new Date(m.invoice_date ?? m.created_at ?? m.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: 6 }}>

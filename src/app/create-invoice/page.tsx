@@ -39,6 +39,7 @@ export default function CreateInvoicePage() {
   const [invoiceType, setInvoiceType] = useState<'ondemand' | 'plan' | 'products' | 'makeover'>('ondemand');
   const [paymentStatus, setPaymentStatus] = useState<'paid' | 'pending'>('paid');
   const [gstRate, setGstRate] = useState<number>(18); // service GST slab (0 = No GST)
+  const [invoiceDate, setInvoiceDate] = useState(''); // '' = today (printed invoice date)
   const [planId, setPlanId] = useState<string>('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -192,6 +193,7 @@ export default function CreateInvoicePage() {
     state: stateName || undefined,
     pincode: pincode || undefined,
     notes: notes || undefined,
+    invoice_date: invoiceDate || undefined,
     line_items: productLines.map((l) => {
       const p = l.product_id ? shopProducts.find((x) => x.id === l.product_id) : null;
       const priceUnchanged = p && Number(l.price) === (Number(p.price) || 0);
@@ -219,6 +221,7 @@ export default function CreateInvoicePage() {
     pincode: pincode || undefined,
     scheduled_date: scheduledDate || undefined,
     scheduled_time: scheduledTime || undefined,
+    invoice_date: invoiceDate || undefined,
     plant_count: parseInt(plantCount) || 0,
     notes: notes || undefined,
     zone_id: zoneId ? Number(zoneId) : undefined,
@@ -242,6 +245,7 @@ export default function CreateInvoicePage() {
     if (phoneInvalid) { toast.error('Phone number must be exactly 10 digits'); return; }
     if (emailInvalid) { toast.error('Enter a valid email address'); return; }
     if (scheduledDate && scheduledDate > today) { toast.error('Service date cannot be in the future'); return; }
+    if (invoiceDate && invoiceDate > today) { toast.error('Invoice date cannot be in the future'); return; }
     if (outcome === 'subscription' && !planId) { toast.error('Select a plan for a subscription'); return; }
     if (invoiceType === 'products') {
       if (!productLines.length) { toast.error('Add at least one product line'); return; }
@@ -338,6 +342,16 @@ export default function CreateInvoicePage() {
               </p>
             </div>
           )}
+
+          {/* Invoice date — what prints on the PDF; backdating allowed, future not */}
+          <div className="form-group" style={{ marginBottom: 16, maxWidth: 260 }}>
+            <label>Invoice Date</label>
+            <input className="input" type="date" max={today} value={invoiceDate}
+              onChange={(e) => setInvoiceDate(e.target.value)} />
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
+              Prints as the invoice date on the PDF and shows in Invoice History. Leave empty for today.
+            </p>
+          </div>
 
           {invoiceType === 'plan' && (
             <div style={{ marginBottom: 16 }}>
