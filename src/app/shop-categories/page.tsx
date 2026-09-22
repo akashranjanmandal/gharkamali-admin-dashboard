@@ -54,7 +54,7 @@ export default function AdminShopCategoriesPage() {
           <h1 className="page-title" style={{ marginBottom: 4 }}>Shop Categories</h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Manage product classification and display icons</p>
         </div>
-        <button onClick={() => { setForm({ name: '', slug: '', icon: '🌿', is_active: true }); setModal({ new: true }); }} className="btn btn-primary" style={{ height: 44 }}>+ Add Category</button>
+        <button onClick={() => { setForm({ name: '', slug: '', icon: '🌿', is_active: true, gst_rate: '' }); setModal({ new: true }); }} className="btn btn-primary" style={{ height: 44 }}>+ Add Category</button>
       </div>
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -65,6 +65,7 @@ export default function AdminShopCategoriesPage() {
               <th>Image</th>
               <th>Category Name</th>
               <th>Slug</th>
+              <th>GST</th>
               <th>Status</th>
               <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
@@ -73,13 +74,13 @@ export default function AdminShopCategoriesPage() {
             {isLoading ? (
               Array(3).fill(0).map((_, i) => (
                 <tr key={i}>
-                  {Array(6).fill(0).map((_, j) => (
+                  {Array(7).fill(0).map((_, j) => (
                     <td key={j}><div className="skeleton" style={{ height: 20, width: '80%' }} /></td>
                   ))}
                 </tr>
               ))
             ) : list.length === 0 ? (
-              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>No categories found.</td></tr>
+              <tr><td colSpan={7} style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>No categories found.</td></tr>
             ) : list.map((c: any) => (
               <tr key={c.id}>
                 <td style={{ fontSize: '1.5rem' }}>{c.icon}</td>
@@ -92,10 +93,15 @@ export default function AdminShopCategoriesPage() {
                 </td>
                 <td style={{ fontWeight: 700, color: 'var(--text)' }}>{c.name}</td>
                 <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{c.slug}</td>
+                <td>
+                  {c.gst_rate != null
+                    ? <span className="badge badge-forest">{c.gst_rate}%</span>
+                    : <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Per-product</span>}
+                </td>
                 <td><span className={`badge ${c.is_active ? 'badge-forest' : 'badge-gold'}`}>{c.is_active ? 'Active' : 'Inactive'}</span></td>
                 <td style={{ textAlign: 'right' }}>
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                    <button onClick={() => { setForm({ ...c }); setModal(c); }} className="btn btn-sm btn-ghost" style={{ padding: '6px 12px' }}>Edit</button>
+                    <button onClick={() => { setForm({ ...c, gst_rate: c.gst_rate ?? '' }); setModal(c); }} className="btn btn-sm btn-ghost" style={{ padding: '6px 12px' }}>Edit</button>
                     <button onClick={() => window.confirm('Deactivate Category?') && deleteMut.mutate(c.id)} className="btn btn-sm btn-danger-ghost" style={{ padding: '6px' }}>Delete</button>
                   </div>
                 </td>
@@ -120,6 +126,20 @@ export default function AdminShopCategoriesPage() {
               <div className="form-group">
                 <label>Slug (used in URL)</label>
                 <input className="input" value={form.slug || ''} onChange={e => f('slug', e.target.value)} placeholder="e.g. fertilizers" />
+              </div>
+              <div className="form-group">
+                <label>Category GST (%)</label>
+                <select className="input" value={form.gst_rate ?? ''} onChange={e => f('gst_rate', e.target.value)}>
+                  <option value="">Per-product (each product keeps its own rate)</option>
+                  <option value="0">0% — No GST (e.g. Plants)</option>
+                  <option value="5">5%</option>
+                  <option value="12">12%</option>
+                  <option value="18">18% (e.g. Pots)</option>
+                  <option value="28">28%</option>
+                </select>
+                <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                  When set, this rate applies to EVERY product in this category — it overrides each product&apos;s own GST dropdown.
+                </p>
               </div>
               <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>

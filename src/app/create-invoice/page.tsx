@@ -156,9 +156,11 @@ export default function CreateInvoicePage() {
   const addProductLine = (productId: string) => {
     const p = shopProducts.find((x) => String(x.id) === productId);
     if (!p) return;
+    // Category GST overrides the product's own rate when set (Plants 0%, Pots 18%).
+    const rate = p.category?.gst_rate != null ? Number(p.category.gst_rate) : Number(p.gst_rate);
     setProductLines((prev) => [...prev, {
       product_id: p.id, name: p.name, price: String(p.price ?? ''), qty: '1',
-      gst_rate: PRODUCT_GST_RATES.includes(Number(p.gst_rate)) ? Number(p.gst_rate) : 0,
+      gst_rate: PRODUCT_GST_RATES.includes(rate) ? rate : 0,
     }]);
   };
   const addCustomLine = () => setProductLines((prev) => [...prev, { name: '', price: '', qty: '1', gst_rate: 18 }]);
