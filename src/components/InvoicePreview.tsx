@@ -12,14 +12,16 @@ export default function InvoicePreview({
   lines,
   statusLabel,
   gstRate = 18,
+  intra,
 }: {
   address?: string | null;
   total: number;
   lines: Line[];
   statusLabel?: string;
   gstRate?: number; // admin-chosen slab on manual invoices (0 = No GST)
+  intra?: boolean;  // explicit CGST+SGST (true) / IGST (false); undefined = detect from address
 }) {
-  const isUP = isUPAddress(address);
+  const isUP = intra ?? isUPAddress(address);
   const { subtotal, gst, half } = inclusiveGstSplit(total, gstRate);
 
   return (

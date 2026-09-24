@@ -40,6 +40,7 @@ export default function CreateInvoicePage() {
   const [paymentStatus, setPaymentStatus] = useState<'paid' | 'pending'>('paid');
   const [gstRate, setGstRate] = useState<number>(18); // service GST slab (0 = No GST)
   const [invoiceDate, setInvoiceDate] = useState(''); // '' = today (printed invoice date)
+  const [taxType, setTaxType] = useState<'auto' | 'cgst_sgst' | 'igst'>('auto'); // GST split
   const [planId, setPlanId] = useState<string>('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -196,6 +197,7 @@ export default function CreateInvoicePage() {
     pincode: pincode || undefined,
     notes: notes || undefined,
     invoice_date: invoiceDate || undefined,
+    tax_type: taxType,
     line_items: productLines.map((l) => {
       const p = l.product_id ? shopProducts.find((x) => x.id === l.product_id) : null;
       const priceUnchanged = p && Number(l.price) === (Number(p.price) || 0);
@@ -234,6 +236,7 @@ export default function CreateInvoicePage() {
       : undefined,
     override_total: overrideTotal ? Number(overrideTotal) : undefined,
     gst_rate: gstRate,
+    tax_type: taxType,
     assign_mode: assignMode,
     gardener_id: assignMode === 'pick' && gardenerId ? Number(gardenerId) : undefined,
     schedule_dates: outcome === 'subscription' ? scheduleDates.filter(Boolean) : undefined,
@@ -344,6 +347,23 @@ export default function CreateInvoicePage() {
               </p>
             </div>
           )}
+
+          {/* Tax split — CGST+SGST within UP, IGST outside (company registered in UP) */}
+          <div className="form-group" style={{ marginBottom: 16 }}>
+            <label>Tax Split</label>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {([['auto', 'Auto (from address)'], ['cgst_sgst', 'CGST + SGST (within UP)'], ['igst', 'IGST (outside UP)']] as const).map(([v, label]) => (
+                <button key={v} type="button" onClick={() => setTaxType(v)}
+                  className={`btn btn-sm ${taxType === v ? 'btn-primary' : 'btn-outline'}`}
+                  style={{ flex: 1, minWidth: 120 }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
+              Company is GST-registered in Uttar Pradesh — service/delivery outside UP must be billed as IGST. Auto detects from the address; pick manually to override.
+            </p>
+          </div>
 
           {/* Invoice date — what prints on the PDF; backdating allowed, future not */}
           <div className="form-group" style={{ marginBottom: 16, maxWidth: 260 }}>
@@ -548,7 +568,8 @@ export default function CreateInvoicePage() {
             // product invoices (exclusive prices, mixed per-line rates) get their
             // own totals card with the same look.
             (() => {
-              const isUP = isUPAddress([address, city, stateName].filter(Boolean).join(', '));
+              const isUP = taxType === 'cgst_sgst' ? true : taxType === 'igst' ? false
+                : isUPAddress([address, city, stateName].filter(Boolean).join(', '));
               return (
                 <div style={{ marginBottom: 24, padding: 16, border: '1px solid var(--border)', borderRadius: 12, background: '#fff' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -599,6 +620,7 @@ export default function CreateInvoicePage() {
               total={computed.total}
               statusLabel="PREVIEW"
               gstRate={gstRate}
+              intra={taxType === 'cgst_sgst' ? true : taxType === 'igst' ? false : undefined}
               lines={invoiceType === 'makeover' ? makeoverPreviewLines : [previewLine]}
             />
           )}
