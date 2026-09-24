@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI, downloadFile, getServiceDetails } from '@/lib/api';
@@ -61,6 +61,17 @@ export default function CreateInvoicePage() {
   const [productLines, setProductLines] = useState<ProductLine[]>([]);
   const [makeoverLines, setMakeoverLines] = useState<MakeoverLine[]>([]);
   const [submitting, setSubmitting] = useState<string | null>(null);
+  const qc = useQueryClient();
+
+  // Blank the form for the next invoice (keeps the selected invoice type).
+  const resetForm = () => {
+    setPaymentStatus('paid'); setGstRate(18); setInvoiceDate(''); setTaxType('auto');
+    setPlanId(''); setCustomerName(''); setCustomerPhone(''); setCustomerEmail('');
+    setAddress(''); setCity(''); setStateName(''); setPincode('');
+    setScheduledDate(''); setScheduledTime(''); setPlantCount(''); setNotes('');
+    setZoneId(''); setAssignMode('none'); setGardenerId(''); setOverrideTotal('');
+    setScheduleDates([]); setProductLines([]); setMakeoverLines([]);
+  };
 
   // ── Data ──
   const { data: plansData } = useQuery({ queryKey: ['admin-plans'], queryFn: AdminAPI.plans });
@@ -277,6 +288,10 @@ export default function CreateInvoicePage() {
       if (res?.invoice_id) {
         await downloadFile(`/admin/manual-invoices/${res.invoice_id}/invoice`, `invoice-${res.invoice_number || res.invoice_id}.pdf`);
       }
+      // Invoice History picks up the new invoice next time it renders, and the
+      // form clears for the next customer (invoice type stays selected).
+      qc.invalidateQueries({ queryKey: ['admin-manual-invoices'] });
+      resetForm();
     } catch (e: any) {
       toast.error(e.message || 'Failed to create invoice');
     }
