@@ -44,6 +44,9 @@ export default function AdminBookingsPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [gardenerId, setGardenerId] = useState('');
   const [reason, setReason] = useState('');
+  const [fixModal, setFixModal] = useState<any>(null); // booking whose status is being corrected
+  const [fixStatus, setFixStatus] = useState('');
+  const [fixReason, setFixReason] = useState('');
   const [downloadingInvoice, setDownloadingInvoice] = useState(false);
   const ctl = useTableControls(COLS);
 
@@ -105,6 +108,12 @@ export default function AdminBookingsPage() {
   const reassignMut = useMutation({
     mutationFn: () => AdminAPI.reassignBooking(reassignModal.id, parseInt(gardenerId), reason),
     onSuccess: () => { toast.success('Booking reassigned'); setReassignModal(null); setGardenerId(''); setReason(''); qc.invalidateQueries({ queryKey: ['admin-bookings'] }); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const fixMut = useMutation({
+    mutationFn: () => AdminAPI.correctBookingStatus(fixModal.id, fixStatus, fixReason),
+    onSuccess: (res: any) => { toast.success(res?.message || 'Status corrected'); setFixModal(null); setFixStatus(''); setFixReason(''); qc.invalidateQueries({ queryKey: ['admin-bookings'] }); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -174,6 +183,7 @@ export default function AdminBookingsPage() {
                       {!['completed', 'cancelled', 'failed'].includes(b.status) && (
                         <button onClick={(e) => { e.stopPropagation(); setReassignModal(b); }} className="btn btn-xs btn-outline">Reassign</button>
                       )}
+                      <button onClick={(e) => { e.stopPropagation(); setFixStatus(''); setFixReason(''); setFixModal(b); }} className="btn btn-xs btn-ghost" title="Correct a wrongly-set status">Fix Status</button>
                     </td>
                   </tr>
                 ))}
@@ -186,6 +196,46 @@ export default function AdminBookingsPage() {
           <button onClick={()=>setPage(p=>Math.min(pages,p+1))} disabled={page===pages} className="btn btn-sm btn-ghost">Next →</button>
         </div>}
       </div>
+
+      {/* Fix Status Modal — admin correction of a wrongly-set status */}
+      {fixModal && (
+        <div className="modal-overlay" onClick={() => setFixModal(null)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 440 }}>
+            <div className="modal-header">
+              <h3>Fix Status — {fixModal.booking_number}</h3>
+              <button className="modal-close" onClick={() => setFixModal(null)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 12 }}>
+                Current status: <span className="badge badge-red">{String(fixModal.status).replace(/_/g, ' ')}</span>
+                {fixModal.gardener?.name && <> · Gardener: <strong>{fixModal.gardener.name}</strong></>}
+              </p>
+              <div className="form-group">
+                <label>Correct status to</label>
+                <select className="input" value={fixStatus} onChange={(e) => setFixStatus(e.target.value)}>
+                  <option value="">Select status…</option>
+                  {['pending', 'assigned', 'en_route', 'arrived', 'in_progress', 'completed', 'cancelled', 'failed']
+                    .filter((s) => s !== fixModal.status)
+                    .map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Reason (goes in the activity log)</label>
+                <input className="input" value={fixReason} onChange={(e) => setFixReason(e.target.value)} placeholder="e.g. marked failed by mistake" />
+              </div>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                The correction is written to the booking&apos;s activity log. Restoring an active status re-notifies the assigned gardener.
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={() => setFixModal(null)}>Cancel</button>
+              <button className="btn btn-primary" disabled={!fixStatus || fixMut.isPending} onClick={() => fixMut.mutate()}>
+                {fixMut.isPending ? 'Saving…' : 'Correct Status'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reassign Modal */}
       {reassignModal && (

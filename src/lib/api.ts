@@ -255,6 +255,12 @@ export const AdminAPI = {
       method: 'PATCH',
       body: JSON.stringify({ gardener_id, ...(reason ? { reason } : {}) }),
     }),
+  // Admin correction of a wrong status (can reopen closed bookings) — logged.
+  correctBookingStatus: (id: number, status: string, reason?: string) =>
+    req(`/admin/bookings/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, ...(reason ? { reason } : {}) }),
+    }),
 
   subscriptions: (p?: any) => req(`/admin/subscriptions${qs(p)}`),
 
