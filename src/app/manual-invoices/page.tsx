@@ -93,21 +93,32 @@ export default function ManualInvoicesPage() {
     (p, limit) => AdminAPI.manualInvoices({ page: p, limit }),
     (res: any) => res?.items || [],
   );
-  const mapExportRow = (m: any) => ({
-    InvoiceNumber: m.gkm_invoice_number || '—',
-    Reference: m.invoice_number,
-    Customer: m.customer_name,
-    Phone: m.customer_phone,
-    Type: m.invoice_type,
-    Outcome: m.outcome,
-    PaymentStatus: m.payment_status || 'paid',
-    Subtotal: m.subtotal,
-    GSTRate: m.invoice_type === 'products' ? 'per-line' : `${m.gst_rate ?? 18}%`,
-    GST: m.gst_amount,
-    Total: m.total_amount,
-    CreatedBy: m.creator?.name,
-    Date: m.invoice_date ?? m.created_at ?? m.createdAt,
-  });
+  const mapExportRow = (m: any) => {
+    // Split the GST the way it was billed: within UP → CGST+SGST halves,
+    // outside → all IGST. Same convention as the PDF.
+    const gst = Number(m.gst_amount) || 0;
+    const half = Math.round((gst / 2) * 100) / 100;
+    return {
+      InvoiceNumber: m.gkm_invoice_number || '—',
+      Reference: m.invoice_number,
+      Customer: m.customer_name,
+      Phone: m.customer_phone,
+      Type: m.invoice_type,
+      Outcome: m.outcome,
+      PaymentStatus: m.payment_status || 'paid',
+      State: m.state || '',
+      GSTType: m.is_up ? 'CGST+SGST (Within State)' : 'IGST (Outside State)',
+      Subtotal: m.subtotal,
+      GSTRate: m.invoice_type === 'products' ? 'per-line' : `${m.gst_rate ?? 18}%`,
+      CGST: m.is_up ? half : 0,
+      SGST: m.is_up ? Math.round((gst - half) * 100) / 100 : 0,
+      IGST: m.is_up ? 0 : gst,
+      GST: m.gst_amount,
+      Total: m.total_amount,
+      CreatedBy: m.creator?.name,
+      Date: m.invoice_date ?? m.created_at ?? m.createdAt,
+    };
+  };
 
   const typeBadge: Record<string, string> = { ondemand: 'badge-blue', plan: 'badge-green', products: 'badge-gold', makeover: 'badge-forest' };
   const typeLabel: Record<string, string> = { ondemand: 'On-Demand', plan: 'Plan', products: 'Products', makeover: 'Green Makeover' };
