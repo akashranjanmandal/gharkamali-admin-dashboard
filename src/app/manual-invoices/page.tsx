@@ -7,7 +7,7 @@ import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 import PeriodFilter, { Period, inPeriod } from '@/components/PeriodFilter';
-import { IconSearch, IconDownload, IconTrash } from '@tabler/icons-react';
+import { IconSearch, IconDownload, IconTrash, IconPencil } from '@tabler/icons-react';
 
 // Permanent register of every manually generated invoice — the record the
 // accounts/CA reconciliation works from. The OFFICIAL number is the GKM
@@ -18,6 +18,9 @@ export default function ManualInvoicesPage() {
   const [period, setPeriod] = useState<Period>(null);
   const [downloading, setDownloading] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
+  const [editModal, setEditModal] = useState<any>(null); // invoice being corrected
+  const [editForm, setEditForm] = useState<any>({});
+  const [saving, setSaving] = useState(false);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-manual-invoices', search, page],
@@ -54,6 +57,36 @@ export default function ManualInvoicesPage() {
       toast.error(e.message || 'Failed to delete invoice');
     }
     setDeleting(null);
+  };
+
+  const openEdit = (m: any) => {
+    setEditForm({
+      customer_name: m.customer_name || '',
+      customer_phone: m.customer_phone || '',
+      service_address: m.service_address || '',
+      city: m.city || '',
+      state: m.state || '',
+      pincode: m.pincode || '',
+      // DATEONLY comes back as YYYY-MM-DD; fall back to the creation date.
+      invoice_date: m.invoice_date || String(m.created_at ?? m.createdAt ?? '').slice(0, 10),
+      tax_type: m.is_up ? 'cgst_sgst' : 'igst',
+    });
+    setEditModal(m);
+  };
+  const ef = (k: string, v: any) => setEditForm((p: any) => ({ ...p, [k]: v }));
+
+  const saveEdit = async () => {
+    if (!String(editForm.customer_name).trim()) { toast.error('Customer name cannot be empty'); return; }
+    setSaving(true);
+    try {
+      const res: any = await AdminAPI.updateManualInvoice(editModal.id, editForm);
+      toast.success(res?.message || 'Invoice updated');
+      setEditModal(null);
+      refetch();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to update invoice');
+    }
+    setSaving(false);
   };
 
   const fetchAll = () => fetchAllPages(
@@ -131,6 +164,9 @@ export default function ManualInvoicesPage() {
                         <button className="btn btn-xs btn-outline" disabled={downloading === m.id} onClick={() => download(m)} style={{ gap: 4 }}>
                           <IconDownload size={13} /> {downloading === m.id ? '…' : 'Invoice'}
                         </button>
+                        <button className="btn btn-xs btn-ghost" onClick={() => openEdit(m)} style={{ gap: 4 }} title="Correct name / address / date">
+                          <IconPencil size={13} /> Edit
+                        </button>
                         <button className="btn btn-xs btn-danger" disabled={deleting === m.id} onClick={() => remove(m)} style={{ gap: 4 }} title="Delete invoice">
                           <IconTrash size={13} /> {deleting === m.id ? '…' : 'Delete'}
                         </button>
@@ -147,6 +183,72 @@ export default function ManualInvoicesPage() {
           <button onClick={() => setPage((p) => Math.min(pages, p + 1))} disabled={page === pages} className="btn btn-sm btn-ghost">Next →</button>
         </div>}
       </div>
+
+      {/* Edit Modal — corrections only; amounts and the GKM number stay frozen */}
+      {editModal && (
+        <div className="modal-overlay" onClick={() => setEditModal(null)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
+            <div className="modal-header">
+              <h3>Edit — {editModal.gkm_invoice_number || editModal.invoice_number}</h3>
+              <button className="modal-close" onClick={() => setEditModal(null)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label>Customer Name *</label>
+                  <input className="input" value={editForm.customer_name} onChange={(e) => ef('customer_name', e.target.value)} />
+                </div>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label>Phone</label>
+                  <input className="input" type="tel" inputMode="numeric" maxLength={10} value={editForm.customer_phone}
+                    onChange={(e) => ef('customer_phone', e.target.value.replace(/\D/g, '').slice(0, 10))} />
+                </div>
+              </div>
+              <div className="form-group" style={{ marginBottom: 12 }}>
+                <label>Address</label>
+                <input className="input" value={editForm.service_address} onChange={(e) => ef('service_address', e.target.value)} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label>City</label>
+                  <input className="input" value={editForm.city} onChange={(e) => ef('city', e.target.value)} />
+                </div>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label>State</label>
+                  <input className="input" value={editForm.state} onChange={(e) => ef('state', e.target.value)} />
+                </div>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label>Pincode</label>
+                  <input className="input" inputMode="numeric" maxLength={6} value={editForm.pincode}
+                    onChange={(e) => ef('pincode', e.target.value.replace(/\D/g, '').slice(0, 6))} />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label>Invoice Date</label>
+                  <input className="input" type="date" max={new Date().toISOString().slice(0, 10)} value={editForm.invoice_date}
+                    onChange={(e) => ef('invoice_date', e.target.value)} />
+                </div>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label>Tax Split</label>
+                  <select className="input" value={editForm.tax_type} onChange={(e) => ef('tax_type', e.target.value)}>
+                    <option value="cgst_sgst">CGST + SGST (within UP)</option>
+                    <option value="igst">IGST (outside UP)</option>
+                    <option value="auto">Auto (re-detect from address)</option>
+                  </select>
+                </div>
+              </div>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                Amounts, GST rate and the invoice number cannot be changed — delete and recreate the invoice for those. Re-download the PDF after saving to get the corrected copy.
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={() => setEditModal(null)}>Cancel</button>
+              <button className="btn btn-primary" disabled={saving} onClick={saveEdit}>{saving ? 'Saving…' : 'Save Changes'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }
