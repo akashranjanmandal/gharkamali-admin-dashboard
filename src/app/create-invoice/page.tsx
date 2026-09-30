@@ -45,6 +45,7 @@ export default function CreateInvoicePage() {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
+  const [customerGstin, setCustomerGstin] = useState(''); // optional B2B GSTIN
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [stateName, setStateName] = useState('');
@@ -66,7 +67,7 @@ export default function CreateInvoicePage() {
   // Blank the form for the next invoice (keeps the selected invoice type).
   const resetForm = () => {
     setPaymentStatus('paid'); setGstRate(18); setInvoiceDate(''); setTaxType('auto');
-    setPlanId(''); setCustomerName(''); setCustomerPhone(''); setCustomerEmail('');
+    setPlanId(''); setCustomerName(''); setCustomerPhone(''); setCustomerEmail(''); setCustomerGstin('');
     setAddress(''); setCity(''); setStateName(''); setPincode('');
     setScheduledDate(''); setScheduledTime(''); setPlantCount(''); setNotes('');
     setZoneId(''); setAssignMode('none'); setGardenerId(''); setOverrideTotal('');
@@ -102,6 +103,8 @@ export default function CreateInvoicePage() {
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   const phoneInvalid = customerPhone !== '' && customerPhone.length !== 10;
   const emailInvalid = customerEmail !== '' && !EMAIL_RE.test(customerEmail);
+  const GSTIN_RE = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]Z[0-9A-Z]$/;
+  const gstinInvalid = customerGstin !== '' && !GSTIN_RE.test(customerGstin.toUpperCase());
 
   // Pincode → auto-fill City & State via India Post API (only when both are empty; silent on failure).
   useEffect(() => {
@@ -202,6 +205,7 @@ export default function CreateInvoicePage() {
     customer_name: customerName,
     customer_phone: customerPhone || undefined,
     customer_email: customerEmail || undefined,
+    customer_gstin: customerGstin || undefined,
     service_address: address || undefined,
     city: city || undefined,
     state: stateName || undefined,
@@ -230,6 +234,7 @@ export default function CreateInvoicePage() {
     customer_name: customerName,
     customer_phone: customerPhone || undefined,
     customer_email: customerEmail || undefined,
+    customer_gstin: customerGstin || undefined,
     service_address: address || undefined,
     city: city || undefined,
     state: stateName || undefined,
@@ -260,6 +265,7 @@ export default function CreateInvoicePage() {
     }
     if (phoneInvalid) { toast.error('Phone number must be exactly 10 digits'); return; }
     if (emailInvalid) { toast.error('Enter a valid email address'); return; }
+    if (gstinInvalid) { toast.error('Enter a valid 15-character GSTIN'); return; }
     if (scheduledDate && scheduledDate > today) { toast.error('Service date cannot be in the future'); return; }
     if (invoiceDate && invoiceDate > today) { toast.error('Invoice date cannot be in the future'); return; }
     if (outcome === 'subscription' && !planId) { toast.error('Select a plan for a subscription'); return; }
@@ -494,10 +500,17 @@ export default function CreateInvoicePage() {
               <input className={`input${phoneInvalid ? ' error' : ''}`} type="tel" inputMode="numeric" maxLength={10} value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit phone" />
               {phoneInvalid && <div style={{ color: 'var(--error)', fontSize: '0.72rem', marginTop: 4 }}>Phone number must be exactly 10 digits</div>}
             </div>
-            <div style={{ gridColumn: '1 / -1' }}>
+            <div>
               <Label>Email</Label>
               <input className={`input${emailInvalid ? ' error' : ''}`} type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} placeholder="Optional" />
               {emailInvalid && <div style={{ color: 'var(--error)', fontSize: '0.72rem', marginTop: 4 }}>Enter a valid email address</div>}
+            </div>
+            <div>
+              <Label>Customer GSTIN (for B2B input credit)</Label>
+              <input className={`input${gstinInvalid ? ' error' : ''}`} maxLength={15} value={customerGstin}
+                onChange={(e) => setCustomerGstin(e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, ''))}
+                placeholder="Optional — e.g. 09AAQCP7633P1ZD" style={{ fontFamily: 'monospace' }} />
+              {gstinInvalid && <div style={{ color: 'var(--error)', fontSize: '0.72rem', marginTop: 4 }}>Enter a valid 15-character GSTIN</div>}
             </div>
           </div>
 

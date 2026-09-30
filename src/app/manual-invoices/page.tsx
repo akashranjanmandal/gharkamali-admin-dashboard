@@ -63,6 +63,7 @@ export default function ManualInvoicesPage() {
     setEditForm({
       customer_name: m.customer_name || '',
       customer_phone: m.customer_phone || '',
+      customer_gstin: m.customer_gstin || '',
       service_address: m.service_address || '',
       city: m.city || '',
       state: m.state || '',
@@ -103,6 +104,7 @@ export default function ManualInvoicesPage() {
       Reference: m.invoice_number,
       Customer: m.customer_name,
       Phone: m.customer_phone,
+      CustomerGSTIN: m.customer_gstin || '',
       Type: m.invoice_type,
       Outcome: m.outcome,
       PaymentStatus: m.payment_status || 'paid',
@@ -214,6 +216,11 @@ export default function ManualInvoicesPage() {
                   <input className="input" type="tel" inputMode="numeric" maxLength={10} value={editForm.customer_phone}
                     onChange={(e) => ef('customer_phone', e.target.value.replace(/\D/g, '').slice(0, 10))} />
                 </div>
+              </div>
+              <div className="form-group" style={{ marginBottom: 12 }}>
+                <label>Customer GSTIN (B2B input credit — blank for none)</label>
+                <input className="input" maxLength={15} value={editForm.customer_gstin} style={{ fontFamily: 'monospace' }}
+                  onChange={(e) => ef('customer_gstin', e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, ''))} />
               </div>
               <div className="form-group" style={{ marginBottom: 12 }}>
                 <label>Address</label>
