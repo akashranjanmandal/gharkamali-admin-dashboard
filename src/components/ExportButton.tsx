@@ -16,13 +16,17 @@ interface Props {
   /** Fetch EVERY row (use fetchAllPages from lib/utils for paginated APIs). */
   fetchAll: () => Promise<any[]>;
   /** Shape one raw row into the CSV columns. */
-  mapRow: (row: any) => Record<string, any>;
+  mapRow?: (row: any) => Record<string, any>;
+  /** Alternative to mapRow: transform ALL filtered rows at once — lets a page
+   *  expand one record into several sheet rows (e.g. per-line GST splits) and
+   *  control the final row order (grouping). */
+  mapRows?: (rows: any[]) => Record<string, any>[];
   /** Row field holding the record date (default created_at / createdAt). */
   dateField?: string;
   label?: string;
 }
 
-export default function ExportButton({ filename, fetchAll, mapRow, dateField = 'created_at', label = 'Export CSV' }: Props) {
+export default function ExportButton({ filename, fetchAll, mapRow, mapRows, dateField = 'created_at', label = 'Export CSV' }: Props) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   // Excel by default (what the team opens these in); CSV still available.
@@ -56,8 +60,9 @@ export default function ExportButton({ filename, fetchAll, mapRow, dateField = '
     try {
       const rows = (await fetchAll()).filter(r => filter(rowDate(r)));
       if (!rows.length) { toast.error('No records in the selected period', { id: t }); return; }
-      (format === 'xlsx' ? exportToXLSX : exportToCSV)(rows.map(mapRow), `${filename}_${suffix}`);
-      toast.success(`Exported ${rows.length} record${rows.length === 1 ? '' : 's'}`, { id: t });
+      const sheet = mapRows ? mapRows(rows) : rows.map(mapRow!);
+      (format === 'xlsx' ? exportToXLSX : exportToCSV)(sheet, `${filename}_${suffix}`);
+      toast.success(`Exported ${rows.length} record${rows.length === 1 ? '' : 's'} (${sheet.length} row${sheet.length === 1 ? '' : 's'})`, { id: t });
     } catch (e: any) {
       toast.error(e?.message || 'Export failed', { id: t });
     } finally {

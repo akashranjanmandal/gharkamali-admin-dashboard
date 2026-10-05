@@ -94,33 +94,92 @@ export default function ManualInvoicesPage() {
     (p, limit) => AdminAPI.manualInvoices({ page: p, limit }),
     (res: any) => res?.items || [],
   );
-  const mapExportRow = (m: any) => {
-    // Split the GST the way it was billed: within UP → CGST+SGST halves,
-    // outside → all IGST. Same convention as the PDF.
-    const gst = Number(m.gst_amount) || 0;
-    const half = Math.round((gst / 2) * 100) / 100;
-    return {
-      InvoiceNumber: m.gkm_invoice_number || '—',
-      Reference: m.invoice_number,
-      Customer: m.customer_name,
-      Phone: m.customer_phone,
-      CustomerGSTIN: m.customer_gstin || '',
-      Type: m.invoice_type,
-      Outcome: m.outcome,
-      PaymentStatus: m.payment_status || 'paid',
-      State: m.state || '',
-      GSTType: m.is_up ? 'CGST+SGST (Within State)' : 'IGST (Outside State)',
-      Subtotal: m.subtotal,
-      GSTRate: m.invoice_type === 'products' ? 'per-line' : `${m.gst_rate ?? 18}%`,
-      CGST: m.is_up ? half : 0,
-      SGST: m.is_up ? Math.round((gst - half) * 100) / 100 : 0,
-      IGST: m.is_up ? 0 : gst,
-      GST: m.gst_amount,
-      Total: m.total_amount,
-      CreatedBy: m.creator?.name,
-      Date: m.invoice_date ?? m.created_at ?? m.createdAt,
-    };
+  // ── Export: ONE ROW PER LINE ITEM ──
+  // An invoice with mixed-GST products becomes several rows sharing the same
+  // invoice number, each carrying that line's GST-inclusive share of the bill
+  // and its own CGST/SGST/IGST split. Rows are then GROUPED by GST type.
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  const gstCategory = (rate: number, isUp: boolean) =>
+    rate === 0 ? 'No GST (0%)' : isUp ? 'CGST+SGST (Within State)' : 'IGST (Outside State)';
+  const GROUP_ORDER = ['CGST+SGST (Within State)', 'IGST (Outside State)', 'No GST (0%)'];
+
+  const expandInvoice = (m: any): any[] => {
+    const isUp = !!m.is_up;
+    const lines: any[] = Array.isArray(m.line_items) ? m.line_items : [];
+    const rows: any[] = [];
+
+    if (m.invoice_type === 'products') {
+      // Shop convention: GST-EXCLUSIVE unit prices, per-line rates on top.
+      for (const l of lines) {
+        const rate = Number(l.gst_rate) || 0;
+        const taxable = round2((Number(l.amount) || 0) * (Number(l.qty) || 1));
+        const gst = round2(taxable * rate / 100);
+        rows.push({ Item: l.name, Qty: Number(l.qty) || 1, rate, taxable, gst, total: round2(taxable + gst) });
+      }
+    } else {
+      // Service convention: lines scale to their GST-INCLUSIVE share of the
+      // stored total (override-safe) — same reconstruction as the PDF.
+      const rate = Number(m.gst_rate ?? 18);
+      const total = Number(m.total_amount) || 0;
+      const baseSum = lines.reduce((s, l) => s + (Number(l.amount) || 0), 0);
+      for (const l of lines) {
+        const share = baseSum > 0 ? round2((Number(l.amount) || 0) * total / baseSum) : round2(total / (lines.length || 1));
+        const taxable = round2(share / (1 + rate / 100));
+        rows.push({ Item: l.name, Qty: Number(l.qty) || 1, rate, taxable, gst: round2(share - taxable), total: share });
+      }
+    }
+    // No captured lines → one row from the stored aggregate totals.
+    if (!rows.length) {
+      rows.push({
+        Item: m.invoice_type === 'products' ? 'Products' : 'Service', Qty: 1,
+        rate: m.invoice_type === 'products' ? 18 : Number(m.gst_rate ?? 18),
+        taxable: Number(m.subtotal) || 0, gst: Number(m.gst_amount) || 0, total: Number(m.total_amount) || 0,
+      });
+    }
+    // Paisa reconciliation: per-line rounding can drift a paisa from the stored
+    // invoice totals — settle the difference on the last row so Σ rows = invoice.
+    const dTotal = round2((Number(m.total_amount) || 0) - round2(rows.reduce((s, r) => s + r.total, 0)));
+    const dGst = round2((Number(m.gst_amount) || 0) - round2(rows.reduce((s, r) => s + r.gst, 0)));
+    if ((dTotal || dGst) && Math.abs(dTotal) <= 0.05 && Math.abs(dGst) <= 0.05) {
+      const last = rows[rows.length - 1];
+      last.total = round2(last.total + dTotal);
+      last.gst = round2(last.gst + dGst);
+      last.taxable = round2(last.total - last.gst);
+    }
+
+    return rows.map((r) => {
+      const half = round2(r.gst / 2);
+      return {
+        InvoiceNumber: m.gkm_invoice_number || '—',
+        Date: m.invoice_date ?? m.created_at ?? m.createdAt,
+        Customer: m.customer_name,
+        Phone: m.customer_phone,
+        CustomerGSTIN: m.customer_gstin || '',
+        Type: m.invoice_type,
+        PaymentStatus: m.payment_status || 'paid',
+        State: m.state || '',
+        GSTType: gstCategory(r.rate, isUp),
+        Item: r.Item,
+        Qty: r.Qty,
+        GSTRate: `${r.rate}%`,
+        Taxable: r.taxable,
+        CGST: isUp && r.rate > 0 ? half : 0,
+        SGST: isUp && r.rate > 0 ? round2(r.gst - half) : 0,
+        IGST: !isUp && r.rate > 0 ? r.gst : 0,
+        GST: r.gst,
+        'Total (incl GST)': r.total,
+        Reference: m.invoice_number,
+        CreatedBy: m.creator?.name,
+      };
+    });
   };
+
+  const mapExportRows = (all: any[]) => all
+    .flatMap(expandInvoice)
+    .sort((a, b) =>
+      (GROUP_ORDER.indexOf(a.GSTType) - GROUP_ORDER.indexOf(b.GSTType)) ||
+      String(a.InvoiceNumber).localeCompare(String(b.InvoiceNumber)) ||
+      String(a.Item).localeCompare(String(b.Item)));
 
   const typeBadge: Record<string, string> = { ondemand: 'badge-blue', plan: 'badge-green', products: 'badge-gold', makeover: 'badge-forest' };
   const typeLabel: Record<string, string> = { ondemand: 'On-Demand', plan: 'Plan', products: 'Products', makeover: 'Green Makeover' };
@@ -134,7 +193,7 @@ export default function ManualInvoicesPage() {
             {total} invoices generated from Create Invoice — official numbers share the same GKM series as automatic invoices.
           </p>
         </div>
-        <ExportButton filename="ManualInvoices" fetchAll={fetchAll} mapRow={mapExportRow} />
+        <ExportButton filename="ManualInvoices" fetchAll={fetchAll} mapRows={mapExportRows} />
       </div>
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
