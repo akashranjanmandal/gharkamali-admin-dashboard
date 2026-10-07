@@ -61,6 +61,7 @@ export default function CreateInvoicePage() {
   const [scheduleDates, setScheduleDates] = useState<string[]>([]);
   const [productLines, setProductLines] = useState<ProductLine[]>([]);
   const [makeoverLines, setMakeoverLines] = useState<MakeoverLine[]>([]);
+  const [addonIds, setAddonIds] = useState<number[]>([]); // on-demand add-on services
   const [submitting, setSubmitting] = useState<string | null>(null);
   const qc = useQueryClient();
 
@@ -71,7 +72,7 @@ export default function CreateInvoicePage() {
     setAddress(''); setCity(''); setStateName(''); setPincode('');
     setScheduledDate(''); setScheduledTime(''); setPlantCount(''); setNotes('');
     setZoneId(''); setAssignMode('none'); setGardenerId(''); setOverrideTotal('');
-    setScheduleDates([]); setProductLines([]); setMakeoverLines([]);
+    setScheduleDates([]); setProductLines([]); setMakeoverLines([]); setAddonIds([]);
   };
 
   // ── Data ──
@@ -82,6 +83,8 @@ export default function CreateInvoicePage() {
   const { data: gardenersData } = useQuery({ queryKey: ['admin-gardeners-active'], queryFn: () => AdminAPI.gardeners({ status: 'active', limit: 100 }) });
   const gardeners: any[] = (gardenersData as any)?.items || (Array.isArray(gardenersData) ? gardenersData : []);
   const { data: productsData } = useQuery({ queryKey: ['admin-shop-products'], queryFn: AdminAPI.shopProducts, enabled: invoiceType === 'products' });
+  const { data: addonsData } = useQuery({ queryKey: ['admin-addons'], queryFn: AdminAPI.addons, enabled: invoiceType === 'ondemand' });
+  const addonList: any[] = (Array.isArray(addonsData) ? addonsData : ((addonsData as any)?.items || [])).filter((a: any) => a.is_active !== false);
   const shopProducts: any[] = (Array.isArray(productsData) ? productsData : []).filter((p: any) => p.is_active);
   // Green Makeover service picker — public content endpoint, fetched once and
   // cached (staleTime: Infinity) since it's static config on the backend.
@@ -138,14 +141,15 @@ export default function CreateInvoicePage() {
     } else {
       const base = selectedZone ? (parseFloat(selectedZone.base_price) || 0) : 0;
       const extra = (parseInt(plantCount) || 0) * ADDITIONAL_PLANT_RATE;
-      baseSum = base + extra;
-      lineName = `On-Demand Gardener Visit (${plantCount || 0} plants)`;
+      const addonSum = addonList.filter((a) => addonIds.includes(a.id)).reduce((s, a) => s + (Number(a.price) || 0), 0);
+      baseSum = base + extra + addonSum;
+      lineName = `On-Demand Gardener Visit (${plantCount || 0} plants)${addonIds.length ? ` + ${addonIds.length} add-on${addonIds.length > 1 ? 's' : ''}` : ''}`;
     }
     const total = overrideTotal && Number(overrideTotal) > 0
       ? Math.round(Number(overrideTotal) * 100) / 100
       : Math.round(baseSum * (1 + gstRate / 100) * 100) / 100;
     return { lineName, baseSum, total };
-  }, [invoiceType, selectedPlan, selectedZone, plantCount, overrideTotal, makeoverLines, gstRate]);
+  }, [invoiceType, selectedPlan, selectedZone, plantCount, overrideTotal, makeoverLines, gstRate, addonIds, addonList]);
 
   const previewLine = { name: computed.lineName || 'Service', amount: inclusiveGstSplit(computed.total, gstRate).subtotal };
   // Makeover preview rows: the admin's pre-GST line amounts as entered. The
@@ -253,6 +257,7 @@ export default function CreateInvoicePage() {
     override_total: overrideTotal ? Number(overrideTotal) : undefined,
     gst_rate: gstRate,
     tax_type: taxType,
+    addon_ids: invoiceType === 'ondemand' && addonIds.length ? addonIds : undefined,
     assign_mode: assignMode,
     gardener_id: assignMode === 'pick' && gardenerId ? Number(gardenerId) : undefined,
     schedule_dates: outcome === 'subscription' ? scheduleDates.filter(Boolean) : undefined,
@@ -535,6 +540,26 @@ export default function CreateInvoicePage() {
                 <div><Label>Plants</Label><input className="input" type="number" value={plantCount} onChange={(e) => setPlantCount(e.target.value)} /></div>
                 <div><Label>Date</Label><input className="input" type="date" max={today} value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} /></div>
               </div>
+              {invoiceType === 'ondemand' && addonList.length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <Label>Add-on Services (billed as extra lines)</Label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {addonList.map((a: any) => {
+                      const on = addonIds.includes(a.id);
+                      return (
+                        <button key={a.id} type="button"
+                          onClick={() => setAddonIds((prev) => on ? prev.filter((id) => id !== a.id) : [...prev, a.id])}
+                          className={`btn btn-sm ${on ? 'btn-primary' : 'btn-outline'}`}>
+                          {a.icon ? `${a.icon} ` : ''}{a.name} — ₹{Number(a.price).toLocaleString('en-IN')}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                    Same add-on catalog as online bookings; each prints as its own line on the invoice (pre-GST price, service GST applies).
+                  </p>
+                </div>
+              )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
                 <div><Label>Time</Label><input className="input" type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} /></div>
                 <div><Label>{invoiceType === 'makeover' ? 'Final quoted price (incl. GST)' : 'Override Total (₹, incl. GST)'}</Label><input className="input" type="number" value={overrideTotal} onChange={(e) => setOverrideTotal(e.target.value)} placeholder={`Auto: ₹${computed.total.toFixed(2)}`} /></div>

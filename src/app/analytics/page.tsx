@@ -116,7 +116,9 @@ export default function AnalyticsPage() {
   const bookingRevenue      = Number(revenueBreakdown.booking_revenue      || 0);
   const shopRevenue         = Number(revenueBreakdown.shop_revenue         || 0);
   const subscriptionRevenue = Number(revenueBreakdown.subscription_revenue || 0);
-  const totalAnalyticsRevenue = bookingRevenue + shopRevenue + subscriptionRevenue;
+  const manualRevenue       = Number(revenueBreakdown.manual_revenue       || 0);
+  const manualStats: any    = a?.manualInvoiceStats || {};
+  const totalAnalyticsRevenue = bookingRevenue + shopRevenue + subscriptionRevenue + manualRevenue;
 
   // ── Zone-specific revenue ──────────────────────────────────────────────────
   const zoneAllRevenue = (a?.bookingsByZone || []).reduce((n: number, z: any) => n + Number(z.revenue || 0), 0);
@@ -145,8 +147,8 @@ export default function AnalyticsPage() {
     datasets: [{ data:bookingsByStatus.map((s:any)=>s.count||0), backgroundColor:['#03411a','#2563eb','#d97706','#16a34a','#808285','#dc2626'], borderWidth:0, hoverOffset:8 }],
   };
   const revenueBreakdownData = {
-    labels: ['Service Bookings', 'Shop Orders', 'Subscriptions'],
-    datasets: [{ data:[bookingRevenue, shopRevenue, subscriptionRevenue], backgroundColor:['#03411a','#2563eb','#d97706'], borderWidth:0, hoverOffset:8 }],
+    labels: ['Service Bookings', 'Shop Orders', 'Subscriptions', 'Offline (Manual)'],
+    datasets: [{ data:[bookingRevenue, shopRevenue, subscriptionRevenue, manualRevenue], backgroundColor:['#03411a','#2563eb','#d97706','#9333ea'], borderWidth:0, hoverOffset:8 }],
   };
   const topProductsData = {
     labels: topProducts.map((p:any) => p.name),
@@ -170,6 +172,7 @@ export default function AnalyticsPage() {
     { label:'Total Revenue',        value: `₹${Number(totalAnalyticsRevenue || 0).toLocaleString('en-IN')}`, icon:<IcRevenue/>, color:'#03411a', sub:`${period}-day period`, trend:18 },
     { label:'Booking Revenue',      value: `₹${Number(bookingRevenue || 0).toLocaleString('en-IN')}`, icon:<IcBooking/>, color:'#2563eb', sub:'Service bookings' },
     { label:'Shop Revenue',         value: `₹${Number(shopRevenue || 0).toLocaleString('en-IN')}`, icon:<IcShop/>, color:'#9333ea', sub:'Paid marketplace orders (period)' },
+    { label:'Offline Sales',        value: `₹${Number(manualRevenue || 0).toLocaleString('en-IN')}`, icon:<IcRevenue/>, color:'#b45309', sub:`Manual invoices (${Number(manualStats.total_invoices || 0)} paid)` },
     { label:'Total Bookings',       value: totalBookings ? totalBookings.toLocaleString('en-IN') : '—', icon:<IcBooking/>, color:'#2563eb', sub:'Service requests', trend:12 },
     { label:'Shop Orders',          value: shopStats.total_orders ? Number(shopStats.total_orders).toLocaleString('en-IN') : '—', icon:<IcShop/>, color:'#9333ea', sub:'Marketplace' },
     { label:'Avg Rating',           value: a?.avgRating ? `${Number(a.avgRating).toFixed(1)} ★` : '—', icon:<IcStar/>, color:'#d97706', sub:'Out of 5.0' },
@@ -188,6 +191,9 @@ export default function AnalyticsPage() {
         { Metric: 'Booking Revenue', Value: bookingRevenue },
         { Metric: 'Shop Revenue (paid)', Value: shopRevenue },
         { Metric: 'Subscription Revenue', Value: subscriptionRevenue },
+        { Metric: 'Offline Sales (manual, paid)', Value: manualRevenue },
+        { Metric: 'Offline Invoices (paid)', Value: Number(manualStats.total_invoices || 0) },
+        { Metric: 'Offline GST Collected', Value: Number(manualStats.total_gst || 0) },
         { Metric: 'Total Bookings', Value: totalBookings },
         { Metric: 'Shop Orders', Value: Number(shopStats.total_orders || 0) },
         { Metric: 'New Customers', Value: newCustomers },
@@ -284,6 +290,7 @@ export default function AnalyticsPage() {
                     { label:'Bookings',      val:bookingRevenue,      color:'#03411a' },
                     { label:'Shop',          val:shopRevenue,         color:'#2563eb' },
                     { label:'Subscriptions', val:subscriptionRevenue, color:'#d97706' },
+                    { label:'Offline (Manual)', val:manualRevenue,    color:'#9333ea' },
                   ].map((r,i)=>(
                     <div key={i} style={{ display:'flex', alignItems:'center', gap:8 }}>
                       <div style={{ width:10, height:10, borderRadius:'50%', background:r.color, flexShrink:0 }} />

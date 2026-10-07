@@ -75,6 +75,7 @@ export default function AdminDashboardPage() {
     { label: 'Active Gardeners',  value: s?.totalGardeners?.toLocaleString('en-IN'),  icon: <IcLeaf />,    color: '#2563eb',       sub: 'Currently active',    trend: 5,  href: '/gardeners' },
     { label: 'Bookings Today',    value: s?.todayBookings?.toLocaleString('en-IN'),    icon: <IcCal />,     color: '#d97706',       sub: 'Scheduled visits',    trend: -2, href: '/bookings' },
     { label: 'Revenue (30d)',     value: s?.totalRevenue != null ? `₹${Number(s.totalRevenue).toLocaleString('en-IN')}` : '—', icon: <IcCash />, color: '#16a34a', sub: 'Last 30 days', trend: 18, href: '/payments' },
+    { label: 'Offline Sales',     value: s?.manualSales != null ? `₹${Number(s.manualSales).toLocaleString('en-IN')}` : '—', icon: <IcCash />, color: '#b45309', sub: 'Paid manual invoices', href: '/manual-invoices' },
     { label: 'Avg Rating',        value: an?.avgRating ? `${Number(an.avgRating).toFixed(1)}` : '—', icon: <IcStar />, color: 'var(--earth)', sub: 'Customer satisfaction', href: '/reviews' },
     { label: 'Open Complaints',   value: openComplaints.length,                       icon: <IcAlert />,   color: '#dc2626',       sub: 'Need attention',        href: '/complaints' },
     { label: 'Active Subs',       value: s?.activeSubscriptions?.toLocaleString('en-IN'), icon: <IcRefresh />, color: '#9333ea', sub: 'Recurring plans', href: '/subscriptions' },
