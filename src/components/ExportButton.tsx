@@ -48,7 +48,10 @@ export default function ExportButton({ filename, fetchAll, mapRow, mapRows, date
   const rowDate = (r: any): Date | null => {
     const v = r?.[dateField] ?? r?.created_at ?? r?.createdAt;
     if (!v) return null;
-    const d = new Date(v);
+    // API DATETIMEs arrive as bare "YYYY-MM-DD HH:MM:SS" strings — Safari's
+    // Date() rejects the space separator, so normalize to ISO before parsing.
+    const s = typeof v === 'string' ? v.replace(/^(\d{4}-\d{2}-\d{2}) /, '$1T') : v;
+    const d = new Date(s);
     return isNaN(d.getTime()) ? null : d;
   };
 

@@ -6,7 +6,7 @@ import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import { fetchAllPages } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
-import PeriodFilter, { Period, inPeriod } from '@/components/PeriodFilter';
+import PeriodFilter, { Period } from '@/components/PeriodFilter';
 import { IconSearch, IconDownload, IconTrash, IconPencil } from '@tabler/icons-react';
 
 // Permanent register of every manually generated invoice — the record the
@@ -22,13 +22,18 @@ export default function ManualInvoicesPage() {
   const [editForm, setEditForm] = useState<any>({});
   const [saving, setSaving] = useState(false);
 
+  // Period filtering is SERVER-SIDE (on invoice_date, falling back to the
+  // creation date) so it spans all pages — filtering just the loaded 20 rows
+  // made the filter look dead whenever matches sat on other pages.
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['admin-manual-invoices', search, page],
-    queryFn: () => AdminAPI.manualInvoices({ search: search || undefined, page, limit: 20 }),
+    queryKey: ['admin-manual-invoices', search, page, period?.from ?? '', period?.to ?? ''],
+    queryFn: () => AdminAPI.manualInvoices({
+      search: search || undefined, page, limit: 20,
+      from_date: period?.from, to_date: period?.to,
+    }),
   });
 
-  const itemsRaw: any[] = (data as any)?.items || [];
-  const items = itemsRaw.filter((m) => inPeriod(m, period));
+  const items: any[] = (data as any)?.items || [];
   const total = (data as any)?.total ?? items.length;
   const pages = (data as any)?.pages ?? 1;
 
@@ -193,7 +198,7 @@ export default function ManualInvoicesPage() {
             {total} invoices generated from Create Invoice — official numbers share the same GKM series as automatic invoices.
           </p>
         </div>
-        <ExportButton filename="ManualInvoices" fetchAll={fetchAll} mapRows={mapExportRows} />
+        <ExportButton filename="ManualInvoices" fetchAll={fetchAll} mapRows={mapExportRows} dateField="invoice_date" />
       </div>
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>

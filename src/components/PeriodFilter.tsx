@@ -19,7 +19,9 @@ export function inPeriod(row: any, period: Period, dateField = 'created_at'): bo
   if (!period) return true;
   const v = row?.[dateField] ?? row?.created_at ?? row?.createdAt;
   if (!v) return false;
-  const d = new Date(v);
+  // Bare "YYYY-MM-DD HH:MM:SS" API strings break Safari's Date() — normalize.
+  const s = typeof v === 'string' ? v.replace(/^(\d{4}-\d{2}-\d{2}) /, '$1T') : v;
+  const d = new Date(s);
   if (isNaN(d.getTime())) return false;
   const day = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   return day >= period.from && day <= period.to;
