@@ -118,6 +118,8 @@ export default function AnalyticsPage() {
   const subscriptionRevenue = Number(revenueBreakdown.subscription_revenue || 0);
   const manualRevenue       = Number(revenueBreakdown.manual_revenue       || 0);
   const manualStats: any    = a?.manualInvoiceStats || {};
+  const customerWise: any[] = a?.customerWiseSales || [];
+  const custKpis: any       = a?.customerKpis || {};
   const totalAnalyticsRevenue = bookingRevenue + shopRevenue + subscriptionRevenue + manualRevenue;
 
   // ── Zone-specific revenue ──────────────────────────────────────────────────
@@ -178,6 +180,9 @@ export default function AnalyticsPage() {
     { label:'Avg Rating',           value: a?.avgRating ? `${Number(a.avgRating).toFixed(1)} ★` : '—', icon:<IcStar/>, color:'#d97706', sub:'Out of 5.0' },
     { label:'Completion Rate',      value: a?.completionRate != null ? `${Number(a.completionRate).toFixed(0)}%` : '—', icon:<IcPercent/>, color:'#16a34a', sub:'Booking completion', trend:3 },
     { label:'Active Subscriptions', value: a?.activeSubscriptions != null ? Number(a.activeSubscriptions).toLocaleString('en-IN') : '—', icon:<IcSubs/>, color:'#0891b2', sub:'Active plans' },
+    { label:'Total Customers',      value: custKpis.total_customers != null ? Number(custKpis.total_customers).toLocaleString('en-IN') : '—', icon:<IcStar/>, color:'#2563eb', sub:'All registered' },
+    { label:'Unique Buyers',        value: custKpis.unique_buyers != null ? Number(custKpis.unique_buyers).toLocaleString('en-IN') : '—', icon:<IcStar/>, color:'#16a34a', sub:`Bought in ${period} days` },
+    { label:'Repeat Customers',     value: custKpis.repeat_buyers != null ? Number(custKpis.repeat_buyers).toLocaleString('en-IN') : '—', icon:<IcSubs/>, color:'#d97706', sub:`2+ purchases in ${period} days` },
   ];
 
   // One .xlsx workbook: every dataset on this page, one sheet each, honoring
@@ -197,6 +202,9 @@ export default function AnalyticsPage() {
         { Metric: 'Total Bookings', Value: totalBookings },
         { Metric: 'Shop Orders', Value: Number(shopStats.total_orders || 0) },
         { Metric: 'New Customers', Value: newCustomers },
+        { Metric: 'Total Customers (registered)', Value: Number(custKpis.total_customers || 0) },
+        { Metric: `Unique Buyers (${period}d)`, Value: Number(custKpis.unique_buyers || 0) },
+        { Metric: `Repeat Customers (${period}d, 2+ purchases)`, Value: Number(custKpis.repeat_buyers || 0) },
         { Metric: 'Avg Rating', Value: a?.avgRating ?? '' },
         { Metric: 'Completion Rate (%)', Value: a?.completionRate ?? '' },
       ]},
@@ -213,6 +221,16 @@ export default function AnalyticsPage() {
       { name: 'Shop Orders by City', rows: shopOrdersByCity },
       { name: 'Customer Locations', rows: a?.customerLocations || [] },
       { name: 'New Users Trend', rows: a?.newUsersTrend || [] },
+      // One row per customer across ALL channels, with fixed 1-month /
+      // 3-month / 1-year purchase counts and spend (phone = unique customer).
+      { name: 'Customer-wise Sales', rows: customerWise.map((c: any) => ({
+        Customer: c.name, Phone: c.phone, City: c.city || '',
+        'Purchases (1 Mo)': Number(c.purchases_1m || 0), 'Spent (1 Mo)': Number(c.spent_1m || 0),
+        'Purchases (3 Mo)': Number(c.purchases_3m || 0), 'Spent (3 Mo)': Number(c.spent_3m || 0),
+        'Purchases (1 Yr)': Number(c.purchases_1y || 0), 'Spent (1 Yr)': Number(c.spent_1y || 0),
+        Bookings: Number(c.bookings || 0), Orders: Number(c.orders || 0), Subscriptions: Number(c.subscriptions || 0),
+        'Last Purchase': c.last_purchase ? String(c.last_purchase).slice(0, 10) : '',
+      })) },
     ];
     const today = new Date().toISOString().slice(0, 10);
     const zoneTag = selectedZone ? `_${(selectedZoneName || 'zone').replace(/[^\w]+/g, '-')}` : '';
@@ -389,6 +407,38 @@ export default function AnalyticsPage() {
               );
             })}
           </div>
+        </div>
+      </div>
+
+      {/* Customer-wise sales — buying frequency per unique customer (phone) */}
+      <div className="card" style={{ marginBottom:20 }}>
+        <div className="card-header">
+          <h2>Customer-wise Sales</h2>
+          <span style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>Top {Math.min(customerWise.length, 15)} by 1-year spend · full list in Export Excel · all zones</span>
+        </div>
+        <div className="table-wrap">
+          <table className="admin-table">
+            <thead><tr><th>#</th><th>Customer</th><th>City</th><th>1 Mo</th><th>3 Mo</th><th>1 Yr</th><th>Spent (1 Yr)</th><th>Last Purchase</th></tr></thead>
+            <tbody>
+              {!customerWise.length ? (
+                <tr><td colSpan={8} style={{ textAlign:'center', color:'var(--text-muted)', padding:32 }}>No purchases in the last year</td></tr>
+              ) : customerWise.slice(0, 15).map((c: any, i: number) => (
+                <tr key={c.id || i}>
+                  <td style={{ color:'var(--text-muted)', fontSize:'0.8rem' }}>{i + 1}</td>
+                  <td>
+                    <div style={{ fontWeight:700, fontSize:'0.85rem' }}>{c.name || '—'}</div>
+                    <div style={{ fontSize:'0.72rem', color:'var(--text-muted)' }}>{c.phone || '—'}</div>
+                  </td>
+                  <td style={{ fontSize:'0.8rem', color:'var(--text-muted)' }}>{c.city || '—'}</td>
+                  <td style={{ fontWeight:700 }}>{Number(c.purchases_1m || 0)}</td>
+                  <td style={{ fontWeight:700 }}>{Number(c.purchases_3m || 0)}</td>
+                  <td style={{ fontWeight:700 }}>{Number(c.purchases_1y || 0)}</td>
+                  <td style={{ fontWeight:800, color:'var(--forest)' }}>₹{Number(c.spent_1y || 0).toLocaleString('en-IN')}</td>
+                  <td style={{ fontSize:'0.8rem', color:'var(--text-muted)', whiteSpace:'nowrap' }}>{c.last_purchase ? String(c.last_purchase).slice(0, 10) : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
