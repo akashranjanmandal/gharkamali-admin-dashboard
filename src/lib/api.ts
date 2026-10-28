@@ -284,6 +284,18 @@ export const AdminAPI = {
   deletePlan: (id: number) => req(`/admin/plans/${id}`, { method: 'DELETE' }),
 
   addons: () => req('/admin/addons'),
+  // Online tip management (gateway-verified tips + audited payouts)
+  tipSummary: () => req('/admin/tips/summary'),
+  tips: (p?: any) => req(`/admin/tips${qs(p)}`),
+  tipDetail: (id: number) => req(`/admin/tips/${id}`),
+  reverseTip: (id: number, reason: string) => req(`/admin/tips/${id}/reverse`, { method: 'POST', body: JSON.stringify({ reason }) }),
+  tipPayouts: (p?: any) => req(`/admin/payouts${qs(p)}`),
+  createTipPayout: (gardener_id: number, tip_ids: number[]) => req('/admin/payouts', { method: 'POST', body: JSON.stringify({ gardener_id, tip_ids }) }),
+  approveTipPayout: (id: number) => req(`/admin/payouts/${id}/approve`, { method: 'POST', body: '{}' }),
+  confirmTipPayoutPaid: (id: number, b: any) => req(`/admin/payouts/${id}/confirm-paid`, { method: 'POST', body: JSON.stringify(b) }),
+  cancelTipPayout: (id: number) => req(`/admin/payouts/${id}/cancel`, { method: 'POST', body: '{}' }),
+  tipConfig: () => req('/admin/tips/config'),
+  saveTipConfig: (b: any) => req('/admin/tips/config', { method: 'PUT', body: JSON.stringify(b) }),
   // On-demand plant-count pricing slabs (base covers 10; slab extra added on top)
   plantSlabs: () => req('/pricing/plant-slabs'),
   savePlantSlabs: (slabs: any[]) => req('/admin/pricing/plant-slabs', { method: 'PUT', body: JSON.stringify({ slabs }) }),
