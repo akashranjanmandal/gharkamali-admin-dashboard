@@ -19,7 +19,7 @@ const INDIAN_STATES = [
 
 const EMPTY_FORM = {
   name: '', city: '', state: '',
-  base_price: '', price_per_plant: '0', min_plants: '1',
+  base_price: '', min_plants: '1',
   product_markup: '0',
   visit_minutes: '60',
   time_addon_minutes: '30', time_addon_price: '0',
@@ -43,7 +43,6 @@ export default function GeofencingPage() {
       const payload = {
         name: form.name, city: form.city, state: form.state,
         base_price: parseFloat(form.base_price) || 0,
-        price_per_plant: parseFloat(form.price_per_plant) || 0,
         min_plants: parseInt(form.min_plants) || 1,
         product_markup: parseFloat(form.product_markup) || 0,
         visit_minutes: parseInt(form.visit_minutes) || 60,
@@ -75,7 +74,6 @@ export default function GeofencingPage() {
     setForm({
       name: g.name, city: g.city, state: g.state || '',
       base_price: String(g.base_price ?? ''),
-      price_per_plant: String(g.price_per_plant ?? '0'),
       min_plants: String(g.min_plants ?? '1'),
       product_markup: String(g.product_markup ?? '0'),
       visit_minutes: String(g.visit_minutes ?? '60'),
@@ -216,7 +214,7 @@ export default function GeofencingPage() {
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
                         {[
                           { l: 'Base Price', v: g.base_price != null ? `₹${g.base_price}` : '—' },
-                          { l: 'Per Plant', v: g.price_per_plant != null ? `₹${g.price_per_plant}` : '—' },
+                          { l: 'Plants', v: 'Slab pricing' },
                           { l: 'Min Plants', v: g.min_plants ?? '—' },
                           { l: 'Prod Surge', v: g.product_markup != null ? `+₹${g.product_markup}` : '—' },
                           { l: 'Visit Duration', v: `${g.visit_minutes || 60}m` },
@@ -298,15 +296,11 @@ export default function GeofencingPage() {
                 </div>
               </div>
 
-              {/* Pricing */}
-              <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr' }}>
+              {/* Pricing — plant counts are priced by the GLOBAL slab table above */}
+              <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
                 <div className="form-group">
-                  <label>Base Price (₹) *</label>
+                  <label>Base Price (₹) * <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(covers up to 10 plants)</span></label>
                   <input type="number" className="input" value={form.base_price} onChange={e => f('base_price', e.target.value)} placeholder="e.g. 299" min="0" />
-                </div>
-                <div className="form-group">
-                  <label>Price per Plant (₹)</label>
-                  <input type="number" className="input" value={form.price_per_plant} onChange={e => f('price_per_plant', e.target.value)} placeholder="0" min="0" />
                 </div>
                 <div className="form-group">
                   <label>Product Markup (₹)</label>
