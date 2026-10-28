@@ -94,6 +94,25 @@ export default function GeofencingPage() {
 
   const canSave = form.name && form.city && form.polygon_coords.length >= 3 && form.base_price;
 
+  // ── On-demand plant-count slabs (zone base covers up to 10 plants; the
+  // matching slab's amount is ADDED; beyond the last slab = custom quote) ──
+  const { data: slabData } = useQuery({ queryKey: ['plant-slabs'], queryFn: AdminAPI.plantSlabs });
+  const [slabEdit, setSlabEdit] = useState<any[] | null>(null); // null = not editing
+  const liveSlabs: any[] = (slabData as any)?.slabs || [];
+  const slabs = slabEdit ?? liveSlabs;
+  const slabMut = useMutation({
+    mutationFn: (rows: any[]) => AdminAPI.savePlantSlabs(rows),
+    onSuccess: () => { toast.success('Plant pricing slabs saved'); setSlabEdit(null); qc.invalidateQueries({ queryKey: ['plant-slabs'] }); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const slabRow = (i: number, patch: any) => setSlabEdit((prev) => (prev ?? liveSlabs.map(s => ({ ...s }))).map((s, si) => si === i ? { ...s, ...patch } : s));
+  const addSlab = () => setSlabEdit((prev) => {
+    const cur = prev ?? liveSlabs.map(s => ({ ...s }));
+    const lastMax = Number(cur[cur.length - 1]?.max || 10);
+    return [...cur, { min: lastMax + 1, max: lastMax + 50, extra: 0 }];
+  });
+  const removeLastSlab = () => setSlabEdit((prev) => (prev ?? liveSlabs.map(s => ({ ...s }))).slice(0, -1));
+
   return (
     <AdminLayout>
       {/* Header */}
@@ -105,6 +124,40 @@ export default function GeofencingPage() {
           </p>
         </div>
         <button onClick={openNew} className="btn btn-primary">+ New Zone</button>
+      </div>
+
+      {/* On-demand plant-count pricing slabs (applies in every zone) */}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="card-header">
+          <h2>On-Demand Plant Pricing Slabs</h2>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Zone base price covers up to 10 plants · slab amount is ADDED · beyond the last slab = custom quote</span>
+        </div>
+        <div style={{ padding: '14px 20px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
+            {slabs.map((s: any, i: number) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, border: '1.5px solid var(--border)', borderRadius: 12, padding: '8px 10px' }}>
+                <input className="input" type="number" value={s.min} onChange={(e) => slabRow(i, { min: Number(e.target.value) })} style={{ width: 64, padding: '6px 8px' }} />
+                <span style={{ color: 'var(--text-muted)' }}>–</span>
+                <input className="input" type="number" value={s.max} onChange={(e) => slabRow(i, { max: Number(e.target.value) })} style={{ width: 64, padding: '6px 8px' }} />
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>plants</span>
+                <span style={{ fontWeight: 800, color: 'var(--forest)' }}>+₹</span>
+                <input className="input" type="number" value={s.extra} onChange={(e) => slabRow(i, { extra: Number(e.target.value) })} style={{ width: 80, padding: '6px 8px' }} />
+              </div>
+            ))}
+            {!slabs.length && <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Loading slabs…</span>}
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <button className="btn btn-sm btn-outline" onClick={addSlab}>+ Add slab</button>
+            <button className="btn btn-sm btn-outline" onClick={removeLastSlab} disabled={slabs.length <= 1}>Remove last</button>
+            <button className="btn btn-sm btn-primary" disabled={!slabEdit || slabMut.isPending} onClick={() => slabMut.mutate(slabEdit!)}>
+              {slabMut.isPending ? 'Saving…' : 'Save Slabs'}
+            </button>
+            {slabEdit && <button className="btn btn-sm btn-ghost" onClick={() => setSlabEdit(null)}>Discard changes</button>}
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+              Ranges must be continuous (each starts where the previous ends + 1). Website, app and admin invoices all follow this table.
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Info banner */}

@@ -284,6 +284,9 @@ export const AdminAPI = {
   deletePlan: (id: number) => req(`/admin/plans/${id}`, { method: 'DELETE' }),
 
   addons: () => req('/admin/addons'),
+  // On-demand plant-count pricing slabs (base covers 10; slab extra added on top)
+  plantSlabs: () => req('/pricing/plant-slabs'),
+  savePlantSlabs: (slabs: any[]) => req('/admin/pricing/plant-slabs', { method: 'PUT', body: JSON.stringify({ slabs }) }),
   createAddon: (b: any) => req('/admin/addons', { method: 'POST', body: JSON.stringify(b) }),
   updateAddon: (id: number, b: any) => req(`/admin/addons/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
   deleteAddon: (id: number) => req(`/admin/addons/${id}`, { method: 'DELETE' }),

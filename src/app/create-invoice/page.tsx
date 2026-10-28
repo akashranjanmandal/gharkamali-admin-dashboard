@@ -7,7 +7,6 @@ import { AdminAPI, downloadFile, getServiceDetails } from '@/lib/api';
 import InvoicePreview from '@/components/InvoicePreview';
 import { inclusiveGstSplit, isUPAddress, inr, SELLER } from '@/lib/invoice';
 
-const ADDITIONAL_PLANT_RATE = 25;
 const PRODUCT_GST_RATES = [0, 5, 12, 18, 28]; // valid shop GST slabs
 const SERVICE_GST_RATES = [0, 5, 12, 18, 28]; // admin-choosable service slabs (0 = No GST)
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -85,6 +84,15 @@ export default function CreateInvoicePage() {
   const { data: productsData } = useQuery({ queryKey: ['admin-shop-products'], queryFn: AdminAPI.shopProducts, enabled: invoiceType === 'products' });
   const { data: addonsData } = useQuery({ queryKey: ['admin-addons'], queryFn: AdminAPI.addons, enabled: invoiceType === 'ondemand' });
   const addonList: any[] = (Array.isArray(addonsData) ? addonsData : ((addonsData as any)?.items || [])).filter((a: any) => a.is_active !== false);
+  // On-demand plant-count slabs: base covers 10 plants, slab extra added on
+  // top; beyond the last slab the server refuses without an override total.
+  const { data: slabData } = useQuery({ queryKey: ['plant-slabs'], queryFn: AdminAPI.plantSlabs, staleTime: 60_000 });
+  const plantSlabs: any[] = (slabData as any)?.slabs || [];
+  const plantSurcharge = (n: number): number | null => {
+    if (n <= 10) return 0;
+    const s = plantSlabs.find((x: any) => n >= x.min && n <= x.max);
+    return s ? Number(s.extra) || 0 : (plantSlabs.length ? null : 0);
+  };
   const shopProducts: any[] = (Array.isArray(productsData) ? productsData : []).filter((p: any) => p.is_active);
   // Green Makeover service picker — public content endpoint, fetched once and
   // cached (staleTime: Infinity) since it's static config on the backend.
@@ -140,7 +148,7 @@ export default function CreateInvoicePage() {
       lineName = `${selectedPlan.name} Plan${selectedPlan.visits_per_month ? ` — ${selectedPlan.visits_per_month} visits/month` : ''}`;
     } else {
       const base = selectedZone ? (parseFloat(selectedZone.base_price) || 0) : 0;
-      const extra = (parseInt(plantCount) || 0) * ADDITIONAL_PLANT_RATE;
+      const extra = plantSurcharge(parseInt(plantCount) || 0) ?? 0; // slab, not per-plant
       const addonSum = addonList.filter((a) => addonIds.includes(a.id)).reduce((s, a) => s + (Number(a.price) || 0), 0);
       baseSum = base + extra + addonSum;
       lineName = `On-Demand Gardener Visit (${plantCount || 0} plants)${addonIds.length ? ` + ${addonIds.length} add-on${addonIds.length > 1 ? 's' : ''}` : ''}`;
@@ -149,7 +157,7 @@ export default function CreateInvoicePage() {
       ? Math.round(Number(overrideTotal) * 100) / 100
       : Math.round(baseSum * (1 + gstRate / 100) * 100) / 100;
     return { lineName, baseSum, total };
-  }, [invoiceType, selectedPlan, selectedZone, plantCount, overrideTotal, makeoverLines, gstRate, addonIds, addonList]);
+  }, [invoiceType, selectedPlan, selectedZone, plantCount, overrideTotal, makeoverLines, gstRate, addonIds, addonList, plantSlabs]);
 
   const previewLine = { name: computed.lineName || 'Service', amount: inclusiveGstSplit(computed.total, gstRate).subtotal };
   // Makeover preview rows: the admin's pre-GST line amounts as entered. The
@@ -537,7 +545,13 @@ export default function CreateInvoicePage() {
                     {zones.map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}
                   </select>
                 </div>
-                <div><Label>Plants</Label><input className="input" type="number" value={plantCount} onChange={(e) => setPlantCount(e.target.value)} /></div>
+                <div>
+                  <Label>Plants</Label>
+                  <input className="input" type="number" value={plantCount} onChange={(e) => setPlantCount(e.target.value)} />
+                  {invoiceType === 'ondemand' && plantSurcharge(parseInt(plantCount) || 0) === null && (
+                    <div style={{ color: 'var(--error)', fontSize: '0.7rem', marginTop: 4 }}>Beyond the slab table — custom quote: enter the agreed price as Override Total</div>
+                  )}
+                </div>
                 <div><Label>Date</Label><input className="input" type="date" max={today} value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} /></div>
               </div>
               {invoiceType === 'ondemand' && addonList.length > 0 && (
