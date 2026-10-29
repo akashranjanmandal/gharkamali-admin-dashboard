@@ -1,4 +1,4 @@
-// File: C:\GharKaMali\gharkamali-admin-dashboard\src\app\layout.tsx
+// File: C:\FRL\GharKaMali\gharkamali-admin-dashboard\src\app\layout.tsx
 import * as entry from '../../../src/app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
