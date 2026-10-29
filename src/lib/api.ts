@@ -296,6 +296,12 @@ export const AdminAPI = {
   cancelTipPayout: (id: number) => req(`/admin/payouts/${id}/cancel`, { method: 'POST', body: '{}' }),
   tipConfig: () => req('/admin/tips/config'),
   saveTipConfig: (b: any) => req('/admin/tips/config', { method: 'PUT', body: JSON.stringify(b) }),
+  // Customer wallet — cashback programme (ledger lives on the backend)
+  walletSummary: () => req('/admin/wallet/summary'),
+  walletConfig: () => req('/admin/wallet/config'),
+  saveWalletConfig: (b: any) => req('/admin/wallet/config', { method: 'PUT', body: JSON.stringify(b) }),
+  walletCredit: (b: { user_id: number; amount: number; note: string; validity_days?: number | null }) =>
+    req('/admin/wallet/credit', { method: 'POST', body: JSON.stringify(b) }),
   // On-demand plant-count pricing slabs (base covers 10; slab extra added on top)
   plantSlabs: () => req('/pricing/plant-slabs'),
   savePlantSlabs: (slabs: any[]) => req('/admin/pricing/plant-slabs', { method: 'PUT', body: JSON.stringify({ slabs }) }),
