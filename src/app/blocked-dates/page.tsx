@@ -16,6 +16,7 @@ const fmt = (d: string) => {
 export default function BlockedDatesPage() {
   const qc = useQueryClient();
   const [newDate, setNewDate] = useState('');
+  const [endDate, setEndDate] = useState(''); // optional — blocks the whole range
   const [newReason, setNewReason] = useState('');
   const { data, isLoading } = useQuery({ queryKey: ['blocked-dates'], queryFn: AdminAPI.blockedDates });
   const dates: BlockedDate[] = Array.isArray(data) ? data : [];
@@ -28,10 +29,24 @@ export default function BlockedDatesPage() {
 
   const addDate = () => {
     if (!newDate) { toast.error('Pick a date first'); return; }
-    if (dates.some(d => d.date === newDate)) { toast.error('That date is already blocked'); return; }
-    saveMut.mutate([...dates, { date: newDate, reason: newReason.trim() || undefined }]);
-    toast.success(`Bookings closed on ${fmt(newDate)}`);
-    setNewDate(''); setNewReason('');
+    // Expand the range (end date optional = single day) into individual dates.
+    const to = endDate || newDate;
+    if (to < newDate) { toast.error('"To" date is before the start date'); return; }
+    const span: string[] = [];
+    for (let dt = new Date(newDate + 'T00:00:00'); span.length <= 92; dt.setDate(dt.getDate() + 1)) {
+      const s = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+      if (s > to) break;
+      span.push(s);
+    }
+    if (span.length > 92) { toast.error('That range is too long — block up to 3 months at a time'); return; }
+    const reason = newReason.trim() || undefined;
+    const fresh = span.filter(s => !dates.some(d => d.date === s));
+    if (fresh.length === 0) { toast.error(span.length === 1 ? 'That date is already blocked' : 'Those dates are all already blocked'); return; }
+    saveMut.mutate([...dates, ...fresh.map(date => ({ date, reason }))]);
+    toast.success(fresh.length === 1
+      ? `Bookings closed on ${fmt(fresh[0])}`
+      : `Bookings closed on ${fresh.length} days (${fmt(fresh[0])} – ${fmt(fresh[fresh.length - 1])})`);
+    setNewDate(''); setEndDate(''); setNewReason('');
   };
   const removeDate = (date: string) => {
     saveMut.mutate(dates.filter(d => d.date !== date));
@@ -58,8 +73,12 @@ export default function BlockedDatesPage() {
         <div className="card" style={{ padding: 20, marginBottom: 20 }}>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-2)', marginBottom: 5 }}>Date *</label>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-2)', marginBottom: 5 }}>From *</label>
               <input type="date" className="input" min={today} value={newDate} onChange={e => setNewDate(e.target.value)} />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-2)', marginBottom: 5 }}>To (optional)</label>
+              <input type="date" className="input" min={newDate || today} value={endDate} onChange={e => setEndDate(e.target.value)} />
             </div>
             <div className="form-group" style={{ marginBottom: 0, flex: 1, minWidth: 200 }}>
               <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-2)', marginBottom: 5 }}>Reason (shown to customers, optional)</label>
