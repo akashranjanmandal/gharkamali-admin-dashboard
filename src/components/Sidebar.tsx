@@ -40,6 +40,7 @@ const NAV = [
   ]},
   { section: 'Operations', items: [
     { href: '/bookings', icon: 'bookings', label: 'Bookings' },
+    { href: '/blocked-dates', icon: 'bookings', label: 'Blocked Dates' },
     { href: '/field-ops', icon: 'fieldops', label: 'Field Ops' },
     { href: '/create-invoice', icon: 'payments', label: 'Create Invoice' },
     { href: '/manual-invoices', icon: 'payments', label: 'Invoice History' },
