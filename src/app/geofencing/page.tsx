@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI } from '@/lib/api';
 import type { LatLng } from '@/components/GeofenceMapPicker';
+import OneTimePricingPanel from '@/components/OneTimePricingPanel';
 
 const GeofenceMapPicker = dynamic(() => import('@/components/GeofenceMapPicker'), { ssr: false });
 
@@ -57,6 +58,7 @@ export default function GeofencingPage() {
       toast.success(modal?.id ? 'Zone updated' : 'Zone created');
       closeModal();
       qc.invalidateQueries({ queryKey: ['admin-geofences'] });
+      qc.invalidateQueries({ queryKey: ['one-time-pricing-zones'] });
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -92,24 +94,6 @@ export default function GeofencingPage() {
 
   const canSave = form.name && form.city && form.polygon_coords.length >= 3 && form.base_price;
 
-  // ── On-demand plant-count slabs (zone base covers up to 10 plants; the
-  // matching slab's amount is ADDED; beyond the last slab = custom quote) ──
-  const { data: slabData } = useQuery({ queryKey: ['plant-slabs'], queryFn: AdminAPI.plantSlabs });
-  const [slabEdit, setSlabEdit] = useState<any[] | null>(null); // null = not editing
-  const liveSlabs: any[] = (slabData as any)?.slabs || [];
-  const slabs = slabEdit ?? liveSlabs;
-  const slabMut = useMutation({
-    mutationFn: (rows: any[]) => AdminAPI.savePlantSlabs(rows),
-    onSuccess: () => { toast.success('Plant pricing slabs saved'); setSlabEdit(null); qc.invalidateQueries({ queryKey: ['plant-slabs'] }); },
-    onError: (e: any) => toast.error(e.message),
-  });
-  const slabRow = (i: number, patch: any) => setSlabEdit((prev) => (prev ?? liveSlabs.map(s => ({ ...s }))).map((s, si) => si === i ? { ...s, ...patch } : s));
-  const addSlab = () => setSlabEdit((prev) => {
-    const cur = prev ?? liveSlabs.map(s => ({ ...s }));
-    const lastMax = Number(cur[cur.length - 1]?.max || 10);
-    return [...cur, { min: lastMax + 1, max: lastMax + 50, extra: 0 }];
-  });
-  const removeLastSlab = () => setSlabEdit((prev) => (prev ?? liveSlabs.map(s => ({ ...s }))).slice(0, -1));
 
   return (
     <AdminLayout>
@@ -124,39 +108,8 @@ export default function GeofencingPage() {
         <button onClick={openNew} className="btn btn-primary">+ New Zone</button>
       </div>
 
-      {/* On-demand plant-count pricing slabs (applies in every zone) */}
-      <div className="card" style={{ marginBottom: 20 }}>
-        <div className="card-header">
-          <h2>On-Demand Plant Pricing Slabs</h2>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Zone base price covers up to 10 plants · slab amount is ADDED · beyond the last slab = custom quote</span>
-        </div>
-        <div style={{ padding: '14px 20px' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
-            {slabs.map((s: any, i: number) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, border: '1.5px solid var(--border)', borderRadius: 12, padding: '8px 10px' }}>
-                <input className="input" type="number" value={s.min} onChange={(e) => slabRow(i, { min: Number(e.target.value) })} style={{ width: 64, padding: '6px 8px' }} />
-                <span style={{ color: 'var(--text-muted)' }}>–</span>
-                <input className="input" type="number" value={s.max} onChange={(e) => slabRow(i, { max: Number(e.target.value) })} style={{ width: 64, padding: '6px 8px' }} />
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>plants</span>
-                <span style={{ fontWeight: 800, color: 'var(--forest)' }}>+₹</span>
-                <input className="input" type="number" value={s.extra} onChange={(e) => slabRow(i, { extra: Number(e.target.value) })} style={{ width: 80, padding: '6px 8px' }} />
-              </div>
-            ))}
-            {!slabs.length && <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Loading slabs…</span>}
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            <button className="btn btn-sm btn-outline" onClick={addSlab}>+ Add slab</button>
-            <button className="btn btn-sm btn-outline" onClick={removeLastSlab} disabled={slabs.length <= 1}>Remove last</button>
-            <button className="btn btn-sm btn-primary" disabled={!slabEdit || slabMut.isPending} onClick={() => slabMut.mutate(slabEdit!)}>
-              {slabMut.isPending ? 'Saving…' : 'Save Slabs'}
-            </button>
-            {slabEdit && <button className="btn btn-sm btn-ghost" onClick={() => setSlabEdit(null)}>Discard changes</button>}
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-              Ranges must be continuous (each starts where the previous ends + 1). Website, app and admin invoices all follow this table.
-            </span>
-          </div>
-        </div>
-      </div>
+      {/* One-time service pricing — per zone (base price + progressive per-plant rates + vermicompost) */}
+      <OneTimePricingPanel />
 
       {/* Info banner */}
       <div style={{ background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)', border: '1.5px solid #86efac', borderRadius: 14, padding: '14px 18px', marginBottom: 24, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
@@ -214,7 +167,7 @@ export default function GeofencingPage() {
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
                         {[
                           { l: 'Base Price', v: g.base_price != null ? `₹${g.base_price}` : '—' },
-                          { l: 'Plants', v: 'Slab pricing' },
+                          { l: 'Plants', v: 'Per-plant rates' },
                           { l: 'Min Plants', v: g.min_plants ?? '—' },
                           { l: 'Prod Surge', v: g.product_markup != null ? `+₹${g.product_markup}` : '—' },
                           { l: 'Visit Duration', v: `${g.visit_minutes || 60}m` },
@@ -296,10 +249,10 @@ export default function GeofencingPage() {
                 </div>
               </div>
 
-              {/* Pricing — plant counts are priced by the GLOBAL slab table above */}
+              {/* Pricing — per-plant rates for this zone are edited in the One-Time Service Pricing panel */}
               <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
                 <div className="form-group">
-                  <label>Base Price (₹) * <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(covers up to 10 plants)</span></label>
+                  <label>Base Price (₹) * <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(first 10 plants, one-time visit)</span></label>
                   <input type="number" className="input" value={form.base_price} onChange={e => f('base_price', e.target.value)} placeholder="e.g. 299" min="0" />
                 </div>
                 <div className="form-group">

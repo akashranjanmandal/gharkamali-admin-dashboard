@@ -306,9 +306,21 @@ export const AdminAPI = {
   blockedDates: () => req('/admin/blocked-dates'),
   saveBlockedDates: (dates: { date: string; reason?: string }[]) =>
     req('/admin/blocked-dates', { method: 'PUT', body: JSON.stringify({ dates }) }),
-  // On-demand plant-count pricing slabs (base covers 10; slab extra added on top)
-  plantSlabs: () => req('/pricing/plant-slabs'),
-  savePlantSlabs: (slabs: any[]) => req('/admin/pricing/plant-slabs', { method: 'PUT', body: JSON.stringify({ slabs }) }),
+  // One-time service pricing per zone (base price covers 10 plants; progressive
+  // per-plant interval rates on top; vermicompost add-on prices)
+  oneTimePricingZones: () => req('/admin/pricing/one-time/zones'),
+  saveZonePricing: (id: number, b: { intervals: any[]; vermicompost: any[]; copied_from_zone_id?: number | null }) =>
+    req(`/admin/pricing/one-time/zones/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  applyVermicompostAll: (vermicompost: any[], zone_ids?: number[]) =>
+    req('/admin/pricing/one-time/vermicompost/apply-all', { method: 'POST', body: JSON.stringify({ vermicompost, zone_ids }) }),
+  pricingAudit: (p?: { entity_type?: string; entity_id?: number; zone_id?: number; limit?: number }) => req(`/admin/pricing/audit${qs(p)}`),
+  // Public pricing config for one zone (same payload the website/app use)
+  oneTimePricing: (geofence_id: number) => req(`/pricing/one-time${qs({ geofence_id })}`),
+  // One-time service surcharges (admin rules applied automatically at checkout)
+  surcharges: () => req('/admin/surcharges'),
+  createSurcharge: (b: any) => req('/admin/surcharges', { method: 'POST', body: JSON.stringify(b) }),
+  updateSurcharge: (id: number, b: any) => req(`/admin/surcharges/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  deleteSurcharge: (id: number) => req(`/admin/surcharges/${id}`, { method: 'DELETE' }),
   createAddon: (b: any) => req('/admin/addons', { method: 'POST', body: JSON.stringify(b) }),
   updateAddon: (id: number, b: any) => req(`/admin/addons/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
   deleteAddon: (id: number) => req(`/admin/addons/${id}`, { method: 'DELETE' }),

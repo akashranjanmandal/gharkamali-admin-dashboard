@@ -151,6 +151,27 @@ export default function BookingDetailPage() {
             <span style={{ color: 'var(--text)', fontWeight: 500 }}>{booking.scheduled_time || 'Morning'}</span>
             <span style={{ color: 'var(--text-secondary)' }}>Plants:</span>
             <span style={{ color: 'var(--text)', fontWeight: 500 }}>{booking.plant_count || '—'}</span>
+            {booking.booking_type === 'ondemand' && Number(booking.base_amount) > 0 && (
+              <>
+                <span style={{ color: 'var(--text-secondary)' }}>Service charge:</span>
+                <span style={{ color: 'var(--text)', fontWeight: 500 }}>₹{Number(booking.base_amount).toLocaleString('en-IN')}</span>
+              </>
+            )}
+            {Number(booking.vermicompost_amount) > 0 && (
+              <>
+                <span style={{ color: 'var(--text-secondary)' }}>Vermicompost:</span>
+                <span style={{ color: 'var(--text)', fontWeight: 500 }}>{booking.vermicompost_kg} kg · ₹{Number(booking.vermicompost_amount).toLocaleString('en-IN')}</span>
+              </>
+            )}
+            {Number(booking.surcharge_amount) > 0 && (
+              <>
+                <span style={{ color: 'var(--text-secondary)' }}>Surcharge:</span>
+                <span style={{ color: 'var(--text)', fontWeight: 500 }}>
+                  {(() => { let s: any = booking.surcharge_details; if (typeof s === 'string') { try { s = JSON.parse(s); } catch { s = null; } }
+                    return Array.isArray(s) && s.length ? s.map((x: any) => `${x.name} ₹${Number(x.amount).toLocaleString('en-IN')}`).join(', ') : `₹${Number(booking.surcharge_amount).toLocaleString('en-IN')}`; })()}
+                </span>
+              </>
+            )}
             <span style={{ color: 'var(--text-secondary)' }}>Amount:</span>
             <span style={{ color: '#22c55e', fontWeight: 700 }}>₹{Number(booking.total_amount || 0).toLocaleString()}</span>
             <span style={{ color: 'var(--text-secondary)' }}>Payment:</span>

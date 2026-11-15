@@ -63,6 +63,7 @@ const NAV = [
   { section: 'Catalog', items: [
     { href: '/plans', icon: 'plans', label: 'Plans' },
     { href: '/geofencing', icon: 'geofencing', label: 'Geofencing' },
+    { href: '/surcharges', icon: 'payments', label: 'Surcharges' },
     { href: '/addons', icon: 'addons', label: 'Add-Ons' },
     { href: '/blogs', icon: 'blogs', label: 'Blogs' },
     { href: '/faqs', icon: 'bookings', label: 'FAQs' },

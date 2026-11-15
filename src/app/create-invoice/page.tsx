@@ -6,6 +6,7 @@ import AdminLayout from '@/components/AdminLayout';
 import { AdminAPI, downloadFile, getServiceDetails } from '@/lib/api';
 import InvoicePreview from '@/components/InvoicePreview';
 import { inclusiveGstSplit, isUPAddress, inr, SELLER } from '@/lib/invoice';
+import { serviceCharge, surchargeLines, VERMICOMPOST_SIZES, MIN_PLANTS } from '@/lib/oneTimePricing';
 
 const PRODUCT_GST_RATES = [0, 5, 12, 18, 28]; // valid shop GST slabs
 const SERVICE_GST_RATES = [0, 5, 12, 18, 28]; // admin-choosable service slabs (0 = No GST)
@@ -61,6 +62,7 @@ export default function CreateInvoicePage() {
   const [productLines, setProductLines] = useState<ProductLine[]>([]);
   const [makeoverLines, setMakeoverLines] = useState<MakeoverLine[]>([]);
   const [addonIds, setAddonIds] = useState<number[]>([]); // on-demand add-on services
+  const [vermiKg, setVermiKg] = useState<number>(0); // on-demand vermicompost add-on (0 = none)
   const [submitting, setSubmitting] = useState<string | null>(null);
   const qc = useQueryClient();
 
@@ -71,7 +73,7 @@ export default function CreateInvoicePage() {
     setAddress(''); setCity(''); setStateName(''); setPincode('');
     setScheduledDate(''); setScheduledTime(''); setPlantCount(''); setNotes('');
     setZoneId(''); setAssignMode('none'); setGardenerId(''); setOverrideTotal('');
-    setScheduleDates([]); setProductLines([]); setMakeoverLines([]); setAddonIds([]);
+    setScheduleDates([]); setProductLines([]); setMakeoverLines([]); setAddonIds([]); setVermiKg(0);
   };
 
   // ── Data ──
@@ -84,15 +86,22 @@ export default function CreateInvoicePage() {
   const { data: productsData } = useQuery({ queryKey: ['admin-shop-products'], queryFn: AdminAPI.shopProducts, enabled: invoiceType === 'products' });
   const { data: addonsData } = useQuery({ queryKey: ['admin-addons'], queryFn: AdminAPI.addons, enabled: invoiceType === 'ondemand' });
   const addonList: any[] = (Array.isArray(addonsData) ? addonsData : ((addonsData as any)?.items || [])).filter((a: any) => a.is_active !== false);
-  // On-demand plant-count slabs: base covers 10 plants, slab extra added on
-  // top; beyond the last slab the server refuses without an override total.
-  const { data: slabData } = useQuery({ queryKey: ['plant-slabs'], queryFn: AdminAPI.plantSlabs, staleTime: 60_000 });
-  const plantSlabs: any[] = (slabData as any)?.slabs || [];
-  const plantSurcharge = (n: number): number | null => {
-    if (n <= 10) return 0;
-    const s = plantSlabs.find((x: any) => n >= x.min && n <= x.max);
-    return s ? Number(s.extra) || 0 : (plantSlabs.length ? null : 0);
-  };
+  // On-demand one-time pricing for the chosen zone: zone base (first 10
+  // plants) + progressive per-plant rates, vermicompost and active zone
+  // surcharges — mirrors the server, which recomputes on submit. Beyond the
+  // last range the server refuses without an override total.
+  const { data: pricingZonesData } = useQuery({ queryKey: ['one-time-pricing-zones'], queryFn: AdminAPI.oneTimePricingZones, enabled: invoiceType === 'ondemand', staleTime: 60_000 });
+  const { data: surchargeData } = useQuery({ queryKey: ['surcharges'], queryFn: AdminAPI.surcharges, enabled: invoiceType === 'ondemand', staleTime: 60_000 });
+  const zonePricing: any = ((pricingZonesData as any)?.zones || []).find((z: any) => String(z.id) === zoneId) || null;
+  const odQuote = useMemo(() => {
+    if (invoiceType !== 'ondemand' || !zonePricing) return null;
+    const svc = serviceCharge(parseInt(plantCount) || 0, Number(zonePricing.base_price), zonePricing.intervals || []);
+    if (!svc.ok) return { svc, vermi: null, surcharges: [] as ReturnType<typeof surchargeLines> };
+    const vRow = vermiKg ? (zonePricing.vermicompost || []).find((v: any) => v.kg === vermiKg) : null;
+    const rules = (Array.isArray(surchargeData) ? surchargeData : []).filter((s: any) =>
+      s.is_active && (s.zone_scope === 'all' || (s.zone_ids || []).map(Number).includes(Number(zonePricing.id))));
+    return { svc, vermi: vRow ? { kg: vRow.kg, amount: Number(vRow.price) } : null, surcharges: surchargeLines(rules, svc.amount, scheduledDate || undefined) };
+  }, [invoiceType, zonePricing, plantCount, vermiKg, surchargeData, scheduledDate]);
   const shopProducts: any[] = (Array.isArray(productsData) ? productsData : []).filter((p: any) => p.is_active);
   // Green Makeover service picker — public content endpoint, fetched once and
   // cached (staleTime: Infinity) since it's static config on the backend.
@@ -138,6 +147,7 @@ export default function CreateInvoicePage() {
   const computed = useMemo(() => {
     let baseSum = 0;
     let lineName = '';
+    const lines: { name: string; amount: number }[] = [];
     if (invoiceType === 'makeover') {
       // Green Makeover: subtotal = Σ pre-GST line amounts; override (if set)
       // is the GST-INCLUSIVE quoted final price — same math as the backend.
@@ -147,19 +157,30 @@ export default function CreateInvoicePage() {
       baseSum = Number(selectedPlan.price) || 0;
       lineName = `${selectedPlan.name} Plan${selectedPlan.visits_per_month ? ` — ${selectedPlan.visits_per_month} visits/month` : ''}`;
     } else {
-      const base = selectedZone ? (parseFloat(selectedZone.base_price) || 0) : 0;
-      const extra = plantSurcharge(parseInt(plantCount) || 0) ?? 0; // slab, not per-plant
-      const addonSum = addonList.filter((a) => addonIds.includes(a.id)).reduce((s, a) => s + (Number(a.price) || 0), 0);
-      baseSum = base + extra + addonSum;
-      lineName = `On-Demand Gardener Visit (${plantCount || 0} plants)${addonIds.length ? ` + ${addonIds.length} add-on${addonIds.length > 1 ? 's' : ''}` : ''}`;
+      // On-demand: one line each for the visit, vermicompost, surcharges and add-ons.
+      const svc = odQuote?.svc;
+      const addons = addonList.filter((a) => addonIds.includes(a.id));
+      if (svc?.ok) {
+        lines.push({ name: `On-Demand Gardener Visit (${svc.plants} plants)`, amount: svc.amount });
+        if (odQuote?.vermi) lines.push({ name: `Vermicompost (${odQuote.vermi.kg} kg)`, amount: odQuote.vermi.amount });
+        for (const s of odQuote?.surcharges || []) lines.push({ name: `Surcharge: ${s.name}${s.type === 'percentage' ? ` (${s.value}% of service)` : ''}`, amount: s.amount });
+      }
+      for (const a of addons) lines.push({ name: `Add-on: ${a.name}`, amount: Number(a.price) || 0 });
+      baseSum = lines.reduce((s, l) => s + l.amount, 0);
+      lineName = !zonePricing ? 'Select the zone to price the visit…'
+        : svc && !svc.ok ? `On-Demand Gardener Visit (${svc.plants} plants — custom quote)`
+          : `On-Demand Gardener Visit (${svc?.plants || MIN_PLANTS} plants)`;
     }
     const total = overrideTotal && Number(overrideTotal) > 0
       ? Math.round(Number(overrideTotal) * 100) / 100
       : Math.round(baseSum * (1 + gstRate / 100) * 100) / 100;
-    return { lineName, baseSum, total };
-  }, [invoiceType, selectedPlan, selectedZone, plantCount, overrideTotal, makeoverLines, gstRate, addonIds, addonList, plantSlabs]);
+    return { lineName, baseSum, total, lines };
+  }, [invoiceType, selectedPlan, plantCount, overrideTotal, makeoverLines, gstRate, addonIds, addonList, odQuote, zonePricing]);
 
   const previewLine = { name: computed.lineName || 'Service', amount: inclusiveGstSplit(computed.total, gstRate).subtotal };
+  // On-demand without an override: show each line (pre-GST) like the PDF will.
+  const onDemandPreviewLines = invoiceType === 'ondemand' && !(overrideTotal && Number(overrideTotal) > 0) && computed.lines.length
+    ? computed.lines : [previewLine];
   // Makeover preview rows: the admin's pre-GST line amounts as entered. The
   // preview card derives subtotal/GST from `total` (inclusiveGstSplit), so an
   // override quote shows the back-computed split exactly like the PDF will.
@@ -266,6 +287,7 @@ export default function CreateInvoicePage() {
     gst_rate: gstRate,
     tax_type: taxType,
     addon_ids: invoiceType === 'ondemand' && addonIds.length ? addonIds : undefined,
+    vermicompost_kg: invoiceType === 'ondemand' && vermiKg ? vermiKg : undefined,
     assign_mode: assignMode,
     gardener_id: assignMode === 'pick' && gardenerId ? Number(gardenerId) : undefined,
     schedule_dates: outcome === 'subscription' ? scheduleDates.filter(Boolean) : undefined,
@@ -547,13 +569,42 @@ export default function CreateInvoicePage() {
                 </div>
                 <div>
                   <Label>Plants</Label>
-                  <input className="input" type="number" value={plantCount} onChange={(e) => setPlantCount(e.target.value)} />
-                  {invoiceType === 'ondemand' && plantSurcharge(parseInt(plantCount) || 0) === null && (
-                    <div style={{ color: 'var(--error)', fontSize: '0.7rem', marginTop: 4 }}>Beyond the slab table — custom quote: enter the agreed price as Override Total</div>
+                  <input className="input" type="number" min={invoiceType === 'ondemand' ? MIN_PLANTS : undefined} placeholder={invoiceType === 'ondemand' ? `Min ${MIN_PLANTS}` : ''} value={plantCount} onChange={(e) => setPlantCount(e.target.value)} />
+                  {invoiceType === 'ondemand' && odQuote && !odQuote.svc.ok && (
+                    <div style={{ color: 'var(--error)', fontSize: '0.7rem', marginTop: 4 }}>Over {odQuote.svc.maxPlants} plants — custom quote: enter the agreed price as Override Total</div>
+                  )}
+                  {invoiceType === 'ondemand' && odQuote?.svc.ok && (
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', marginTop: 4 }}>
+                      Visit charge ₹{odQuote.svc.amount.toLocaleString('en-IN')}{(parseInt(plantCount) || 0) < MIN_PLANTS ? ` (minimum ${MIN_PLANTS} plants)` : ''}
+                    </div>
+                  )}
+                  {invoiceType === 'ondemand' && zoneId === '' && (
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', marginTop: 4 }}>Select the zone to price the visit</div>
                   )}
                 </div>
                 <div><Label>Date</Label><input className="input" type="date" max={today} value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} /></div>
               </div>
+              {invoiceType === 'ondemand' && (
+                <div style={{ marginBottom: 16 }}>
+                  <Label>Vermicompost (optional add-on, zone price)</Label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    <button type="button" onClick={() => setVermiKg(0)} className={`btn btn-sm ${vermiKg === 0 ? 'btn-primary' : 'btn-outline'}`}>None</button>
+                    {VERMICOMPOST_SIZES.map((kg) => {
+                      const p = (zonePricing?.vermicompost || []).find((v: any) => v.kg === kg)?.price;
+                      return (
+                        <button key={kg} type="button" onClick={() => setVermiKg(kg)} className={`btn btn-sm ${vermiKg === kg ? 'btn-primary' : 'btn-outline'}`}>
+                          {kg} kg{p != null ? ` — ₹${Number(p).toLocaleString('en-IN')}` : ''}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {odQuote?.surcharges?.length ? (
+                    <p style={{ fontSize: '0.72rem', color: '#92400e', marginTop: 6 }}>
+                      Active surcharge{odQuote.surcharges.length > 1 ? 's' : ''} for this zone: {odQuote.surcharges.map((s) => `${s.name} ₹${s.amount.toLocaleString('en-IN')}`).join(', ')} (added as separate lines)
+                    </p>
+                  ) : null}
+                </div>
+              )}
               {invoiceType === 'ondemand' && addonList.length > 0 && (
                 <div style={{ marginBottom: 16 }}>
                   <Label>Add-on Services (billed as extra lines)</Label>
@@ -688,7 +739,7 @@ export default function CreateInvoicePage() {
               statusLabel="PREVIEW"
               gstRate={gstRate}
               intra={taxType === 'cgst_sgst' ? true : taxType === 'igst' ? false : undefined}
-              lines={invoiceType === 'makeover' ? makeoverPreviewLines : [previewLine]}
+              lines={invoiceType === 'makeover' ? makeoverPreviewLines : invoiceType === 'ondemand' ? onDemandPreviewLines : [previewLine]}
             />
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>

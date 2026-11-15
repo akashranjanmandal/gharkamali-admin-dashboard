@@ -9,6 +9,7 @@ import ExportButton from '@/components/ExportButton';
 import PeriodFilter, { Period } from '@/components/PeriodFilter';
 import { Th, useTableControls, type Col } from '@/components/TableHeader';
 import InvoicePreview from '@/components/InvoicePreview';
+import { bookingLines } from '@/lib/oneTimePricing';
 import { inclusiveGstSplit } from '@/lib/invoice';
 import { IconSearch, IconDownload, IconX, IconCalendar, IconMapPin, IconUser, IconLeaf, IconStar, IconMessageCircle } from '@tabler/icons-react';
 
@@ -431,10 +432,13 @@ export default function AdminBookingsPage() {
                       address={bookingDetail.service_address}
                       total={Number(bookingDetail.total_amount) || 0}
                       statusLabel={(bookingDetail.payment_status || 'PAID').toUpperCase()}
-                      lines={[{
-                        name: `Gardener Visit${bookingDetail.subscription?.plan?.name ? ` — ${bookingDetail.subscription.plan.name}` : ''} (${bookingDetail.plant_count || 0} plants)`,
-                        amount: Number(bookingDetail.base_amount) || inclusiveGstSplit(Number(bookingDetail.total_amount) || 0).subtotal,
-                      }]}
+                      lines={bookingDetail.booking_type === 'ondemand' && Number(bookingDetail.base_amount) > 0
+                        // One-time visit: service, vermicompost, surcharges and add-ons as separate lines
+                        ? bookingLines(bookingDetail)
+                        : [{
+                          name: `Gardener Visit${bookingDetail.subscription?.plan?.name ? ` — ${bookingDetail.subscription.plan.name}` : ''} (${bookingDetail.plant_count || 0} plants)`,
+                          amount: Number(bookingDetail.base_amount) || inclusiveGstSplit(Number(bookingDetail.total_amount) || 0).subtotal,
+                        }]}
                     />
                   </div>
                 </div>
