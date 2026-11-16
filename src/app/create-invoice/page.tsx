@@ -171,9 +171,13 @@ export default function CreateInvoicePage() {
         : svc && !svc.ok ? `On-Demand Gardener Visit (${svc.plants} plants — custom quote)`
           : `On-Demand Gardener Visit (${svc?.plants || MIN_PLANTS} plants)`;
     }
+    // Vermicompost is goods (fertilizer, HSN 3101) at 5% GST, not the service
+    // slab — mirror the backend: every other line gets the chosen slab.
+    const vermiAmt = invoiceType === 'ondemand' ? Number(odQuote?.vermi?.amount || 0) : 0;
+    const vermiRate = gstRate === 0 ? 0 : 5;
     const total = overrideTotal && Number(overrideTotal) > 0
       ? Math.round(Number(overrideTotal) * 100) / 100
-      : Math.round(baseSum * (1 + gstRate / 100) * 100) / 100;
+      : Math.round(((baseSum - vermiAmt) * (1 + gstRate / 100) + vermiAmt * (1 + vermiRate / 100)) * 100) / 100;
     return { lineName, baseSum, total, lines };
   }, [invoiceType, selectedPlan, plantCount, overrideTotal, makeoverLines, gstRate, addonIds, addonList, odQuote, zonePricing]);
 
