@@ -47,7 +47,9 @@ export default function LeadsPage() {
   const [sheetUrl, setSheetUrl] = useState('');
   const [webappUrl, setWebappUrl] = useState('');
   // Shared secret between our backend and the Apps Script on the sheet.
-  const [token] = useState(() => {
+  // Editable: if the sheet already has a script with its own TOKEN (e.g. the
+  // WhatsApp-bot bridge), paste that value here instead.
+  const [token, setToken] = useState(() => {
     try {
       const saved = localStorage.getItem('gkm_leads_token');
       if (saved) return saved;
@@ -219,9 +221,16 @@ function doGet(e) {
                 <li><strong>Deploy → New deployment → Web app</strong>, set <strong>Execute as: Me</strong> and <strong>Who has access: Anyone</strong>, click Deploy and authorise.</li>
                 <li>Copy the Web App URL (ends in <code>/exec</code>) and paste it here:</li>
               </ol>
+              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 14px', fontSize: '0.76rem', color: '#92400e', marginBottom: 12 }}>
+                <strong>Sheet already has a script?</strong> (e.g. the WhatsApp-bot bridge) — do NOT delete it. Add only the
+                <code> doGet </code> function from above into the existing script (skip the <code>const TOKEN</code> line — it
+                already has one), put that script&apos;s existing TOKEN value in the Access token box below, and re-deploy via
+                <strong> Deploy → Manage deployments → ✎ → New version</strong> so the URL n8n uses stays the same.
+              </div>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <input className="input" style={{ flex: 1, minWidth: 280 }} placeholder="https://script.google.com/macros/s/…/exec" value={webappUrl} onChange={e => setWebappUrl(e.target.value)} />
-                <button className="btn btn-primary" onClick={() => configMut.mutate({ webapp_url: webappUrl.trim(), token })} disabled={configMut.isPending || !webappUrl.trim()}>
+                <input className="input" style={{ flex: 2, minWidth: 280 }} placeholder="https://script.google.com/macros/s/…/exec" value={webappUrl} onChange={e => setWebappUrl(e.target.value)} />
+                <input className="input" style={{ flex: 1, minWidth: 180 }} placeholder="Access token (TOKEN in the script)" value={token} onChange={e => { setToken(e.target.value); try { localStorage.setItem('gkm_leads_token', e.target.value); } catch {} }} />
+                <button className="btn btn-primary" onClick={() => configMut.mutate({ webapp_url: webappUrl.trim(), token: token.trim() })} disabled={configMut.isPending || !webappUrl.trim() || token.trim().length < 8}>
                   {configMut.isPending ? 'Connecting…' : 'Connect privately'}
                 </button>
               </div>
