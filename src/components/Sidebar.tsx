@@ -3,6 +3,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useRef, useEffect } from 'react';
 import { useAdmin } from '@/store/admin';
+import { usePerms, moduleForPath } from '@/lib/perms';
 
 // Premium SVG Icons - no emojis
 const icons: Record<string, JSX.Element> = {
@@ -83,6 +84,8 @@ const NAV = [
   ]},
   { section: 'System', items: [
     { href: '/notifications', icon: 'bell', label: 'Broadcasts' },
+    { href: '/team', icon: 'supervisors', label: 'Team & Roles' },
+    { href: '/audit', icon: 'sla', label: 'Audit Logs' },
     { href: '/settings', icon: 'settings', label: 'Settings' },
   ]},
 ];
@@ -92,6 +95,7 @@ const SCROLL_KEY = 'gkm_sidebar_scroll';
 export default function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const { user, logout } = useAdmin();
+  const { canView } = usePerms();
   const navRef = useRef<HTMLElement>(null);
 
   // Restore scroll on mount (AdminLayout is per-page so it remounts on nav).
@@ -127,9 +131,13 @@ export default function Sidebar({ open, onClose }: { open?: boolean; onClose?: (
         )}
       </div>
 
-      {/* Nav */}
+      {/* Nav — only the sections this role's permissions allow (RBAC). The
+          backend enforces the same map on every API call; this is just UI. */}
       <nav ref={navRef} className="sidebar-nav">
-        {NAV.map(group => (
+        {NAV.map(group => ({
+          ...group,
+          items: group.items.filter(item => canView(moduleForPath(item.href))),
+        })).filter(group => group.items.length > 0).map(group => (
           <div key={group.section}>
             <div className="sidebar-section">{group.section}</div>
             {group.items.map(item => {

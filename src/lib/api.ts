@@ -302,6 +302,22 @@ export const AdminAPI = {
   saveWalletConfig: (b: any) => req('/admin/wallet/config', { method: 'PUT', body: JSON.stringify(b) }),
   walletCredit: (b: { user_id: number; amount: number; note: string; validity_days?: number | null }) =>
     req('/admin/wallet/credit', { method: 'POST', body: JSON.stringify(b) }),
+  // RBAC: roles, permissions, panel users, audit logs
+  rbacMe: () => req('/admin/rbac/me'),
+  rbacConfig: () => req('/admin/rbac/config'),
+  saveRbacConfig: (matrix: any) => req('/admin/rbac/config', { method: 'PUT', body: JSON.stringify({ matrix }) }),
+  panelUsers: () => req('/admin/panel-users'),
+  createPanelUser: (b: { name: string; phone: string; email?: string; password: string; role: string }) =>
+    req('/admin/panel-users', { method: 'POST', body: JSON.stringify(b) }),
+  updatePanelUser: (id: number, b: any) => req(`/admin/panel-users/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
+  auditLogs: (params?: { module?: string; actor_id?: number; limit?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.module) q.set('module', params.module);
+    if (params?.actor_id) q.set('actor_id', String(params.actor_id));
+    if (params?.limit) q.set('limit', String(params.limit));
+    const s = q.toString();
+    return req(`/admin/audit-logs${s ? `?${s}` : ''}`);
+  },
   // Leads synced live from the marketing Google Sheet
   leads: () => req('/admin/leads'),
   syncLeads: () => req('/admin/leads?sync=1'),

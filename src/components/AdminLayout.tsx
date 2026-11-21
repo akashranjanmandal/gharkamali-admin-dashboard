@@ -7,6 +7,7 @@ import { AdminAPI } from '@/lib/api';
 import AdminNotificationListener from './AdminNotificationListener';
 import NotificationBell from './NotificationBell';
 import toast from 'react-hot-toast';
+import { usePerms, moduleForPath, ROLE_LANDING } from '@/lib/perms';
 
 // Matches the server default shown to customers when no custom message is set.
 const DEFAULT_PAUSE_MESSAGE = "We're not serviceable right now — we'll be back very soon!";
@@ -15,6 +16,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, isLoading, user } = useAdmin();
+  const perms = usePerms();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any>(null);
@@ -111,6 +113,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </div>
   );
   if (!isAuthenticated) return null;
+
+  // RBAC page guard — the backend rejects the API calls anyway; this shows a
+  // clear explanation instead of a page full of failed requests.
+  const pageModule = moduleForPath(pathname);
+  if (perms.loaded && pageModule && !perms.canView(pageModule)) {
+    const home = ROLE_LANDING[perms.role || ''] || '/dashboard';
+    return (
+      <div className="admin-layout">
+        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <main className="admin-main">
+          <div className="admin-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '70vh' }}>
+            <div style={{ textAlign: 'center', maxWidth: 420 }}>
+              <div style={{ fontSize: '2.4rem', marginBottom: 12 }}>🔒</div>
+              <h2 style={{ fontWeight: 800, marginBottom: 8 }}>No access to this section</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 18 }}>
+                Your role ({user?.role}) doesn&apos;t have permission here. Ask the Super Admin to grant it in Team &amp; Roles.
+              </p>
+              <button className="btn btn-primary" onClick={() => router.replace(home)}>Go to my dashboard</button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-layout">

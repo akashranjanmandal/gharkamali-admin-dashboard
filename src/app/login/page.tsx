@@ -16,9 +16,14 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
 
+  // Role-based landing pages: Super Admin & Business Manager → dashboard,
+  // Accounts → transactions, Sales → leads, Supervisor → ops dashboard.
+  const landing = (r?: string) =>
+    r === 'supervisor' ? '/supervisor/dashboard' : r === 'accounts' ? '/payments' : r === 'sales' ? '/leads' : '/dashboard';
+
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace(user?.role === 'supervisor' ? '/supervisor/dashboard' : '/dashboard');
+      router.replace(landing(user?.role));
     }
   }, [isAuthenticated, user]);
 
@@ -27,17 +32,21 @@ export default function AdminLoginPage() {
     setLoading(true);
     try {
       const res: any = await adminLogin(phone.trim(), password);
-      if (!['admin', 'supervisor'].includes(res?.user?.role)) {
-        toast.error('Access denied. Admin or supervisor only.');
+      const staffRoles = ['admin', 'supervisor', 'accounts', 'sales', 'business'];
+      if (!staffRoles.includes(res?.user?.role)) {
+        toast.error('Access denied. Staff accounts only.');
         return;
       }
-      if (res.user.role !== role) {
-        toast.error(`This account is a ${res.user.role}. Switch the tab to "${res.user.role === 'admin' ? 'Admin' : 'Supervisor'}" to log in.`);
+      // Supervisors use their own tab; every other staff role logs in on "Admin".
+      if ((res.user.role === 'supervisor') !== (role === 'supervisor')) {
+        toast.error(res.user.role === 'supervisor'
+          ? 'This is a supervisor account. Switch the tab to "Supervisor" to log in.'
+          : 'This is a staff account. Switch the tab to "Admin" to log in.');
         return;
       }
       login(res.user, res.token);
       toast.success('Welcome back!');
-      router.replace(res.user.role === 'supervisor' ? '/supervisor/dashboard' : '/dashboard');
+      router.replace(landing(res.user.role));
     } catch (e: any) { toast.error(e.message || 'Invalid credentials'); }
     finally { setLoading(false); }
   };
