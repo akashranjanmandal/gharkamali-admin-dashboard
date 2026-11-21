@@ -434,61 +434,105 @@ function doGet(e) {
         </div>
       </div>
 
-      {/* Lead drawer / modal */}
-      {selected && (
-        <div className="modal-overlay" onClick={() => setSelected(null)}>
-          <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 560, maxHeight: '86vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-              <h2 style={{ fontWeight: 800, fontSize: '1.15rem' }}>{selected.name || 'Lead'}</h2>
-              <button className="btn btn-sm btn-ghost" onClick={() => setSelected(null)}>✕</button>
-            </div>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: 14 }}>
-              {fmtDT(leadDate(selected))}{selected.phone ? <> · <a href={`tel:+91${selected.phone}`} style={{ color: 'var(--forest)', fontWeight: 700 }}>{selected.phone}</a> · <a href={`https://wa.me/91${selected.phone}`} target="_blank" rel="noopener noreferrer" style={{ color: '#15803d', fontWeight: 700 }}>WhatsApp</a></> : null}
-            </div>
+      {/* Lead detail modal: fixed header, scrollable body, sticky footer */}
+      {selected && (() => {
+        const sm = statusMeta(selected.status);
+        return (
+          <div className="modal-overlay" onClick={() => setSelected(null)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <div onClick={e => e.stopPropagation()}
+              style={{ background: '#fff', borderRadius: 20, width: 'min(600px, 100%)', maxHeight: 'min(88vh, 760px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 24px 70px rgba(0,0,0,0.28)' }}>
 
-            {/* Status buttons */}
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
-              {STATUSES.map(s => (
-                <button key={s.key}
-                  onClick={() => updateMut.mutate({ id: selected.id, body: { status: s.key } })}
-                  disabled={updateMut.isPending}
-                  className="btn btn-sm"
-                  style={{ background: selected.status === s.key ? s.color : s.bg, color: selected.status === s.key ? '#fff' : s.color, fontWeight: 700, border: 'none' }}>
-                  {s.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Follow-up + notes */}
-            <div className="form-group">
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-2)', marginBottom: 5 }}>Follow-up date</label>
-              <input type="date" className="input" value={editFollowUp} onChange={e => setEditFollowUp(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-2)', marginBottom: 5 }}>Notes</label>
-              <textarea className="input" rows={3} style={{ resize: 'vertical' }} value={editNotes} onChange={e => setEditNotes(e.target.value)} placeholder="Called at 4pm, asked to call back tomorrow…" />
-            </div>
-            <button className="btn btn-primary" style={{ width: '100%', marginBottom: 18 }}
-              disabled={updateMut.isPending}
-              onClick={() => updateMut.mutate({ id: selected.id, body: { notes: editNotes, follow_up_on: editFollowUp || null } }, { onSuccess: () => toast.success('Saved') })}>
-              Save notes & follow-up
-            </button>
-
-            {/* Everything from the sheet */}
-            {rawFields.length > 0 && (
-              <div style={{ background: 'var(--bg-muted, #f6f7f6)', borderRadius: 14, padding: 14 }}>
-                <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 8 }}>From the sheet</div>
-                {rawFields.map(([k, v]) => (
-                  <div key={k} style={{ display: 'flex', gap: 10, padding: '5px 0', borderBottom: '1px dashed var(--border)', fontSize: '0.82rem' }}>
-                    <span style={{ minWidth: 140, color: 'var(--text-muted)', fontWeight: 600 }}>{k}</span>
-                    <span style={{ fontWeight: 600, wordBreak: 'break-word' }}>{String(v)}</span>
+              {/* Header */}
+              <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <h2 style={{ fontWeight: 800, fontSize: '1.15rem', lineHeight: 1.2 }}>{selected.name || 'Lead'}</h2>
+                    <span style={{ background: sm.bg, color: sm.color, fontWeight: 700, fontSize: '0.7rem', borderRadius: 999, padding: '3px 10px' }}>{sm.label}</span>
                   </div>
-                ))}
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginTop: 4 }}>{fmtDT(leadDate(selected))}{selected.city ? ` · ${selected.city}` : ''}</div>
+                </div>
+                {selected.phone && (
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    <a href={`tel:+91${selected.phone}`} title={`Call ${selected.phone}`}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 999, border: '1.5px solid var(--border)', fontSize: '0.76rem', fontWeight: 700, color: 'var(--forest)', whiteSpace: 'nowrap' }}>
+                      📞 {selected.phone}
+                    </a>
+                    <a href={`https://wa.me/91${selected.phone}`} target="_blank" rel="noopener noreferrer" title="Open WhatsApp chat"
+                      style={{ display: 'flex', alignItems: 'center', padding: '7px 13px', borderRadius: 999, background: '#dcfce7', fontSize: '0.76rem', fontWeight: 700, color: '#15803d', whiteSpace: 'nowrap' }}>
+                      WhatsApp
+                    </a>
+                  </div>
+                )}
+                <button onClick={() => setSelected(null)} aria-label="Close"
+                  style={{ width: 32, height: 32, borderRadius: 10, border: '1px solid var(--border)', background: '#fff', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-muted)', flexShrink: 0, lineHeight: 1 }}>✕</button>
               </div>
-            )}
+
+              {/* Scrollable body */}
+              <div style={{ padding: '18px 22px', overflowY: 'auto', flex: 1, minHeight: 0 }}>
+                <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 8 }}>Status</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 18 }}>
+                  {STATUSES.map(s => {
+                    const active = selected.status === s.key;
+                    return (
+                      <button key={s.key}
+                        onClick={() => updateMut.mutate({ id: selected.id, body: { status: s.key } })}
+                        disabled={updateMut.isPending}
+                        style={{
+                          padding: '9px 6px', borderRadius: 11, cursor: 'pointer', fontWeight: 700, fontSize: '0.78rem',
+                          fontFamily: 'inherit', transition: 'all 0.15s',
+                          background: active ? s.color : '#fff',
+                          color: active ? '#fff' : s.color,
+                          border: `1.5px solid ${active ? s.color : 'var(--border)'}`,
+                        }}>
+                        {s.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14, marginBottom: 18 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-2)', marginBottom: 5 }}>Follow-up date</label>
+                    <input type="date" className="input" value={editFollowUp} onChange={e => setEditFollowUp(e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-2)', marginBottom: 5 }}>Notes</label>
+                    <textarea className="input" rows={3} style={{ resize: 'vertical' }} value={editNotes} onChange={e => setEditNotes(e.target.value)} placeholder="Called at 4pm, asked to call back tomorrow…" />
+                  </div>
+                </div>
+
+                {rawFields.length > 0 && (
+                  <div style={{ background: 'var(--bg-muted, #f6f7f6)', borderRadius: 14, padding: '14px 16px' }}>
+                    <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 6 }}>From the sheet</div>
+                    {rawFields.map(([k, v], i) => (
+                      <div key={k} style={{ display: 'flex', gap: 12, padding: '7px 0', borderTop: i === 0 ? 'none' : '1px dashed var(--border)', fontSize: '0.8rem', alignItems: 'baseline' }}>
+                        <span style={{ width: 130, flexShrink: 0, color: 'var(--text-muted)', fontWeight: 600 }}>{k}</span>
+                        {/^https?:\/\//.test(String(v)) ? (
+                          <a href={String(v)} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 600, color: 'var(--forest)', wordBreak: 'break-all' }}>
+                            {/maps\.google|google\.[a-z.]+\/maps/.test(String(v)) ? '📍 Open location in Maps' : String(v)}
+                          </a>
+                        ) : (
+                          <span style={{ fontWeight: 600, wordBreak: 'break-word', color: 'var(--text)' }}>{String(v)}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div style={{ padding: '14px 22px', borderTop: '1px solid var(--border)', display: 'flex', gap: 10, background: '#fff' }}>
+                <button className="btn btn-ghost" onClick={() => setSelected(null)}>Close</button>
+                <button className="btn btn-primary" style={{ flex: 1 }}
+                  disabled={updateMut.isPending}
+                  onClick={() => updateMut.mutate({ id: selected.id, body: { notes: editNotes, follow_up_on: editFollowUp || null } }, { onSuccess: () => toast.success('Saved') })}>
+                  {updateMut.isPending ? 'Saving…' : 'Save notes & follow-up'}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </AdminLayout>
   );
 }

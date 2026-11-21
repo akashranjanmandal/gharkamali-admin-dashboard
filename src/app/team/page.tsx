@@ -177,7 +177,7 @@ export default function TeamPage() {
       {/* Create / edit staff modal */}
       {modal && (
         <div className="modal-overlay" onClick={() => setModal(null)}>
-          <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 440 }}>
+          <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 440, padding: '22px 24px' }}>
             <h2 style={{ fontWeight: 800, fontSize: '1.15rem', marginBottom: 16 }}>{modal === 'create' ? 'Add staff member' : `Edit ${(modal as PanelUser).name}`}</h2>
             <div className="form-group">
               <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-2)', marginBottom: 5 }}>Name *</label>
