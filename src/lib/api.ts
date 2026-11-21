@@ -323,8 +323,8 @@ export const AdminAPI = {
   syncLeads: () => req('/admin/leads?sync=1'),
   updateLead: (id: number, b: { status?: string; notes?: string; follow_up_on?: string | null }) =>
     req(`/admin/leads/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
-  saveLeadsConfig: (sheet_url: string) =>
-    req('/admin/leads/config', { method: 'PUT', body: JSON.stringify({ sheet_url }) }),
+  saveLeadsConfig: (cfg: { sheet_url?: string; webapp_url?: string; token?: string }) =>
+    req('/admin/leads/config', { method: 'PUT', body: JSON.stringify(cfg) }),
   // Days on which new customer bookings are closed (holidays / capacity freezes)
   blockedDates: () => req('/admin/blocked-dates'),
   saveBlockedDates: (dates: { date: string; reason?: string }[]) =>
