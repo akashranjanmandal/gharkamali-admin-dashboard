@@ -302,6 +302,13 @@ export const AdminAPI = {
   saveWalletConfig: (b: any) => req('/admin/wallet/config', { method: 'PUT', body: JSON.stringify(b) }),
   walletCredit: (b: { user_id: number; amount: number; note: string; validity_days?: number | null }) =>
     req('/admin/wallet/credit', { method: 'POST', body: JSON.stringify(b) }),
+  // Leads synced live from the marketing Google Sheet
+  leads: () => req('/admin/leads'),
+  syncLeads: () => req('/admin/leads?sync=1'),
+  updateLead: (id: number, b: { status?: string; notes?: string; follow_up_on?: string | null }) =>
+    req(`/admin/leads/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
+  saveLeadsConfig: (sheet_url: string) =>
+    req('/admin/leads/config', { method: 'PUT', body: JSON.stringify({ sheet_url }) }),
   // Days on which new customer bookings are closed (holidays / capacity freezes)
   blockedDates: () => req('/admin/blocked-dates'),
   saveBlockedDates: (dates: { date: string; reason?: string }[]) =>

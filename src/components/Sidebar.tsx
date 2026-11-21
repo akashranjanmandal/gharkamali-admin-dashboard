@@ -37,6 +37,7 @@ const NAV = [
   { section: 'Overview', items: [
     { href: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
     { href: '/analytics', icon: 'analytics', label: 'Analytics' },
+    { href: '/leads', icon: 'customers', label: 'Leads' },
   ]},
   { section: 'Operations', items: [
     { href: '/bookings', icon: 'bookings', label: 'Bookings' },
